@@ -205,28 +205,28 @@ export const publicEventRoutes = new Hono()
   .post("/:slug/media", zValidator("json", createMediaSchema), async (c) => {
     const slug = c.req.param("slug");
     const { key, contentType, fileSize, guestName, caption } = c.req.valid("json");
-
+  
     const [event] = await db.select().from(events).where(eq(events.slug, slug));
     if (!event || !event.uploadsEnabled) {
       return c.json({ error: "Event not found or uploads disabled" }, 404);
     }
-
+  
     const mediaCount = await db
       .select({ count: count() })
       .from(media)
       .where(eq(media.eventId, event.id));
-
+  
     if (mediaCount[0].count >= event.maxMediaCount) {
       return c.json({ error: "Upload limit reached for this event" }, 400);
     }
-
+  
     const now = new Date();
     if (event.uploadsDeadline && now > event.uploadsDeadline) {
       return c.json({ error: "Uploads are closed for this event" }, 400);
     }
-
+  
     const type = contentType.startsWith("video/") ? "video" : "photo";
-
+  
     const [record] = await db
       .insert(media)
       .values({
@@ -239,7 +239,7 @@ export const publicEventRoutes = new Hono()
         caption,
       })
       .returning();
-
+  
     return c.json(record, 201);
   })
   .get("/:slug/media", async (c) => {

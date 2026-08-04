@@ -1,28 +1,4 @@
 {
-<<<<<<< HEAD
-  "name": "@app/shared",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "exports": {
-    "./schema": "./src/schema.ts",
-    "./validators": "./src/validators.ts",
-    "./db": "./src/db.ts"
-  },
-  "scripts": {
-    "db:push": "drizzle-kit push",
-    "db:generate": "drizzle-kit generate",
-    "db:studio": "drizzle-kit studio"
-  },
-  "dependencies": {
-    "drizzle-orm": "^0.44.0",
-    "postgres": "^3.4.5",
-    "zod": "^3.24.0"
-  },
-  "devDependencies": {
-    "drizzle-kit": "^0.31.0",
-    "typescript": "^5.0.0"
-=======
   "name": "event-photo-sharing",
   "private": true,
   "packageManager": "pnpm@9.15.4",
@@ -32,6 +8,5 @@
     "dev:api": "pnpm --filter @app/api dev",
     "build": "pnpm -r build",
     "db:push": "pnpm --filter @app/shared db:push"
->>>>>>> 58bf49a (feat: organization and guest feat with api integration)
   }
 }
