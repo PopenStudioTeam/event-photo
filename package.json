@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "@app/shared",
   "version": "0.0.0",
   "private": true,
@@ -21,5 +22,16 @@
   "devDependencies": {
     "drizzle-kit": "^0.31.0",
     "typescript": "^5.0.0"
+=======
+  "name": "event-photo-sharing",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "engines": { "node": ">=22.0.0" },
+  "scripts": {
+    "dev:web": "pnpm --filter @app/web dev",
+    "dev:api": "pnpm --filter @app/api dev",
+    "build": "pnpm -r build",
+    "db:push": "pnpm --filter @app/shared db:push"
+>>>>>>> 58bf49a (feat: organization and guest feat with api integration)
   }
 }

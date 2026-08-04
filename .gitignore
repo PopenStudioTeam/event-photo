@@ -1,1 +1,16 @@
+<<<<<<< HEAD
 node_modules/
+=======
+node_modules
+.next
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Workspace monorepo: only the root package-lock.json should be committed
+apps/*/package-lock.json
+
+postman/
+>>>>>>> 58bf49a (feat: organization and guest feat with api integration)
