@@ -71,8 +71,8 @@ export default function EventDetailPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const events = await apiFetch("/events");
-        const found = (events as Event[]).find((e) => e.slug === slug) ?? null;
+        const events = await apiFetch<Event[]>("/events");
+        const found = events.find((e) => e.slug === slug) ?? null;
         if (!found) {
           setError("Event not found");
         } else {
@@ -112,13 +112,13 @@ export default function EventDetailPage() {
     }
 
     try {
-      const updated = await apiFetch(`/events/${slug}`, {
+      const updated = await apiFetch<Event>(`/events/${slug}`, {
         method: "PATCH",
         body: JSON.stringify(body),
       });
 
       // Merge with existing event to avoid losing client-only fields
-      setEvent((prev) => (prev ? { ...prev, ...updated } : (updated as Event)));
+      setEvent((prev) => (prev ? { ...prev, ...updated } : updated));
       setEditOpen(false);
     } catch (err) {
       console.error(err);
@@ -139,10 +139,13 @@ export default function EventDetailPage() {
       const contentType = coverFile.type || "image/jpeg";
       const fileSize = coverFile.size;
 
-      const presign = await apiFetch(`/events/${event.slug}/cover-url`, {
-        method: "POST",
-        body: JSON.stringify({ contentType, fileSize }),
-      });
+      const presign = await apiFetch<{ uploadUrl: string; key: string }>(
+        `/events/${event.slug}/cover-url`,
+        {
+          method: "POST",
+          body: JSON.stringify({ contentType, fileSize }),
+        },
+      );
 
       const putRes = await fetch(presign.uploadUrl, {
         method: "PUT",
@@ -154,13 +157,13 @@ export default function EventDetailPage() {
         throw new Error("Upload to R2 failed");
       }
 
-      const updated = await apiFetch(`/events/${event.slug}`, {
+      const updated = await apiFetch<Event>(`/events/${event.slug}`, {
         method: "PATCH",
         body: JSON.stringify({ coverImageKey: presign.key }),
       });
 
       // Merge instead of full replace
-      setEvent((prev) => (prev ? { ...prev, ...updated } : (updated as Event)));
+      setEvent((prev) => (prev ? { ...prev, ...updated } : updated));
 
       setCoverFile(null);
     } catch (err) {
@@ -175,8 +178,8 @@ export default function EventDetailPage() {
     if (!event) return;
     setLoadingMedia(true);
     try {
-      const list = await apiFetch(`/events/${event.slug}/media`);
-      setMedia(list as Media[]);
+      const list = await apiFetch<Media[]>(`/events/${event.slug}/media`);
+      setMedia(list);
       setGalleryOpen(true);
     } catch (err) {
       console.error(err);
