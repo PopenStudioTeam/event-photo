@@ -28,3 +28,84 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
 
   return res.json();
 }
+
+export async function apiFetchBlob(path: string, options: RequestInit = {}) {
+  const token =
+    typeof window !== "undefined"
+      ? window.localStorage.getItem("eventphoto_token")
+      : null;
+
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> | undefined),
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  if (!res.ok) {
+    throw new Error(`API error ${res.status}`);
+  }
+
+  return res.blob();
+}
+
+export async function apiFetchBlobWithProgress(
+  path: string,
+  options: RequestInit = {},
+  onProgress?: (percent: number) => void
+): Promise<Blob> {
+  const token =
+    typeof window !== "undefined"
+      ? window.localStorage.getItem("eventphoto_token")
+      : null;
+
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> | undefined),
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  if (!res.ok) {
+    throw new Error(`API error ${res.status}`);
+  }
+
+  const contentLength = res.headers.get("Content-Length");
+  const total = contentLength ? Number(contentLength) : 0;
+
+  if (!res.body || !total) {
+    onProgress?.(0);
+    const blob = await res.blob();
+    onProgress?.(100);
+    return blob;
+  }
+
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    onProgress?.(Math.min(100, Math.round((received / total) * 100)));
+  }
+
+  onProgress?.(100);
+  return new Blob(chunks as BlobPart[], {
+    type: res.headers.get("Content-Type") ?? "application/octet-stream",
+  });
+}

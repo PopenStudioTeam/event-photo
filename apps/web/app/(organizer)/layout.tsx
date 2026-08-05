@@ -16,12 +16,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-muted flex items-stretch">
-      <Sidebar /> {/* keep as-is or slightly rounded */}
-      <div className="flex-1 flex justify-center py-6 px-4 md:px-8">
-        <div className="w-full max-w-6xl bg-background rounded-2xl shadow-sm border border-border/60 flex flex-col">
-          <TopBar />
-          <main className="flex-1 p-4 md:p-6">{children}</main>
+    <div className="flex min-h-screen w-full flex-col bg-muted md:flex-row">
+      <Sidebar />
+      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col pb-[4.5rem] md:pb-0">
+        <div className="flex min-h-screen w-full min-w-0 flex-1 flex-col p-3 sm:p-4 md:min-h-0 md:p-6">
+          <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/60 bg-background shadow-sm sm:rounded-2xl">
+            <TopBar />
+            <main className="min-w-0 flex-1 p-3 sm:p-4 md:p-6">{children}</main>
+          </div>
         </div>
       </div>
     </div>

@@ -205,12 +205,12 @@ export default function EventDetailPage() {
   const eventUrl = `${baseWebUrl}/e/${event.slug}`;
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 lg:grid-cols-2">
       {/* Event details */}
       <Card className="rounded-xl">
-        <CardHeader className="flex items-center justify-between">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-base md:text-lg">Event details</CardTitle>
-          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+          <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setEditOpen(true)}>
             Edit
           </Button>
         </CardHeader>
@@ -231,14 +231,15 @@ export default function EventDetailPage() {
             {event.uploadsEnabled ? "Enabled" : "Disabled"}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleCopyLink}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleCopyLink}>
               Copy event link
             </Button>
 
             <Button
               variant="outline"
               size="sm"
+              className="w-full sm:w-auto"
               onClick={loadMedia}
               disabled={loadingMedia}
             >
@@ -259,7 +260,7 @@ export default function EventDetailPage() {
                 <img
                   src={event.coverImageUrl ?? ""}
                   alt="Cover"
-                  className="w-full h-64 object-cover"
+                  className="aspect-[16/9] w-full object-cover sm:aspect-video sm:h-64"
                 />
               </button>
             )}
@@ -272,18 +273,19 @@ export default function EventDetailPage() {
 
             <div
               className={cn(
-                "flex flex-col sm:flex-row items-start sm:items-center gap-2 rounded-md border border-dashed border-border px-3 py-3 bg-muted/50"
+                "flex flex-col gap-3 rounded-md border border-dashed border-border bg-muted/50 px-3 py-3 sm:flex-row sm:items-center"
               )}
             >
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleCoverFileChange}
-                className="text-xs"
+                className="w-full text-xs file:mr-3 file:rounded-md file:border-0 file:bg-background file:px-3 file:py-1.5 file:text-xs"
               />
               <Button
                 size="sm"
                 variant="secondary"
+                className="w-full shrink-0 sm:w-auto"
                 onClick={handleCoverUpload}
                 disabled={!coverFile || coverUploading}
               >
@@ -303,21 +305,21 @@ export default function EventDetailPage() {
         <CardHeader>
           <CardTitle className="text-base md:text-lg">QR code</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div className="w-56 h-56 border rounded-lg bg-white flex items-center justify-center overflow-hidden">
+        <CardContent className="space-y-3 text-sm">
+          <div className="mx-auto flex aspect-square w-full max-w-[14rem] items-center justify-center overflow-hidden rounded-lg border bg-white sm:max-w-[16rem]">
             <img
               src={`${API_URL}/qr/${event.slug}`}
               alt="Event QR"
-              className="max-w-full max-h-full object-contain"
+              className="h-full w-full object-contain p-2"
             />
           </div>
-          <div className="text-xs text-muted-foreground break-all">{eventUrl}</div>
+          <div className="break-all text-xs text-muted-foreground">{eventUrl}</div>
         </CardContent>
       </Card>
 
       {/* Edit modal */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-sm rounded-xl">
+        <DialogContent className="max-w-[calc(100%-2rem)] rounded-xl sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit event</DialogTitle>
           </DialogHeader>
@@ -367,16 +369,16 @@ export default function EventDetailPage() {
           if (!open) setZoomLevel(1);
         }}
       >
-        <DialogContent className="max-w-[95vw] sm:max-w-[95vw] w-full h-[90vh] rounded-xl flex flex-col">
-          <DialogHeader>
+        <DialogContent className="flex h-[95vh] max-h-[95vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[95vw]">
+          <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
             <DialogTitle>Cover image</DialogTitle>
           </DialogHeader>
 
-          <div className="flex items-center justify-between gap-2 border-b pb-3">
-            <div className="text-xs text-muted-foreground break-all">
+          <div className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="break-all text-xs text-muted-foreground">
               {event.coverImageKey ?? ""}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center gap-2">
               <Button type="button" variant="outline" size="sm" onClick={handleZoomOut}>
                 -
               </Button>
@@ -389,12 +391,12 @@ export default function EventDetailPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden flex items-center justify-center bg-muted/30 rounded-lg p-4">
+          <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-muted/30 p-3 sm:p-6">
             {event.coverImageUrl ? (
               <img
                 src={event.coverImageUrl}
                 alt="Cover"
-                className="max-w-full max-h-full rounded-lg object-contain transition-transform duration-150"
+                className="max-h-full max-w-full rounded-lg object-contain transition-transform duration-150"
                 style={{
                   transform: `scale(${zoomLevel})`,
                   transformOrigin: "center center",
@@ -407,11 +409,12 @@ export default function EventDetailPage() {
             )}
           </div>
 
-          <DialogFooter className="mt-3 flex justify-end">
+          <DialogFooter className="shrink-0 border-t px-4 py-3 sm:px-6">
             <Button
               type="button"
               variant="outline"
               size="sm"
+              className="w-full sm:ml-auto sm:w-auto"
               onClick={() => setZoomOpen(false)}
             >
               Close
@@ -422,18 +425,18 @@ export default function EventDetailPage() {
 
       {/* Gallery modal (all uploaded photos) */}
       <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
-        <DialogContent className="max-w-5xl w-[95vw] rounded-xl">
-          <DialogHeader>
-            <DialogTitle>Uploaded photos</DialogTitle>
+        <DialogContent className="flex max-h-[95vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[95vw]">
+          <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
+            <DialogTitle className="text-base sm:text-lg">Uploaded photos</DialogTitle>
           </DialogHeader>
 
-          <div className="pt-2">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
             {media.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
+              <div className="flex min-h-[30vh] items-center justify-center text-sm text-muted-foreground">
                 No photos uploaded yet.
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4">
                 {media.map((item, idx) => (
                   <button
                     key={item.id}
@@ -444,10 +447,10 @@ export default function EventDetailPage() {
                     <img
                       src={item.url}
                       alt={item.guestName ?? "Guest photo"}
-                      className="w-full h-40 object-cover transition-transform group-hover:scale-105"
+                      className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
                     />
                     {item.guestName && (
-                      <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-[10px] text-white">
+                      <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-[10px] text-white sm:text-xs">
                         {item.guestName}
                       </div>
                     )}
@@ -457,11 +460,12 @@ export default function EventDetailPage() {
             )}
           </div>
 
-          <DialogFooter className="mt-4 flex justify-end">
+          <DialogFooter className="shrink-0 border-t px-4 py-3 sm:px-6">
             <Button
               type="button"
               variant="outline"
               size="sm"
+              className="w-full sm:ml-auto sm:w-auto"
               onClick={() => setGalleryOpen(false)}
             >
               Close
@@ -472,21 +476,21 @@ export default function EventDetailPage() {
 
       {/* Lightbox modal (single image view) */}
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-        <DialogContent className="max-w-[95vw] w-full h-[90vh] rounded-xl flex flex-col">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="flex h-[95vh] max-h-[95vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[95vw]">
+          <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
+            <DialogTitle className="truncate text-base sm:text-lg">
               {media[lightboxIndex]?.guestName
                 ? `Photo by ${media[lightboxIndex].guestName}`
                 : "Photo"}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-hidden flex items-center justify-center bg-muted/30 rounded-lg p-4">
+          <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-muted/30 p-3 sm:p-6">
             {media[lightboxIndex] ? (
               <img
                 src={media[lightboxIndex].url}
                 alt={media[lightboxIndex].guestName ?? "Guest photo"}
-                className="max-w-full max-h-full rounded-lg object-contain"
+                className="max-h-full max-w-full rounded-lg object-contain"
               />
             ) : (
               <div className="text-sm text-muted-foreground">
@@ -495,18 +499,19 @@ export default function EventDetailPage() {
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-2 border-t pt-3">
+          <div className="flex shrink-0 flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <Button
               type="button"
               variant="outline"
               size="sm"
+              className="w-full sm:w-auto"
               disabled={lightboxIndex <= 0}
               onClick={() => setLightboxIndex((i) => i - 1)}
             >
               Previous
             </Button>
 
-            <div className="text-xs text-muted-foreground">
+            <div className="text-center text-xs text-muted-foreground">
               {lightboxIndex + 1} / {media.length}
             </div>
 
@@ -514,6 +519,7 @@ export default function EventDetailPage() {
               type="button"
               variant="outline"
               size="sm"
+              className="w-full sm:w-auto"
               disabled={lightboxIndex >= media.length - 1}
               onClick={() => setLightboxIndex((i) => i + 1)}
             >
@@ -521,11 +527,12 @@ export default function EventDetailPage() {
             </Button>
           </div>
 
-          <DialogFooter className="mt-3 flex justify-end">
+          <DialogFooter className="shrink-0 border-t px-4 py-3 sm:px-6">
             <Button
               type="button"
               variant="outline"
               size="sm"
+              className="w-full sm:ml-auto sm:w-auto"
               onClick={() => setLightboxOpen(false)}
             >
               Close

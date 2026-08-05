@@ -5,7 +5,7 @@ import { nanoid } from "nanoid";
 import { db } from "@app/shared/db";
 import { media, mediaTypeEnum, events } from "@app/shared/schema";
 import { coverUploadSchema, createEventSchema, updateEventSchema, uploadMediaUrlSchema, createMediaSchema } from "@app/shared/validators";
-import { count, desc, eq, lt } from "drizzle-orm";
+import { count, desc, eq, lt, and } from "drizzle-orm";
 import { R2_BUCKET, r2 } from "../lib/r2.js";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -94,7 +94,7 @@ export const eventRoutes = new Hono()
           })
         );
       }
-    
+
       patch.coverImageKey = updates.coverImageKey;
     }
 
@@ -144,20 +144,65 @@ export const eventRoutes = new Hono()
 
     return c.json({ ok: true });
   })
-  .get("/:slug/media", async (c) => {
+  .get("/:slug/media/:mediaId/download", jwt({ secret: JWT_SECRET, alg: "HS256" }), async (c) => {
+    const { sub: organizerId } = c.get("jwtPayload") as { sub: string };
     const slug = c.req.param("slug");
-  
+    const mediaId = c.req.param("mediaId");
+
     const [event] = await db.select().from(events).where(eq(events.slug, slug));
-    if (!event) {
+    if (!event || event.organizerId !== organizerId) {
       return c.json({ error: "Event not found" }, 404);
     }
-  
+
+    const [item] = await db
+      .select()
+      .from(media)
+      .where(and(eq(media.id, mediaId), eq(media.eventId, event.id)));
+
+    if (!item) {
+      return c.json({ error: "Media not found" }, 404);
+    }
+
+    const object = await r2.send(
+      new GetObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: item.storageKey,
+      })
+    );
+
+    if (!object.Body) {
+      return c.json({ error: "File not found" }, 404);
+    }
+
+    const bytes = await object.Body.transformToByteArray();
+    const ext = (item.mimeType ?? "application/octet-stream").split("/")[1] || "bin";
+    const baseName =
+      item.guestName?.replace(/\s+/g, "_") ||
+      item.caption?.slice(0, 20).replace(/\s+/g, "_") ||
+      item.id;
+    const filename = `${baseName}.${ext}`;
+
+    return c.body(bytes, 200, {
+      "Content-Type": item.mimeType,
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Length": String(bytes.byteLength),
+    });
+  })
+  .get("/:slug/media", jwt({ secret: JWT_SECRET, alg: "HS256" }), async (c) => {
+    const { sub: organizerId } = c.get("jwtPayload") as { sub: string };
+    const slug = c.req.param("slug");
+
+    const [event] = await db.select().from(events).where(eq(events.slug, slug));
+    if (!event || event.organizerId !== organizerId) {
+      return c.json({ error: "Event not found" }, 404);
+    }
+
     const rows = await db
       .select()
       .from(media)
       .where(eq(media.eventId, event.id))
       .orderBy(media.createdAt);
-  
+
     // Build response with URLs (you can use presigned GET or your own CDN URL)
     const items = await Promise.all(
       rows.map(async (m) => {
@@ -165,17 +210,21 @@ export const eventRoutes = new Hono()
           Bucket: R2_BUCKET,
           Key: m.storageKey,
         }), { expiresIn: 60 * 10 });
-  
+
         return {
           id: m.id,
-          key: m.storageKey,
-          url,
+          storageKey: m.storageKey,
+          type: m.type,
+          mimeType: m.mimeType,
+          fileSize: m.fileSize,
           guestName: m.guestName,
+          caption: m.caption,
           createdAt: m.createdAt.toISOString(),
+          url,
         };
       })
     );
-  
+
     return c.json(items);
   });
 
@@ -205,28 +254,28 @@ export const publicEventRoutes = new Hono()
   .post("/:slug/media", zValidator("json", createMediaSchema), async (c) => {
     const slug = c.req.param("slug");
     const { key, contentType, fileSize, guestName, caption } = c.req.valid("json");
-  
+
     const [event] = await db.select().from(events).where(eq(events.slug, slug));
     if (!event || !event.uploadsEnabled) {
       return c.json({ error: "Event not found or uploads disabled" }, 404);
     }
-  
+
     const mediaCount = await db
       .select({ count: count() })
       .from(media)
       .where(eq(media.eventId, event.id));
-  
+
     if (mediaCount[0].count >= event.maxMediaCount) {
       return c.json({ error: "Upload limit reached for this event" }, 400);
     }
-  
+
     const now = new Date();
     if (event.uploadsDeadline && now > event.uploadsDeadline) {
       return c.json({ error: "Uploads are closed for this event" }, 400);
     }
-  
+
     const type = contentType.startsWith("video/") ? "video" : "photo";
-  
+
     const [record] = await db
       .insert(media)
       .values({
@@ -239,35 +288,57 @@ export const publicEventRoutes = new Hono()
         caption,
       })
       .returning();
-  
+
     return c.json(record, 201);
   })
   .get("/:slug/media", async (c) => {
     const slug = c.req.param("slug");
     const limit = Number(c.req.query("limit") ?? "30");
-    const cursor = c.req.query("cursor"); // optional: timestamp or id
+    const cursor = c.req.query("cursor");
 
     const [event] = await db.select().from(events).where(eq(events.slug, slug));
     if (!event) return c.json({ error: "Event not found" }, 404);
 
-    let query = db
+    const items = await db
       .select()
       .from(media)
-      .where(eq(media.eventId, event.id))
+      .where(
+        cursor
+          ? and(eq(media.eventId, event.id), lt(media.createdAt, new Date(cursor)))
+          : eq(media.eventId, event.id)
+      )
       .orderBy(desc(media.createdAt))
       .limit(limit);
 
-    // Simple cursor: createdAt < cursor
-    if (cursor) {
-      query = query.where(lt(media.createdAt, new Date(cursor)));
-    }
+    const withUrls = await Promise.all(
+      items.map(async (m) => {
+        const url = await getSignedUrl(
+          r2,
+          new GetObjectCommand({
+            Bucket: R2_BUCKET,
+            Key: m.storageKey,
+          }),
+          { expiresIn: 60 * 10 }
+        );
 
-    const items = await query;
+        return {
+          id: m.id,
+          storageKey: m.storageKey,
+          type: m.type,
+          mimeType: m.mimeType,
+          fileSize: m.fileSize,
+          guestName: m.guestName,
+          caption: m.caption,
+          createdAt: m.createdAt?.toISOString(),
+          url,
+        };
+      })
+    );
 
     const nextCursor =
       items.length === limit ? items[items.length - 1].createdAt?.toISOString() : null;
 
-    return c.json({ items, nextCursor });
+    return c.json({ items: withUrls, nextCursor });
   });
 
 // Guest upload routes

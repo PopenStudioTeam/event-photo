@@ -22,15 +22,14 @@ type PublicEvent = {
 
 type MediaItem = {
   id: string;
-  storageKey?: string; // from DB (for admin)
-  key?: string;        // from your eventRoutes
-  url?: string;        // when you add presigned GET
-  type?: "photo" | "video";
-  mimeType?: string;
-  fileSize?: number;
-  guestName?: string | null;
-  caption?: string | null;
-  createdAt?: string;
+  storageKey: string;
+  type: "photo" | "video";
+  mimeType: string;
+  fileSize: number;
+  guestName: string | null;
+  caption: string | null;
+  createdAt: string;
+  url: string;
 };
 
 type MediaResponse = {
@@ -51,6 +50,7 @@ export default function GuestEventPage() {
   const [caption, setCaption] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
@@ -69,7 +69,6 @@ export default function GuestEventPage() {
       setLoadingEvent(true);
       setEventError(null);
       try {
-        // GET /e/:slug (publicEventRoutes.get("/:slug"))
         const res = await apiFetch(`/e/${slug}`);
         setEvent(res as PublicEvent);
       } catch (err) {
@@ -97,7 +96,6 @@ export default function GuestEventPage() {
         query.set("cursor", mediaCursor);
       }
 
-      // GET /e/:slug/media (publicEventRoutes.get("/:slug/media"))
       const res = await apiFetch(
         query.toString() ? `/e/${slug}/media?${query.toString()}` : `/e/${slug}/media`
       );
@@ -124,6 +122,7 @@ export default function GuestEventPage() {
     setFile(f);
     setUploadError(null);
     setUploadSuccess(null);
+    setUploadProgress(null);
   };
 
   const handleUpload = async (e: FormEvent) => {
@@ -133,12 +132,13 @@ export default function GuestEventPage() {
     setUploading(true);
     setUploadError(null);
     setUploadSuccess(null);
+    setUploadProgress(0);
 
     try {
-      const contentType = file.type || "image/jpeg";
+      const contentType = file.type || "application/octet-stream";
       const fileSize = file.size;
 
-      // 1) Get presigned PUT URL: POST /e/:slug/upload-url (publicMediaUploadRoutes)
+      // 1) Get presigned PUT URL: POST /e/:slug/upload-url
       const presign = await apiFetch(`/e/${slug}/upload-url`, {
         method: "POST",
         body: JSON.stringify({ contentType, fileSize }),
@@ -150,18 +150,10 @@ export default function GuestEventPage() {
         type: string;
       };
 
-      // 2) Upload file to R2 using PUT
-      const putRes = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": contentType },
-        body: file,
-      });
+      // 2) Upload file to R2 with progress (XHR to track)
+      await uploadWithProgress(uploadUrl, file, contentType);
 
-      if (!putRes.ok) {
-        throw new Error("Upload to storage failed");
-      }
-
-      // 3) Create media record: POST /e/:slug/media (publicEventRoutes.post("/:slug/media"))
+      // 3) Create media record: POST /e/:slug/media
       await apiFetch(`/e/${slug}/media`, {
         method: "POST",
         body: JSON.stringify({
@@ -173,17 +165,48 @@ export default function GuestEventPage() {
         }),
       });
 
-      setUploadSuccess("Photo uploaded successfully!");
+      setUploadSuccess("Media uploaded successfully!");
       setFile(null);
       setCaption("");
-      // Refresh gallery (initial=true to reset cursor)
+      setUploadProgress(null);
       loadMedia(true);
     } catch (err) {
       console.error(err);
-      setUploadError("Failed to upload photo. Please try again.");
+      setUploadError("Failed to upload media. Please try again.");
+      setUploadProgress(null);
     } finally {
       setUploading(false);
     }
+  };
+
+  const uploadWithProgress = (url: string, file: File, contentType: string) => {
+    return new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", url);
+
+      xhr.setRequestHeader("Content-Type", contentType);
+
+      xhr.upload.onprogress = (event) => {
+        if (!event.lengthComputable) return;
+        const progress = Math.round((event.loaded / event.total) * 100);
+        setUploadProgress(progress);
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          setUploadProgress(100);
+          resolve();
+        } else {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error("Network error during upload"));
+      };
+
+      xhr.send(file);
+    });
   };
 
   const openLightbox = (index: number) => {
@@ -244,7 +267,7 @@ export default function GuestEventPage() {
         {/* Upload form */}
         <section className="rounded-lg border bg-background p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Upload your photo</h2>
+            <h2 className="text-sm font-semibold">Upload your media</h2>
             <span className="text-xs text-muted-foreground">
               Uploads: {event.uploadsEnabled ? "Enabled" : "Disabled"}
             </span>
@@ -268,28 +291,43 @@ export default function GuestEventPage() {
                   className="w-full rounded-md border px-3 py-2 text-sm"
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
-                  placeholder="Say something about this photo"
+                  placeholder="Say something about this media"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium">Photo</label>
+                <label className="text-xs font-medium">
+                  File (image or video)
+                </label>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*"
                   onChange={handleFileChange}
                   className="text-xs"
                 />
               </div>
 
-              <Button
-                type="submit"
-                size="sm"
-                disabled={!file || uploading}
-                className="mt-2"
-              >
-                {uploading ? "Uploading…" : "Upload photo"}
-              </Button>
+              <div className="flex items-center gap-3 mt-2">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={!file || uploading}
+                >
+                  {uploading ? "Uploading…" : "Upload"}
+                </Button>
+
+                {uploadProgress !== null && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                )}
+              </div>
 
               {uploadError && (
                 <div className="text-xs text-red-500 mt-2">{uploadError}</div>
@@ -322,49 +360,57 @@ export default function GuestEventPage() {
           </div>
 
           {loadingMedia && media.length === 0 ? (
-            <div className="text-sm text-muted-foreground">Loading photos…</div>
+            <div className="text-sm text-muted-foreground">Loading media…</div>
           ) : media.length === 0 ? (
             <div className="text-sm text-muted-foreground">
-              No photos yet. Be the first to upload!
+              No media yet. Be the first to upload!
             </div>
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {media.map((item, idx) => {
-                  // You currently return raw DB rows without URL; for now we skip URL use.
-                  // If you later add presigned GET URLs, set `item.url` and use it here.
                   const isPhoto =
-                    item.type === "photo" ||
-                    (item.mimeType ?? "").startsWith("image/");
-                  const label = item.guestName ?? "Guest photo";
-
-                  // If you don't yet have URLs, you could later add a GET /e/:slug/media-with-urls.
-                  const src = item.url ?? ""; // placeholder
+                    item.type === "photo" || item.mimeType.startsWith("image/");
+                  const label = item.guestName ?? "Guest upload";
 
                   return (
-                    <button
+                    <div
                       key={item.id}
-                      type="button"
-                      onClick={() => openLightbox(idx)}
-                      className="group relative overflow-hidden rounded-lg border bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="group relative overflow-hidden rounded-lg border bg-muted flex flex-col"
                     >
-                      {isPhoto && src ? (
-                        <img
-                          src={src}
-                          alt={label}
-                          className="w-full h-40 object-cover transition-transform group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="w-full h-40 flex items-center justify-center text-[11px] text-muted-foreground">
-                          {label}
-                        </div>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => openLightbox(idx)}
+                        className="flex-1 w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        {isPhoto ? (
+                          <img
+                            src={item.url}
+                            alt={label}
+                            className="w-full h-40 object-cover transition-transform group-hover:scale-105"
+                          />
+                        ) : (
+                          <video
+                            src={item.url}
+                            className="w-full h-40 object-cover"
+                            muted
+                            playsInline
+                          />
+                        )}
+                      </button>
+
                       {item.guestName && (
                         <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-[10px] text-white">
                           {item.guestName}
                         </div>
                       )}
-                    </button>
+
+                      {item.caption && (
+                        <div className="px-2 py-1 border-t bg-background/80 text-[10px] text-muted-foreground truncate">
+                          {item.caption}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -386,27 +432,36 @@ export default function GuestEventPage() {
         </section>
       </div>
 
-      {/* Lightbox modal (note: needs real URLs later) */}
+      {/* Lightbox modal */}
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
         <DialogContent className="max-w-[95vw] w-full h-[90vh] rounded-xl flex flex-col">
           <DialogHeader>
             <DialogTitle>
               {media[lightboxIndex]?.guestName
-                ? `Photo by ${media[lightboxIndex].guestName}`
-                : "Event photo"}
+                ? `Media by ${media[lightboxIndex].guestName}`
+                : "Media"}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-hidden flex items-center justify-center bg-muted/30 rounded-lg p-4">
-            {media[lightboxIndex]?.url ? (
-              <img
-                src={media[lightboxIndex].url as string}
-                alt={media[lightboxIndex].guestName ?? "Event photo"}
-                className="max-w-full max-h-full rounded-lg object-contain"
-              />
+          <div className="flex-1 overflow-hidden flex items	center justify-center bg-muted/30 rounded-lg p-4">
+            {media[lightboxIndex] ? (
+              media[lightboxIndex].type === "photo" ||
+              media[lightboxIndex].mimeType.startsWith("image/") ? (
+                <img
+                  src={media[lightboxIndex].url}
+                  alt={media[lightboxIndex].guestName ?? "Media"}
+                  className="max-w-full max-h-full rounded-lg object-contain"
+                />
+              ) : (
+                <video
+                  src={media[lightboxIndex].url}
+                  controls
+                  className="max-w-full max-h-full rounded-lg object-contain"
+                />
+              )
             ) : (
               <div className="text-sm text-muted-foreground">
-                No image preview available.
+                No media available.
               </div>
             )}
           </div>
@@ -437,7 +492,7 @@ export default function GuestEventPage() {
             </Button>
           </div>
 
-          <DialogFooter className="mt-3 flex justify-end">
+          <DialogFooter className="mt-3 flex justify	end">
             <Button
               type="button"
               variant="outline"
