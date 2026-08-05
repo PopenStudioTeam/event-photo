@@ -182,7 +182,7 @@ export const eventRoutes = new Hono()
       item.id;
     const filename = `${baseName}.${ext}`;
 
-    return c.body(bytes, 200, {
+    return c.body(Buffer.from(bytes), 200, {
       "Content-Type": item.mimeType,
       "Content-Disposition": `attachment; filename="${filename}"`,
       "Content-Length": String(bytes.byteLength),

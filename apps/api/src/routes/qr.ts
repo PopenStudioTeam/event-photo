@@ -25,7 +25,11 @@ export const qrRoutes = new Hono().get("/:slug", async (c) => {
     width: 512,
   });
 
-  c.header("Content-Type", "image/png");
-  c.header("Cache-Control", "public, max-age=3600");
-  return c.body(pngBuffer);
+  return new Response(new Uint8Array(pngBuffer), {
+    status: 200,
+    headers: {
+      "Content-Type": "image/png",
+      "Cache-Control": "public, max-age=3600",
+    },
+  });
 });
