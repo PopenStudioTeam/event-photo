@@ -10,7 +10,6 @@ import {
 import { qrRoutes } from "./routes/qr.js";
 import { googleAuthRoutes } from "./routes/google-auth.js";
 import { rateLimiter } from "hono-rate-limiter";
-import { serve } from "@hono/node-server";
 
 function clientIp(c: Context) {
   const forwarded = c.req.header("x-forwarded-for");
@@ -47,6 +46,5 @@ app.route(
     .route("/", publicMediaUploadRoutes)
 );
 
-serve({ fetch: app.fetch, port: 4000 }, (info) => {
-  console.log(`API running on http://localhost:${info.port}`);
-});
+// IMPORTANT: no `serve` on Vercel. Just export the app.
+export default app;
