@@ -1,6 +1,6 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
-export async function apiFetch(path: string, options: RequestInit = {}) {
+export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   const token =
     typeof window !== "undefined"
       ? window.localStorage.getItem("eventphoto_token")
@@ -26,7 +26,7 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
     throw new Error(`API error ${res.status}`);
   }
 
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 export async function apiFetchBlob(path: string, options: RequestInit = {}) {
