@@ -3,6 +3,7 @@
 import { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { useParams } from "next/navigation";
 import { API_URL, apiFetch } from "@/lib/api";
+import { useBaseWebUrl } from "@/lib/use-base-web-url";
 import {
   Card,
   CardHeader,
@@ -90,7 +91,7 @@ export default function EventDetailPage() {
     load();
   }, [slug]);
 
-  const baseWebUrl = process.env.NEXT_PUBLIC_BASE_WEB_URL ?? "http://localhost:3000";
+  const baseWebUrl = useBaseWebUrl();
 
   const handleCopyLink = () => {
     if (!event) return;
@@ -311,7 +312,7 @@ export default function EventDetailPage() {
         <CardContent className="space-y-3 text-sm">
           <div className="mx-auto flex aspect-square w-full max-w-[14rem] items-center justify-center overflow-hidden rounded-lg border bg-white sm:max-w-[16rem]">
             <img
-              src={`${API_URL}/qr/${event.slug}`}
+              src={`${API_URL}/qr/${event.slug}?origin=${encodeURIComponent(baseWebUrl)}`}
               alt="Event QR"
               className="h-full w-full object-contain p-2"
             />

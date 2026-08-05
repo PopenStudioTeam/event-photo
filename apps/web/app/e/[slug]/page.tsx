@@ -3,6 +3,7 @@
 import { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { useParams } from "next/navigation";
 import { API_URL, apiFetch } from "@/lib/api";
+import { useBaseWebUrl } from "@/lib/use-base-web-url";
 import {
   Dialog,
   DialogContent,
@@ -214,8 +215,7 @@ export default function GuestEventPage() {
     setLightboxOpen(true);
   };
 
-  const baseWebUrl =
-    process.env.NEXT_PUBLIC_BASE_WEB_URL ?? "http://localhost:3000";
+  const baseWebUrl = useBaseWebUrl();
 
   if (loadingEvent) {
     return (
