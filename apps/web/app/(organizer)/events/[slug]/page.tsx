@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, ChangeEvent, FormEvent } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { API_URL, apiFetch, apiFetchBlobWithProgress } from "@/lib/api";
@@ -21,6 +21,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { EventSlideshowOverlay } from "@/components/event-slideshow-overlay";
 
 type Event = {
   id: string;
@@ -63,7 +64,6 @@ function mediaFilename(item: Media) {
 
 export default function EventDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const slug = params?.slug as string;
 
   const [event, setEvent] = useState<Event | null>(null);
@@ -104,6 +104,8 @@ export default function EventDetailPage() {
     percent: null,
   });
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [slideshowOpen, setSlideshowOpen] = useState(false);
+  const [slideshowStartIndex, setSlideshowStartIndex] = useState(0);
 
   useEffect(() => {
     const load = async () => {
@@ -136,9 +138,9 @@ export default function EventDetailPage() {
     navigator.clipboard.writeText(url);
   };
 
-  const handleOpenSlideshow = () => {
-    if (!event) return;
-    router.push(`/events/${event.slug}/slideshow`);
+  const handleOpenSlideshow = (startIndex = 0) => {
+    setSlideshowStartIndex(startIndex);
+    setSlideshowOpen(true);
   };
 
   const openEditDialog = () => {
@@ -434,9 +436,9 @@ export default function EventDetailPage() {
               variant="outline"
               size="sm"
               className="w-full sm:w-auto"
-              onClick={handleOpenSlideshow}
+              onClick={() => handleOpenSlideshow()}
             >
-              Open slideshow
+              Start slideshow
             </Button>
 
             <Button
@@ -920,6 +922,14 @@ export default function EventDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EventSlideshowOverlay
+        open={slideshowOpen}
+        onClose={() => setSlideshowOpen(false)}
+        mediaPath={event ? `/events/${event.slug}/media` : ""}
+        eventName={event?.name}
+        initialIndex={slideshowStartIndex}
+      />
     </div>
   );
 }

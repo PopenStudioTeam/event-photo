@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { HeartIcon } from "@phosphor-icons/react";
+import { EventSlideshowOverlay } from "@/components/event-slideshow-overlay";
 
 type PublicEvent = {
   slug: string;
@@ -86,6 +87,10 @@ export default function GuestEventPage() {
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // Slideshow overlay
+  const [slideshowOpen, setSlideshowOpen] = useState(false);
+  const [slideshowStartIndex, setSlideshowStartIndex] = useState(0);
 
   useEffect(() => {
     const loadEvent = async () => {
@@ -341,6 +346,11 @@ export default function GuestEventPage() {
 
   const currentLightboxItem = media[lightboxIndex] ?? null;
 
+  const openSlideshow = (startIndex = 0) => {
+    setSlideshowStartIndex(startIndex);
+    setSlideshowOpen(true);
+  };
+
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
     setLightboxOpen(true);
@@ -470,7 +480,17 @@ export default function GuestEventPage() {
                 ? "Gallery locked"
                 : `${media.length} photo${media.length === 1 ? "" : "s"} & video${media.length === 1 ? "" : "s"}`}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {galleryUnlocked && media.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-neutral-600 bg-neutral-900 text-white hover:bg-neutral-800"
+                  onClick={() => openSlideshow()}
+                >
+                  Start slideshow
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -489,18 +509,29 @@ export default function GuestEventPage() {
 
         {/* Gallery */}
         <section className="rounded-xl border bg-background p-3 sm:p-4 space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Gallery</h2>
-            {galleryUnlocked && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => loadMedia(true)}
-                disabled={loadingMedia}
-              >
-                Refresh
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {galleryUnlocked && media.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openSlideshow()}
+                >
+                  Slideshow
+                </Button>
+              )}
+              {galleryUnlocked && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadMedia(true)}
+                  disabled={loadingMedia}
+                >
+                  Refresh
+                </Button>
+              )}
+            </div>
           </div>
 
           {event.protected && !galleryUnlocked ? (
@@ -822,6 +853,14 @@ export default function GuestEventPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <EventSlideshowOverlay
+        open={slideshowOpen}
+        onClose={() => setSlideshowOpen(false)}
+        mediaPath={`/e/${slug}/media`}
+        eventName={event.name}
+        initialIndex={slideshowStartIndex}
+      />
     </div>
   );
 }
