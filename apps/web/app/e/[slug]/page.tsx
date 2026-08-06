@@ -2,8 +2,12 @@
 
 import { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { useParams } from "next/navigation";
-import { API_URL, apiFetch } from "@/lib/api";
-import { useBaseWebUrl } from "@/lib/use-base-web-url";
+import { apiFetch } from "@/lib/api";
+import {
+  getGalleryUnlockToken,
+  setGalleryUnlockToken,
+  clearGalleryUnlockToken,
+} from "@/lib/gallery-unlock";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +16,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { HeartIcon } from "@phosphor-icons/react";
 
 type PublicEvent = {
   slug: string;
@@ -19,6 +24,7 @@ type PublicEvent = {
   eventDate: string | null;
   coverImageUrl: string | null;
   uploadsEnabled: boolean;
+  protected: boolean;
 };
 
 type MediaItem = {
@@ -31,11 +37,19 @@ type MediaItem = {
   caption: string | null;
   createdAt: string;
   url: string;
+  likesCount: number;
 };
 
 type MediaResponse = {
   items: MediaItem[];
   nextCursor: string | null;
+};
+
+type UploadItem = {
+  file: File;
+  caption: string;
+  status: "queued" | "uploading" | "done" | "error";
+  progress: number;
 };
 
 export default function GuestEventPage() {
@@ -46,14 +60,22 @@ export default function GuestEventPage() {
   const [loadingEvent, setLoadingEvent] = useState(true);
   const [eventError, setEventError] = useState<string | null>(null);
 
-  // Upload form state
+  // Guest name and welcome step
   const [guestName, setGuestName] = useState("");
-  const [caption, setCaption] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [welcomeDone, setWelcomeDone] = useState(false);
+
+  // Upload state
+  const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [uploadPanelOpen, setUploadPanelOpen] = useState(false);
+
+  // Gallery protection
+  const [galleryUnlocked, setGalleryUnlocked] = useState(false);
+  const [unlockPassword, setUnlockPassword] = useState("");
+  const [unlockError, setUnlockError] = useState<string | null>(null);
+  const [unlocking, setUnlocking] = useState(false);
 
   // Gallery state
   const [media, setMedia] = useState<MediaItem[]>([]);
@@ -71,7 +93,16 @@ export default function GuestEventPage() {
       setEventError(null);
       try {
         const res = await apiFetch(`/e/${slug}`);
-        setEvent(res as PublicEvent);
+        const loaded = res as PublicEvent;
+        setEvent(loaded);
+
+        if (!loaded.protected) {
+          setGalleryUnlocked(true);
+        } else if (getGalleryUnlockToken(slug)) {
+          setGalleryUnlocked(true);
+        } else {
+          setGalleryUnlocked(false);
+        }
       } catch (err) {
         console.error(err);
         setEventError("Failed to load event.");
@@ -82,13 +113,17 @@ export default function GuestEventPage() {
 
     if (slug) {
       loadEvent();
-      loadMedia(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
+  useEffect(() => {
+    if (!slug || !event || !galleryUnlocked) return;
+    loadMedia(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, event, galleryUnlocked]);
+
   const loadMedia = async (initial = false) => {
-    if (!slug) return;
+    if (!slug || !galleryUnlocked) return;
 
     setLoadingMedia(true);
     try {
@@ -113,96 +148,122 @@ export default function GuestEventPage() {
       setMediaHasMore(Boolean(nextCursor));
     } catch (err) {
       console.error(err);
+      if (err instanceof Error && err.message.includes("403")) {
+        clearGalleryUnlockToken(slug);
+        setGalleryUnlocked(false);
+        setMedia([]);
+      }
     } finally {
       setLoadingMedia(false);
     }
   };
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] ?? null;
-    setFile(f);
-    setUploadError(null);
-    setUploadSuccess(null);
-    setUploadProgress(null);
-  };
-
-  const handleUpload = async (e: FormEvent) => {
+  const handleUnlock = async (e: FormEvent) => {
     e.preventDefault();
-    if (!file || !event || !event.uploadsEnabled) return;
+    if (!slug || !unlockPassword.trim()) return;
 
-    setUploading(true);
-    setUploadError(null);
-    setUploadSuccess(null);
-    setUploadProgress(0);
+    setUnlocking(true);
+    setUnlockError(null);
 
     try {
-      const contentType = file.type || "application/octet-stream";
-      const fileSize = file.size;
-
-      // 1) Get presigned PUT URL: POST /e/:slug/upload-url
-      const presign = await apiFetch(`/e/${slug}/upload-url`, {
+      const res = await apiFetch(`/e/${slug}/unlock`, {
         method: "POST",
-        body: JSON.stringify({ contentType, fileSize }),
+        body: JSON.stringify({ password: unlockPassword }),
       });
 
-      const { uploadUrl, key } = presign as {
-        uploadUrl: string;
-        key: string;
-        type: string;
-      };
-
-      // 2) Upload file to R2 with progress (XHR to track)
-      await uploadWithProgress(uploadUrl, file, contentType);
-
-      // 3) Create media record: POST /e/:slug/media
-      await apiFetch(`/e/${slug}/media`, {
-        method: "POST",
-        body: JSON.stringify({
-          key,
-          contentType,
-          fileSize,
-          guestName: guestName || undefined,
-          caption: caption || undefined,
-        }),
-      });
-
-      setUploadSuccess("Media uploaded successfully!");
-      setFile(null);
-      setCaption("");
-      setUploadProgress(null);
-      loadMedia(true);
+      const { galleryToken } = res as { galleryToken?: string };
+      if (!galleryToken) {
+        setUnlockError("Unlock failed. Please try again.");
+        return;
+      }
+      setGalleryUnlockToken(slug, galleryToken);
+      setGalleryUnlocked(true);
+      setUnlockPassword("");
     } catch (err) {
-      console.error(err);
-      setUploadError("Failed to upload media. Please try again.");
-      setUploadProgress(null);
+      setUnlockError(
+        err instanceof Error ? err.message : "Incorrect password. Please try again."
+      );
     } finally {
-      setUploading(false);
+      setUnlocking(false);
     }
   };
 
-  const uploadWithProgress = (url: string, file: File, contentType: string) => {
+  const handleWelcomeSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!guestName.trim()) return;
+    setWelcomeDone(true);
+  };
+
+  const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+
+    const items: UploadItem[] = files.map((file) => ({
+      file,
+      caption: "",
+      status: "queued",
+      progress: 0,
+    }));
+
+    setUploads(items);
+    setUploadError(null);
+    setUploadSuccess(null);
+    setUploadPanelOpen(true);
+  };
+
+  const handleUploadItemCaptionChange = (index: number, caption: string) => {
+    setUploads((prev) =>
+      prev.map((u, idx) =>
+        idx === index ? { ...u, caption } : u
+      )
+    );
+  };
+
+  const uploadWithPerFileProgress = (
+    url: string,
+    file: File,
+    contentType: string,
+    index: number
+  ) => {
     return new Promise<void>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", url);
-
       xhr.setRequestHeader("Content-Type", contentType);
 
       xhr.upload.onprogress = (event) => {
         if (!event.lengthComputable) return;
         const progress = Math.round((event.loaded / event.total) * 100);
-        setUploadProgress(progress);
+        setUploads((prev) =>
+          prev.map((u, idx) =>
+            idx === index ? { ...u, progress, status: "uploading" } : u
+          )
+        );
       };
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          setUploadProgress(100);
+          setUploads((prev) =>
+            prev.map((u, idx) =>
+              idx === index ? { ...u, progress: 100, status: "done" } : u
+            )
+          );
           resolve();
         } else {
+          setUploads((prev) =>
+            prev.map((u, idx) =>
+              idx === index ? { ...u, status: "error" } : u
+            )
+          );
           reject(new Error(`Upload failed with status ${xhr.status}`));
         }
       };
 
       xhr.onerror = () => {
+        setUploads((prev) =>
+          prev.map((u, idx) =>
+            idx === index ? { ...u, status: "error" } : u
+          )
+        );
         reject(new Error("Network error during upload"));
       };
 
@@ -210,16 +271,84 @@ export default function GuestEventPage() {
     });
   };
 
+  const handleUpload = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!event || !event.uploadsEnabled || uploads.length === 0) return;
+
+    setUploading(true);
+    setUploadError(null);
+    setUploadSuccess(null);
+
+    try {
+      for (let i = 0; i < uploads.length; i++) {
+        const item = uploads[i];
+        const file = item.file;
+        const contentType = file.type || "application/octet-stream";
+        const fileSize = file.size;
+
+        const presign = await apiFetch(`/e/${slug}/upload-url`, {
+          method: "POST",
+          body: JSON.stringify({ contentType, fileSize }),
+        });
+
+        const { uploadUrl, key } = presign as {
+          uploadUrl: string;
+          key: string;
+          type: string;
+        };
+
+        await uploadWithPerFileProgress(uploadUrl, file, contentType, i);
+
+        await apiFetch(`/e/${slug}/media`, {
+          method: "POST",
+          body: JSON.stringify({
+            key,
+            contentType,
+            fileSize,
+            guestName: guestName || undefined,
+            caption: item.caption || undefined,
+          }),
+        });
+      }
+
+      setUploadSuccess("All files uploaded successfully!");
+      setUploads([]);
+      setUploadPanelOpen(false);
+      loadMedia(true);
+    } catch (err) {
+      console.error(err);
+      setUploadError("Failed to upload some files. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleLike = async (item: MediaItem) => {
+    try {
+      const res = await apiFetch(`/e/${slug}/media/${item.id}/like`, {
+        method: "POST",
+      });
+      const { likesCount } = res as { likesCount: number };
+      setMedia((prev) =>
+        prev.map((m) =>
+          m.id === item.id ? { ...m, likesCount } : m
+        )
+      );
+    } catch (err) {
+      console.error("Failed to like media", err);
+    }
+  };
+
+  const currentLightboxItem = media[lightboxIndex] ?? null;
+
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
     setLightboxOpen(true);
   };
 
-  const baseWebUrl = useBaseWebUrl();
-
   if (loadingEvent) {
     return (
-      <div className="flex-1 p-6">
+      <div className="flex-1 flex items-center justify-center p-6 bg-background">
         <div className="text-sm text-muted-foreground">Loading event…</div>
       </div>
     );
@@ -227,7 +356,7 @@ export default function GuestEventPage() {
 
   if (eventError || !event) {
     return (
-      <div className="flex-1 p-6">
+      <div className="flex-1 flex items-center justify-center p-6 bg-background">
         <div className="text-sm text-red-500">
           {eventError ?? "Event not found"}
         </div>
@@ -235,131 +364,178 @@ export default function GuestEventPage() {
     );
   }
 
-  const eventUrl = `${baseWebUrl}/e/${event.slug}`;
-
-  return (
-    <div className="flex-1 p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Event header */}
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold">{event.name}</h1>
-          <div className="text-sm text-muted-foreground">
-            {event.eventDate
-              ? new Date(event.eventDate).toLocaleDateString()
-              : "No date set"}
-          </div>
-          <div className="text-xs text-muted-foreground break-all">
-            Event link: {eventUrl}
-          </div>
-        </div>
-
-        {/* Cover image */}
-        {event.coverImageUrl && (
-          <div className="w-full overflow-hidden rounded-lg border bg-muted">
-            <img
-              src={event.coverImageUrl}
-              alt="Event cover"
-              className="w-full h-64 object-cover"
-            />
-          </div>
-        )}
-
-        {/* Upload form */}
-        <section className="rounded-lg border bg-background p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Upload your media</h2>
-            <span className="text-xs text-muted-foreground">
-              Uploads: {event.uploadsEnabled ? "Enabled" : "Disabled"}
-            </span>
+  // Step 1: Welcome card
+  if (!welcomeDone) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-neutral-950 p-4">
+        <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900 shadow-2xl">
+          <div className="relative h-56 w-full overflow-hidden sm:h-72">
+            {event.coverImageUrl ? (
+              <img
+                src={event.coverImageUrl}
+                alt={event.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-neutral-800">
+                <span className="text-sm text-neutral-400">Event cover</span>
+              </div>
+            )}
+            {event.coverImageUrl && (
+              <div className="absolute bottom-4 left-4 h-14 w-14 overflow-hidden rounded-full border-2 border-white">
+                <img
+                  src={event.coverImageUrl}
+                  alt="Avatar"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            )}
           </div>
 
-          {event.uploadsEnabled ? (
-            <form className="space-y-3 text-sm" onSubmit={handleUpload}>
+          <div className="space-y-4 px-6 pb-6 pt-5 text-white">
+            <div className="space-y-1">
+              <h1 className="text-xl font-semibold">{event.name}</h1>
+              <p className="text-sm text-neutral-400">
+                Share your photos and videos from this event.
+              </p>
+            </div>
+
+            <form className="space-y-3 text-sm" onSubmit={handleWelcomeSubmit}>
               <div className="space-y-1">
-                <label className="text-xs font-medium">Your name (optional)</label>
+                <label className="text-xs font-medium text-neutral-300">Name</label>
                 <input
-                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-sm text-white placeholder:text-neutral-500"
                   value={guestName}
                   onChange={(e) => setGuestName(e.target.value)}
-                  placeholder="Guest name"
+                  placeholder="Your name"
                 />
               </div>
+              <Button
+                type="submit"
+                size="lg"
+                className="mt-2 w-full rounded-full bg-white text-black hover:bg-neutral-200"
+              >
+                Let&apos;s Go!
+              </Button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-              <div className="space-y-1">
-                <label className="text-xs font-medium">Caption (optional)</label>
-                <input
-                  className="w-full rounded-md border px-3 py-2 text-sm"
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  placeholder="Say something about this media"
-                />
+  // Album view + gallery + upload panel
+  return (
+    <div className="flex-1 min-h-screen bg-background">
+      <div className="max-w-5xl mx-auto p-3 sm:p-6 space-y-6">
+        {/* Album hero */}
+        <section className="rounded-2xl overflow-hidden border bg-black text-white">
+          <div className="relative h-40 sm:h-56 md:h-64">
+            {event.coverImageUrl ? (
+              <img
+                src={event.coverImageUrl}
+                alt={event.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-muted">
+                <span className="text-sm text-muted-foreground">
+                  Event cover
+                </span>
               </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium">
-                  File (image or video)
-                </label>
-                <input
-                  type="file"
-                  accept="image/*,video/*"
-                  onChange={handleFileChange}
-                  className="text-xs"
-                />
-              </div>
-
-              <div className="flex items-center gap-3 mt-2">
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={!file || uploading}
-                >
-                  {uploading ? "Uploading…" : "Upload"}
-                </Button>
-
-                {uploadProgress !== null && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary transition-all"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
-                    <span>{uploadProgress}%</span>
+            )}
+            <div className="absolute left-4 bottom-4 flex items-center gap-3">
+              {event.coverImageUrl && (
+                <div className="h-12 w-12 rounded-full border-2 border-white overflow-hidden">
+                  <img
+                    src={event.coverImageUrl}
+                    alt="Avatar"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              )}
+              <div>
+                <div className="text-sm font-semibold">{event.name}</div>
+                {event.eventDate && (
+                  <div className="text-[11px] text-gray-300">
+                    {new Date(event.eventDate).toLocaleDateString()}
                   </div>
                 )}
               </div>
-
-              {uploadError && (
-                <div className="text-xs text-red-500 mt-2">{uploadError}</div>
-              )}
-              {uploadSuccess && (
-                <div className="text-xs text-green-600 mt-2">
-                  {uploadSuccess}
-                </div>
-              )}
-            </form>
-          ) : (
-            <div className="text-sm text-muted-foreground">
-              Uploads are currently disabled for this event.
             </div>
-          )}
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-6 bg-black/70">
+            <div className="text-xs text-gray-300">
+              {event.protected && !galleryUnlocked
+                ? "Gallery locked"
+                : `${media.length} photo${media.length === 1 ? "" : "s"} & video${media.length === 1 ? "" : "s"}`}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-neutral-600 bg-neutral-900 text-white hover:bg-neutral-800"
+                onClick={() => setUploadPanelOpen(true)}
+                disabled={!event.uploadsEnabled}
+              >
+                + Add to album
+              </Button>
+              <span className="text-[11px] text-gray-400">
+                Uploads: {event.uploadsEnabled ? "Enabled" : "Disabled"}
+              </span>
+            </div>
+          </div>
         </section>
 
         {/* Gallery */}
-        <section className="rounded-lg border bg-background p-4 space-y-3">
+        <section className="rounded-xl border bg-background p-3 sm:p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Event gallery</h2>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => loadMedia(true)}
-              disabled={loadingMedia}
-            >
-              Refresh
-            </Button>
+            <h2 className="text-sm font-semibold">Gallery</h2>
+            {galleryUnlocked && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadMedia(true)}
+                disabled={loadingMedia}
+              >
+                Refresh
+              </Button>
+            )}
           </div>
 
-          {loadingMedia && media.length === 0 ? (
+          {event.protected && !galleryUnlocked ? (
+            <div className="rounded-lg border bg-muted/40 p-4 sm:p-6">
+              <div className="mx-auto max-w-sm space-y-4">
+                <div className="space-y-1 text-center sm:text-left">
+                  <h3 className="text-sm font-semibold">This gallery is protected</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Enter the event password to view photos and videos.
+                  </p>
+                </div>
+                <form className="space-y-3" onSubmit={handleUnlock}>
+                  <input
+                    type="password"
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={unlockPassword}
+                    onChange={(e) => setUnlockPassword(e.target.value)}
+                    placeholder="Gallery password"
+                    autoComplete="current-password"
+                  />
+                  {unlockError && (
+                    <div className="text-xs text-red-500">{unlockError}</div>
+                  )}
+                  <Button
+                    type="submit"
+                    size="sm"
+                    className="w-full"
+                    disabled={unlocking || !unlockPassword.trim()}
+                  >
+                    {unlocking ? "Unlocking…" : "Unlock gallery"}
+                  </Button>
+                </form>
+              </div>
+            </div>
+          ) : loadingMedia && media.length === 0 ? (
             <div className="text-sm text-muted-foreground">Loading media…</div>
           ) : media.length === 0 ? (
             <div className="text-sm text-muted-foreground">
@@ -371,7 +547,7 @@ export default function GuestEventPage() {
                 {media.map((item, idx) => {
                   const isPhoto =
                     item.type === "photo" || item.mimeType.startsWith("image/");
-                  const label = item.guestName ?? "Guest upload";
+                  const label = item.guestName ?? "Guest";
 
                   return (
                     <div
@@ -399,14 +575,28 @@ export default function GuestEventPage() {
                         )}
                       </button>
 
-                      {item.guestName && (
-                        <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-[10px] text-white">
-                          {item.guestName}
-                        </div>
-                      )}
+                      <div className="flex items-center justify-between gap-2 border-t bg-background/80 px-2 py-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleLike(item)}
+                          className="h-8 gap-1.5 px-2 text-foreground hover:bg-muted"
+                        >
+                          <HeartIcon weight="fill" className="size-4 text-red-500" />
+                          <span className="text-xs font-medium">
+                            {item.likesCount}
+                          </span>
+                        </Button>
+                        {item.guestName && (
+                          <span className="max-w-[50%] truncate text-[10px] text-muted-foreground sm:text-xs">
+                            {item.guestName}
+                          </span>
+                        )}
+                      </div>
 
                       {item.caption && (
-                        <div className="px-2 py-1 border-t bg-background/80 text-[10px] text-muted-foreground truncate">
+                        <div className="px-2 pb-2 text-[10px] sm:text-xs text-muted-foreground truncate">
                           {item.caption}
                         </div>
                       )}
@@ -430,43 +620,170 @@ export default function GuestEventPage() {
             </>
           )}
         </section>
+
+        {/* Upload dialog */}
+        <Dialog open={uploadPanelOpen} onOpenChange={setUploadPanelOpen}>
+          <DialogContent className="flex max-h-[90vh] w-[min(96vw,720px)] max-w-[min(96vw,720px)] flex-col overflow-hidden sm:max-w-[min(96vw,720px)]">
+            <DialogHeader>
+              <DialogTitle className="text-base">Add photos & videos</DialogTitle>
+            </DialogHeader>
+
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+              {event.uploadsEnabled ? (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium">
+                      Pick files (you can add more)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      multiple
+                      capture="environment"
+                      onChange={handleFilesChange}
+                      className="text-xs"
+                    />
+                  </div>
+
+                  {uploads.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="text-xs font-semibold">
+                        {uploads.length} item{uploads.length === 1 ? "" : "s"} selected
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {uploads.map((u, idx) => {
+                          const isPhoto = u.file.type.startsWith("image/");
+                          return (
+                            <div
+                              key={idx}
+                              className="flex flex-col overflow-hidden rounded-lg border bg-muted"
+                            >
+                              <div className="flex h-36 w-full items-center justify-center overflow-hidden bg-black">
+                                {isPhoto ? (
+                                  <img
+                                    src={URL.createObjectURL(u.file)}
+                                    alt={u.file.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="px-2 text-center text-[11px] text-muted-foreground">
+                                    {u.file.name}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="space-y-1 p-2 text-xs">
+                                <div className="flex items-center justify-between">
+                                  <span className="max-w-[120px] truncate">
+                                    {u.file.name}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {u.status === "queued" && "Queued"}
+                                    {u.status === "uploading" && `${u.progress}%`}
+                                    {u.status === "done" && "Done"}
+                                    {u.status === "error" && "Error"}
+                                  </span>
+                                </div>
+                                <input
+                                  className="w-full rounded-md border px-2 py-1 text-xs"
+                                  placeholder="Add caption (optional)"
+                                  value={u.caption}
+                                  onChange={(e) =>
+                                    handleUploadItemCaptionChange(idx, e.target.value)
+                                  }
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleUpload} className="space-y-3 text-sm">
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={uploads.length === 0 || uploading}
+                        className="rounded-full px-6"
+                      >
+                        {uploading ? "Uploading…" : "Upload"}
+                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        Uploading as{" "}
+                        <span className="font-semibold">{guestName}</span>
+                      </span>
+                    </div>
+
+                    {uploadError && (
+                      <div className="mt-2 text-xs text-red-500">{uploadError}</div>
+                    )}
+                    {uploadSuccess && (
+                      <div className="mt-2 text-xs text-green-600">{uploadSuccess}</div>
+                    )}
+                  </form>
+                </>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  Uploads are currently disabled for this event.
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="border-t pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setUploadPanelOpen(false)}
+                disabled={uploading}
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Lightbox modal */}
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-        <DialogContent className="max-w-[95vw] w-full h-[90vh] rounded-xl flex flex-col">
+        <DialogContent className="flex h-[min(92vh,900px)] w-[min(96vw,1100px)] max-w-[min(96vw,1100px)] flex-col overflow-hidden sm:max-w-[min(96vw,1100px)]">
           <DialogHeader>
-            <DialogTitle>
-              {media[lightboxIndex]?.guestName
-                ? `Media by ${media[lightboxIndex].guestName}`
+            <DialogTitle className="text-base">
+              {currentLightboxItem?.guestName
+                ? `Media by ${currentLightboxItem.guestName}`
                 : "Media"}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-hidden flex items	center justify-center bg-muted/30 rounded-lg p-4">
-            {media[lightboxIndex] ? (
-              media[lightboxIndex].type === "photo" ||
-              media[lightboxIndex].mimeType.startsWith("image/") ? (
+          <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-neutral-950 p-2 sm:p-4">
+            {currentLightboxItem ? (
+              currentLightboxItem.type === "photo" ||
+              currentLightboxItem.mimeType.startsWith("image/") ? (
                 <img
-                  src={media[lightboxIndex].url}
-                  alt={media[lightboxIndex].guestName ?? "Media"}
-                  className="max-w-full max-h-full rounded-lg object-contain"
+                  src={currentLightboxItem.url}
+                  alt={currentLightboxItem.guestName ?? "Media"}
+                  className="max-h-full max-w-full rounded-lg object-contain"
                 />
               ) : (
                 <video
-                  src={media[lightboxIndex].url}
+                  src={currentLightboxItem.url}
                   controls
-                  className="max-w-full max-h-full rounded-lg object-contain"
+                  className="max-h-full max-w-full rounded-lg object-contain"
                 />
               )
             ) : (
-              <div className="text-sm text-muted-foreground">
-                No media available.
-              </div>
+              <div className="text-sm text-muted-foreground">No media available.</div>
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-2 border-t pt-3">
+          {currentLightboxItem?.caption && (
+            <p className="truncate px-1 text-sm text-muted-foreground">
+              {currentLightboxItem.caption}
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3">
             <Button
               type="button"
               variant="outline"
@@ -475,6 +792,18 @@ export default function GuestEventPage() {
               onClick={() => setLightboxIndex((i) => i - 1)}
             >
               Previous
+            </Button>
+
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              disabled={!currentLightboxItem}
+              onClick={() => currentLightboxItem && handleLike(currentLightboxItem)}
+              className="gap-2 bg-neutral-900 text-white hover:bg-neutral-800"
+            >
+              <HeartIcon weight="fill" className="size-4 text-red-400" />
+              Like ({currentLightboxItem?.likesCount ?? 0})
             </Button>
 
             <div className="text-xs text-muted-foreground">
@@ -491,17 +820,6 @@ export default function GuestEventPage() {
               Next
             </Button>
           </div>
-
-          <DialogFooter className="mt-3 flex justify	end">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setLightboxOpen(false)}
-            >
-              Close
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

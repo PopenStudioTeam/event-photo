@@ -21,6 +21,9 @@ type Event = {
   slug: string;
   eventDate: string | null;
   uploadsEnabled: boolean;
+  mediaCount: number;
+  protected: boolean;
+  hasPassword: boolean; // true if a password is configured
 };
 
 type Media = {
@@ -210,11 +213,37 @@ export default function EventsPage() {
     }
   };
 
+  const handleDeleteMedia = async (item: Media) => {
+    if (!galleryEvent) return;
+    if (!confirm("Delete this item?")) return;
+
+    try {
+      await apiFetch(`/events/${galleryEvent.slug}/media/${item.id}`, {
+        method: "DELETE",
+      });
+      setMedia((prev) => prev.filter((m) => m.id !== item.id));
+    } catch (err) {
+      console.error("Failed to delete media", err);
+      // TODO: show a toast or error message
+    }
+  };
+
   return (
     <div className="min-w-0 space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-semibold sm:text-xl">Events</h2>
-        <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleNewEvent}>
+        <div>
+          <h2 className="text-lg font-semibold sm:text-xl">Events</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {events.length} event(s) ·{" "}
+            {events.reduce((sum, evt) => sum + (evt.mediaCount ?? 0), 0)} item(s)
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full sm:w-auto"
+          onClick={handleNewEvent}
+        >
           New Event
         </Button>
       </div>
@@ -232,15 +261,26 @@ export default function EventsPage() {
           {/* Mobile cards */}
           <div className="space-y-3 md:hidden">
             {events.map((evt) => (
-              <div key={evt.id} className="space-y-3 rounded-lg border bg-background p-4">
+              <div
+                key={evt.id}
+                className="space-y-3 rounded-lg border bg-background p-4"
+              >
                 <div className="min-w-0">
-                  <div className="font-medium">{evt.name || "Untitled Event"}</div>
+                  <div className="font-medium">
+                    {evt.name || "Untitled Event"}
+                  </div>
                   <div className="mt-1 text-xs text-muted-foreground">
                     {evt.eventDate
                       ? new Date(evt.eventDate).toLocaleDateString()
                       : "No date"}
                     {" · "}
                     Uploads {evt.uploadsEnabled ? "enabled" : "disabled"}
+                    {" · "}
+                    {evt.mediaCount} item(s)
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Protected: {evt.protected ? "Yes" : "No"} · Password:{" "}
+                    {evt.hasPassword ? "Set" : "Not set"}
                   </div>
                   <div className="mt-1 break-all font-mono text-[11px] text-muted-foreground">
                     {evt.slug}
@@ -270,58 +310,86 @@ export default function EventsPage() {
 
           {/* Desktop / tablet table */}
           <div className="hidden w-full min-w-0 overflow-x-auto rounded-lg border bg-background md:block">
-            <table className="w-full min-w-[640px] border-collapse text-sm">
-            <thead>
-              <tr className="bg-muted/50">
-                <th className="px-3 py-2 text-left font-medium lg:px-4">Name</th>
-                <th className="px-3 py-2 text-left font-medium lg:px-4">Date</th>
-                <th className="hidden px-3 py-2 text-left font-medium lg:table-cell lg:px-4">Slug</th>
-                <th className="px-3 py-2 text-left font-medium lg:px-4">Uploads</th>
-                <th className="px-3 py-2 text-right font-medium lg:px-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.map((evt) => (
-                <tr key={evt.id} className="border-t">
-                  <td className="max-w-[140px] truncate px-3 py-2 align-middle lg:max-w-none lg:px-4">
-                    {evt.name || "Untitled Event"}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2 align-middle lg:px-4">
-                    {evt.eventDate
-                      ? new Date(evt.eventDate).toLocaleDateString()
-                      : "—"}
-                  </td>
-                  <td className="hidden px-3 py-2 align-middle lg:table-cell lg:px-4">
-                    <span className="break-all font-mono text-xs">{evt.slug}</span>
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2 align-middle lg:px-4">
-                    {evt.uploadsEnabled ? "Enabled" : "Disabled"}
-                  </td>
-                  <td className="px-3 py-2 align-middle lg:px-4">
-                    <div className="flex flex-col items-stretch justify-end gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full sm:w-auto"
-                        onClick={() => handleOpenEvent(evt.slug)}
-                      >
-                        Open
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full sm:w-auto"
-                        onClick={() => openDocumentationGallery(evt)}
-                      >
-                        <span className="lg:hidden">View docs</span>
-                        <span className="hidden lg:inline">View documentation</span>
-                      </Button>
-                    </div>
-                  </td>
+            <table className="w-full min-w-[720px] border-collapse text-sm">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="px-3 py-2 text-left font-medium lg:px-4">
+                    Name
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium lg:px-4">
+                    Date
+                  </th>
+                  <th className="hidden px-3 py-2 text-left font-medium lg:table-cell lg:px-4">
+                    Slug
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium lg:px-4">
+                    Uploads
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium lg:px-4">
+                    Items
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium lg:px-4">
+                    Protected
+                  </th>
+                  <th className="px-3 py-2 text-right font-medium lg:px-4">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {events.map((evt) => (
+                  <tr key={evt.id} className="border-t">
+                    <td className="max-w-[140px] truncate px-3 py-2 align-middle lg:max-w-none lg:px-4">
+                      {evt.name || "Untitled Event"}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 align-middle lg:px-4">
+                      {evt.eventDate
+                        ? new Date(evt.eventDate).toLocaleDateString()
+                        : "—"}
+                    </td>
+                    <td className="hidden px-3 py-2 align-middle lg:table-cell lg:px-4">
+                      <span className="break-all font-mono text-xs">
+                        {evt.slug}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 align-middle lg:px-4">
+                      {evt.uploadsEnabled ? "Enabled" : "Disabled"}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 align-middle lg:px-4">
+                      {evt.mediaCount} item(s)
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 align-middle lg:px-4">
+                      {evt.protected ? "Yes" : "No"}
+                      {" · "}
+                      {evt.hasPassword ? "Password set" : "No password"}
+                    </td>
+                    <td className="px-3 py-2 align-middle lg:px-4">
+                      <div className="flex flex-col items-stretch justify-end gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full sm:w-auto"
+                          onClick={() => handleOpenEvent(evt.slug)}
+                        >
+                          Open
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full sm:w-auto"
+                          onClick={() => openDocumentationGallery(evt)}
+                        >
+                          <span className="lg:hidden">View docs</span>
+                          <span className="hidden lg:inline">
+                            View documentation
+                          </span>
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </>
       )}
@@ -360,7 +428,8 @@ export default function EventsPage() {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {media.map((item, idx) => {
                   const isPhoto =
-                    item.type === "photo" || (item.mimeType ?? "").startsWith("image/");
+                    item.type === "photo" ||
+                    (item.mimeType ?? "").startsWith("image/");
                   const label = item.guestName ?? "Guest upload";
 
                   return (
@@ -396,19 +465,34 @@ export default function EventsPage() {
                       )}
 
                       <div className="flex items-center justify-between gap-2 border-t bg-background/80 px-2 py-2">
-                        <button
-                          type="button"
-                          onClick={() => handleDownloadSingle(item)}
-                          disabled={downloadProgress.active}
-                          className="text-[11px] text-primary hover:underline disabled:opacity-50 sm:text-xs"
-                        >
-                          {downloadingId === item.id ? "Downloading…" : "Download"}
-                        </button>
-                        {item.caption && (
-                          <span className="max-w-[50%] truncate text-[10px] text-muted-foreground sm:text-xs">
-                            {item.caption}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadSingle(item)}
+                            disabled={downloadProgress.active}
+                            className="text-[11px] text-primary hover:underline disabled:opacity-50 sm:text-xs"
+                          >
+                            {downloadingId === item.id
+                              ? "Downloading…"
+                              : "Download"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteMedia(item)}
+                            disabled={downloadProgress.active}
+                            className="text-[11px] text-red-500 hover:underline disabled:opacity-50 sm:text-xs"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                        <span className="max-w-[50%] truncate text-[10px] text-muted-foreground sm:text-xs">
+                          {item.type === "video" ? "Video" : "Photo"}
+                          {item.fileSize
+                            ? ` · ${Math.round(
+                                item.fileSize / 1024 / 1024
+                              )} MB`
+                            : ""}
+                        </span>
                       </div>
                     </div>
                   );
@@ -423,7 +507,9 @@ export default function EventsPage() {
                 <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                   <span className="truncate">{downloadProgress.label}</span>
                   <span className="shrink-0 tabular-nums">
-                    {downloadProgress.percent != null ? `${downloadProgress.percent}%` : "…"}
+                    {downloadProgress.percent != null
+                      ? `${downloadProgress.percent}%`
+                      : "…"}
                   </span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -441,26 +527,28 @@ export default function EventsPage() {
             )}
 
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-between">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-              onClick={handleDownloadZip}
-              disabled={media.length === 0 || downloadProgress.active}
-            >
-              {downloadProgress.active ? "Downloading…" : "Download all as ZIP"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-              disabled={downloadProgress.active}
-              onClick={() => setGalleryOpen(false)}
-            >
-              Close
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-auto"
+                onClick={handleDownloadZip}
+                disabled={media.length === 0 || downloadProgress.active}
+              >
+                {downloadProgress.active
+                  ? "Downloading…"
+                  : "Download all as ZIP"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-auto"
+                disabled={downloadProgress.active}
+                onClick={() => setGalleryOpen(false)}
+              >
+                Close
+              </Button>
             </div>
           </DialogFooter>
         </DialogContent>
@@ -472,7 +560,7 @@ export default function EventsPage() {
           <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
             <DialogTitle className="truncate text-base sm:text-lg">
               {media[lightboxIndex]?.guestName
-                ? `Photo by ${media[lightboxIndex].guestName}`
+                ? `Media by ${media[lightboxIndex].guestName}`
                 : "Media"}
             </DialogTitle>
           </DialogHeader>

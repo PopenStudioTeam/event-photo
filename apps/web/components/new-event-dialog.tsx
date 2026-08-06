@@ -21,13 +21,28 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
+  const [protectedGallery, setProtectedGallery] = useState(false);
+  const [password, setPassword] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const resetForm = () => {
+    setName("");
+    setDate("");
+    setProtectedGallery(false);
+    setPassword("");
+    setError(null);
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       setError("Name is required");
+      return;
+    }
+
+    if (protectedGallery && password.length < 4) {
+      setError("Gallery password must be at least 4 characters");
       return;
     }
 
@@ -37,10 +52,15 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
     try {
       const body: Record<string, unknown> = {
         name: name.trim(),
+        protected: protectedGallery,
       };
 
       if (date) {
         body.eventDate = new Date(date).toISOString();
+      }
+
+      if (protectedGallery) {
+        body.password = password;
       }
 
       const created = await apiFetch("/events", {
@@ -51,8 +71,7 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
       const event = created as { slug: string };
 
       onOpenChange(false);
-      setName("");
-      setDate("");
+      resetForm();
       router.push(`/events/${event.slug}`);
     } catch (err) {
       console.error(err);
@@ -63,8 +82,14 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm rounded-xl">
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next);
+        if (!next) resetForm();
+      }}
+    >
+      <DialogContent className="max-w-md rounded-xl sm:max-w-md">
         <DialogHeader>
           <DialogTitle>New event</DialogTitle>
         </DialogHeader>
@@ -90,6 +115,40 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
             />
           </div>
 
+          <div className="space-y-3 rounded-md border bg-muted/40 p-3">
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={protectedGallery}
+                onChange={(e) => {
+                  setProtectedGallery(e.target.checked);
+                  if (!e.target.checked) setPassword("");
+                }}
+              />
+              <span>
+                <span className="block text-xs font-medium">Protect gallery with password</span>
+                <span className="block text-[11px] text-muted-foreground">
+                  Guests must enter a password to view photos and videos.
+                </span>
+              </span>
+            </label>
+
+            {protectedGallery && (
+              <div className="space-y-1">
+                <label className="text-xs font-medium">Gallery password</label>
+                <input
+                  type="password"
+                  className="w-full rounded-md border px-3 py-2 text-sm"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 4 characters"
+                  minLength={4}
+                />
+              </div>
+            )}
+          </div>
+
           {error && <div className="text-xs text-red-500">{error}</div>}
 
           <DialogFooter className="mt-4 flex justify-end gap-2">
@@ -99,9 +158,7 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
               size="sm"
               onClick={() => {
                 onOpenChange(false);
-                setName("");
-                setDate("");
-                setError(null);
+                resetForm();
               }}
             >
               Cancel

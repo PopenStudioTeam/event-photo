@@ -19,12 +19,20 @@ export const coverUploadSchema = z.object({
 export const createEventSchema = z.object({
   name: z.string().min(1).max(120),
   eventDate: z.string().datetime().optional(),
+  protected: z.boolean().optional(),
+  password: z.string().min(4).max(128).optional(),
 });
 
 export const updateEventSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   eventDate: z.string().datetime().optional(),
   coverImageKey: z.string().optional(),
+  protected: z.boolean().optional(),
+  password: z.string().min(4).max(128).optional(),
+});
+
+export const unlockEventSchema = z.object({
+  password: z.string().min(1).max(128),
 });
 
 // Guest upload validation

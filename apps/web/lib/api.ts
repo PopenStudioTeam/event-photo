@@ -1,5 +1,12 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
+function galleryTokenForPath(path: string): string | null {
+  if (typeof window === "undefined") return null;
+  const match = path.match(/^\/e\/([^/?]+)/);
+  if (!match) return null;
+  return sessionStorage.getItem(`gallery_unlock_${match[1]}`);
+}
+
 export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   const token =
     typeof window !== "undefined"
@@ -17,13 +24,25 @@ export async function apiFetch<T = unknown>(path: string, options: RequestInit =
     headers.Authorization = `Bearer ${token}`;
   }
 
+  const galleryToken = galleryTokenForPath(path);
+  if (galleryToken) {
+    headers["X-Gallery-Token"] = galleryToken;
+  }
+
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers,
   });
 
   if (!res.ok) {
-    throw new Error(`API error ${res.status}`);
+    let message = `API error ${res.status}`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body.error) message = body.error;
+    } catch {
+      // ignore non-json error bodies
+    }
+    throw new Error(message);
   }
 
   return res.json() as Promise<T>;

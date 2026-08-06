@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, boolean, integer, pgEnum} from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, boolean, integer, pgEnum } from "drizzle-orm/pg-core";
 
 export const mediaTypeEnum = pgEnum("media_type", ["photo", "video"]);
 
@@ -22,6 +22,8 @@ export const events = pgTable("events", {
     .notNull(),
   maxMediaCount: integer("max_media_count").default(1000).notNull(),
   uploadsDeadline: timestamp("uploads_deadline", { withTimezone: true }),
+  protected: boolean("protected").default(false).notNull(),
+  protectedPasswordHash: text("gallery_password"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -36,5 +38,7 @@ export const media = pgTable("media", {
   fileSize: integer("file_size").notNull(),
   guestName: text("guest_name"),
   caption: text("caption"),
+  likesCount: integer("likes_count").default(0).notNull(),
+  status: text("status").default("pending").notNull(), // "pending" | "approved" | "rejected"
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

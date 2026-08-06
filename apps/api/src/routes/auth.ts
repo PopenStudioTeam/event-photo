@@ -2,24 +2,12 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { sign } from "hono/jwt";
 import { eq } from "drizzle-orm";
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { db } from "@app/shared/db";
 import { organizers } from "@app/shared/schema";
-import { registerSchema, googleAuthSchema, loginSchema } from "@app/shared/validators";
+import { registerSchema, loginSchema } from "@app/shared/validators";
+import { hashPassword, verifyPassword } from "../lib/password.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "";
-
-function hashPassword(password: string) {
-  const salt = randomBytes(16);
-  const hash = scryptSync(password, salt, 64).toString("hex");
-  return `${salt}:${hash}`;
-}
-
-function verifyPassword(password: string, stored: string) {
-  const [salt, hash] = stored.split(":");
-  const candidate = scryptSync(password, salt, 64);
-  return timingSafeEqual(Buffer.from(hash, "hex"), candidate);
-}
 
 export const authRoutes = new Hono()
   .post("/register", zValidator("json", registerSchema), async (c) => {
