@@ -21,6 +21,13 @@ export const createEventSchema = z.object({
   eventDate: z.string().datetime().optional(),
   protected: z.boolean().optional(),
   password: z.string().min(4).max(128).optional(),
+  primaryColor: z.string().min(4).max(32).optional(),
+  backgroundVariant: z.enum(["dark", "light"]).optional(),
+  povEnabled: z.boolean().optional(),
+  povMaxPerGuest: z.number().int().min(0).max(100).optional(),
+  povRevealAt: z.string().datetime().optional(),
+  coverLayout: z.enum(["banner", "card"]).optional(),
+  coverOverlay: z.enum(["none", "gradient"]).optional(),
 });
 
 export const updateEventSchema = z.object({
@@ -29,6 +36,13 @@ export const updateEventSchema = z.object({
   coverImageKey: z.string().optional(),
   protected: z.boolean().optional(),
   password: z.string().min(4).max(128).optional(),
+  primaryColor: z.string().min(4).max(32).optional(),
+  backgroundVariant: z.enum(["dark", "light"]).optional(),
+  povEnabled: z.boolean().optional(),
+  povMaxPerGuest: z.number().int().min(0).max(100).optional(),
+  povRevealAt: z.string().datetime().optional(),
+  coverLayout: z.enum(["banner", "card"]).optional(),
+  coverOverlay: z.enum(["none", "gradient"]).optional(),
 });
 
 export const unlockEventSchema = z.object({

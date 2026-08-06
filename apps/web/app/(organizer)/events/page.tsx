@@ -23,7 +23,14 @@ type Event = {
   uploadsEnabled: boolean;
   mediaCount: number;
   protected: boolean;
-  hasPassword: boolean; // true if a password is configured
+  hasPassword: boolean;
+
+  // NEW: theme + POV
+  primaryColor: string;
+  backgroundVariant: "dark" | "light";
+  povEnabled: boolean;
+  povMaxPerGuest: number;
+  povRevealAt: string | null;
 };
 
 type Media = {
@@ -69,6 +76,7 @@ export default function EventsPage() {
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
   const [newEventOpen, setNewEventOpen] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress>({
     active: false,
@@ -224,7 +232,6 @@ export default function EventsPage() {
       setMedia((prev) => prev.filter((m) => m.id !== item.id));
     } catch (err) {
       console.error("Failed to delete media", err);
-      // TODO: show a toast or error message
     }
   };
 
@@ -282,6 +289,22 @@ export default function EventsPage() {
                     Protected: {evt.protected ? "Yes" : "No"} · Password:{" "}
                     {evt.hasPassword ? "Set" : "Not set"}
                   </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Theme: {evt.backgroundVariant === "dark" ? "Dark" : "Light"} ·{" "}
+                    {evt.primaryColor}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    POV:{" "}
+                    {evt.povEnabled
+                      ? `On · max ${evt.povMaxPerGuest || "∞"} shot(s)`
+                      : "Off"}
+                    {evt.povEnabled && evt.povRevealAt && (
+                      <>
+                        {" · reveal "}
+                        {new Date(evt.povRevealAt).toLocaleDateString()}
+                      </>
+                    )}
+                  </div>
                   <div className="mt-1 break-all font-mono text-[11px] text-muted-foreground">
                     {evt.slug}
                   </div>
@@ -310,7 +333,7 @@ export default function EventsPage() {
 
           {/* Desktop / tablet table */}
           <div className="hidden w-full min-w-0 overflow-x-auto rounded-lg border bg-background md:block">
-            <table className="w-full min-w-[720px] border-collapse text-sm">
+            <table className="w-full min-w-[900px] border-collapse text-sm">
               <thead>
                 <tr className="bg-muted/50">
                   <th className="px-3 py-2 text-left font-medium lg:px-4">
@@ -330,6 +353,12 @@ export default function EventsPage() {
                   </th>
                   <th className="px-3 py-2 text-left font-medium lg:px-4">
                     Protected
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium lg:px-4">
+                    Theme
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium lg:px-4">
+                    POV
                   </th>
                   <th className="px-3 py-2 text-right font-medium lg:px-4">
                     Actions
@@ -362,6 +391,22 @@ export default function EventsPage() {
                       {evt.protected ? "Yes" : "No"}
                       {" · "}
                       {evt.hasPassword ? "Password set" : "No password"}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 align-middle lg:px-4">
+                      {evt.backgroundVariant === "dark" ? "Dark" : "Light"}
+                      {" · "}
+                      {evt.primaryColor}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 align-middle lg:px-4">
+                      {evt.povEnabled
+                        ? `On · max ${evt.povMaxPerGuest || "∞"}`
+                        : "Off"}
+                      {evt.povEnabled && evt.povRevealAt && (
+                        <>
+                          {" · "}
+                          {new Date(evt.povRevealAt).toLocaleDateString()}
+                        </>
+                      )}
                     </td>
                     <td className="px-3 py-2 align-middle lg:px-4">
                       <div className="flex flex-col items-stretch justify-end gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
@@ -406,7 +451,8 @@ export default function EventsPage() {
           }
         }}
       >
-        <DialogContent className="flex max-h-[95vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[95vw]">
+        <DialogContent className="flex max
+h-[95vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[95vw]">
           <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
             <DialogTitle className="truncate text-base sm:text-lg">
               {galleryEvent

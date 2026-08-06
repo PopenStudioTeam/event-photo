@@ -26,6 +26,15 @@ type PublicEvent = {
   coverImageUrl: string | null;
   uploadsEnabled: boolean;
   protected: boolean;
+
+  primaryColor: string;
+  backgroundVariant: "dark" | "light";
+  povEnabled: boolean;
+  povMaxPerGuest: number;
+  povRevealAt: string | null;
+
+  coverLayout: "banner" | "card";
+  coverOverlay: "none" | "gradient";
 };
 
 type MediaItem = {
@@ -44,6 +53,7 @@ type MediaItem = {
 type MediaResponse = {
   items: MediaItem[];
   nextCursor: string | null;
+  revealAt?: string | null;
 };
 
 type UploadItem = {
@@ -83,6 +93,7 @@ export default function GuestEventPage() {
   const [loadingMedia, setLoadingMedia] = useState(false);
   const [mediaCursor, setMediaCursor] = useState<string | null>(null);
   const [mediaHasMore, setMediaHasMore] = useState(false);
+  const [revealAt, setRevealAt] = useState<string | null>(null);
 
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -141,7 +152,7 @@ export default function GuestEventPage() {
         query.toString() ? `/e/${slug}/media?${query.toString()}` : `/e/${slug}/media`
       );
 
-      const { items, nextCursor } = res as MediaResponse;
+      const { items, nextCursor, revealAt: revealAtFromApi } = res as MediaResponse;
 
       if (initial) {
         setMedia(items);
@@ -151,6 +162,7 @@ export default function GuestEventPage() {
 
       setMediaCursor(nextCursor);
       setMediaHasMore(Boolean(nextCursor));
+      setRevealAt(revealAtFromApi ?? null);
     } catch (err) {
       console.error(err);
       if (err instanceof Error && err.message.includes("403")) {
@@ -218,9 +230,7 @@ export default function GuestEventPage() {
 
   const handleUploadItemCaptionChange = (index: number, caption: string) => {
     setUploads((prev) =>
-      prev.map((u, idx) =>
-        idx === index ? { ...u, caption } : u
-      )
+      prev.map((u, idx) => (idx === index ? { ...u, caption } : u))
     );
   };
 
@@ -316,7 +326,7 @@ export default function GuestEventPage() {
         });
       }
 
-      setUploadSuccess("All files uploaded successfully!");
+      setUploadSuccess("All files uploaded successfully! Pending approval.");
       setUploads([]);
       setUploadPanelOpen(false);
       loadMedia(true);
@@ -335,9 +345,7 @@ export default function GuestEventPage() {
       });
       const { likesCount } = res as { likesCount: number };
       setMedia((prev) =>
-        prev.map((m) =>
-          m.id === item.id ? { ...m, likesCount } : m
-        )
+        prev.map((m) => (m.id === item.id ? { ...m, likesCount } : m))
       );
     } catch (err) {
       console.error("Failed to like media", err);
@@ -374,18 +382,32 @@ export default function GuestEventPage() {
     );
   }
 
+  const bgClass =
+    event.backgroundVariant === "light" ? "bg-neutral-100" : "bg-neutral-950";
+  const primaryStyle = { backgroundColor: event.primaryColor || "#ffffff" };
+
+  const coverOverlayClass =
+    event.coverOverlay === "gradient"
+      ? "bg-gradient-to-t from-black/70 via-black/30 to-transparent"
+      : "";
+
   // Step 1: Welcome card
   if (!welcomeDone) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-neutral-950 p-4">
+      <div className={`flex min-h-screen items-center justify-center ${bgClass} p-4`}>
         <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900 shadow-2xl">
           <div className="relative h-56 w-full overflow-hidden sm:h-72">
             {event.coverImageUrl ? (
-              <img
-                src={event.coverImageUrl}
-                alt={event.name}
-                className="h-full w-full object-cover"
-              />
+              <div className="relative h-full w-full">
+                <img
+                  src={event.coverImageUrl}
+                  alt={event.name}
+                  className="h-full w-full object-cover"
+                />
+                {event.coverOverlay === "gradient" && (
+                  <div className={`absolute inset-0 ${coverOverlayClass}`} />
+                )}
+              </div>
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-neutral-800">
                 <span className="text-sm text-neutral-400">Event cover</span>
@@ -423,7 +445,8 @@ export default function GuestEventPage() {
               <Button
                 type="submit"
                 size="lg"
-                className="mt-2 w-full rounded-full bg-white text-black hover:bg-neutral-200"
+                className="mt-2 w-full rounded-full text-sm font-semibold"
+                style={primaryStyle}
               >
                 Let&apos;s Go!
               </Button>
@@ -438,15 +461,20 @@ export default function GuestEventPage() {
   return (
     <div className="flex-1 min-h-screen bg-background">
       <div className="max-w-5xl mx-auto p-3 sm:p-6 space-y-6">
-        {/* Album hero */}
+        {/* Album hero with cover customization */}
         <section className="rounded-2xl overflow-hidden border bg-black text-white">
           <div className="relative h-40 sm:h-56 md:h-64">
             {event.coverImageUrl ? (
-              <img
-                src={event.coverImageUrl}
-                alt={event.name}
-                className="h-full w-full object-cover"
-              />
+              <div className="relative h-full w-full">
+                <img
+                  src={event.coverImageUrl}
+                  alt={event.name}
+                  className="h-full w-full object-cover"
+                />
+                {event.coverOverlay === "gradient" && (
+                  <div className={`absolute inset-0 ${coverOverlayClass}`} />
+                )}
+              </div>
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-muted">
                 <span className="text-sm text-muted-foreground">
@@ -478,7 +506,9 @@ export default function GuestEventPage() {
             <div className="text-xs text-gray-300">
               {event.protected && !galleryUnlocked
                 ? "Gallery locked"
-                : `${media.length} photo${media.length === 1 ? "" : "s"} & video${media.length === 1 ? "" : "s"}`}
+                : `${media.length} photo${media.length === 1 ? "" : "s"} & video${
+                    media.length === 1 ? "" : "s"
+                  }`}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {galleryUnlocked && media.length > 0 && (
@@ -511,7 +541,7 @@ export default function GuestEventPage() {
         <section className="rounded-xl border bg-background p-3 sm:p-4 space-y-3">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Gallery</h2>
-            <div className="flex items-center gap-2">
+            <div className="flex items-right gap-2">
               {galleryUnlocked && media.length > 0 && (
                 <Button
                   variant="outline"
@@ -533,6 +563,27 @@ export default function GuestEventPage() {
               )}
             </div>
           </div>
+
+          {event.povEnabled && event.povRevealAt && revealAt && (
+            <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground mb-2">
+              Gallery will unlock on{" "}
+              <span className="font-semibold">
+                {new Date(event.povRevealAt).toLocaleDateString()}
+              </span>
+              . You can still upload your shots now.
+            </div>
+          )}
+
+          {event.povEnabled && event.povMaxPerGuest > 0 && (
+            <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground mb-2">
+              POV mode is enabled. Each guest can upload up to{" "}
+              <span className="font-semibold">
+                {event.povMaxPerGuest} photo
+                {event.povMaxPerGuest === 1 ? "" : "s"}
+              </span>
+              . Try to capture your best moments!
+            </div>
+          )}
 
           {event.protected && !galleryUnlocked ? (
             <div className="rounded-lg border bg-muted/40 p-4 sm:p-6">
@@ -568,6 +619,11 @@ export default function GuestEventPage() {
             </div>
           ) : loadingMedia && media.length === 0 ? (
             <div className="text-sm text-muted-foreground">Loading media…</div>
+          ) : revealAt && media.length === 0 ? (
+            <div className="text-sm text-muted-foreground">
+              Gallery is in POV reveal mode and will unlock on{" "}
+              {new Date(event.povRevealAt ?? revealAt).toLocaleDateString()}.
+            </div>
           ) : media.length === 0 ? (
             <div className="text-sm text-muted-foreground">
               No media yet. Be the first to upload!
@@ -662,6 +718,17 @@ export default function GuestEventPage() {
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
               {event.uploadsEnabled ? (
                 <>
+                  {event.povEnabled && event.povMaxPerGuest > 0 && (
+                    <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+                      POV mode is enabled. Each guest can upload up to{" "}
+                      <span className="font-semibold">
+                        {event.povMaxPerGuest} photo
+                        {event.povMaxPerGuest === 1 ? "" : "s"}
+                      </span>
+                      . Think like a disposable camera!
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <label className="text-xs font-medium">
                       Pick files (you can add more)
@@ -750,7 +817,9 @@ export default function GuestEventPage() {
                       <div className="mt-2 text-xs text-red-500">{uploadError}</div>
                     )}
                     {uploadSuccess && (
-                      <div className="mt-2 text-xs text-green-600">{uploadSuccess}</div>
+                      <div className="mt-2 text-xs text-green-600">
+                        {uploadSuccess}
+                      </div>
                     )}
                   </form>
                 </>
@@ -804,7 +873,9 @@ export default function GuestEventPage() {
                 />
               )
             ) : (
-              <div className="text-sm text-muted-foreground">No media available.</div>
+              <div className="text-sm text-muted-foreground">
+                No media available.
+              </div>
             )}
           </div>
 
@@ -830,7 +901,9 @@ export default function GuestEventPage() {
               variant="default"
               size="sm"
               disabled={!currentLightboxItem}
-              onClick={() => currentLightboxItem && handleLike(currentLightboxItem)}
+              onClick={() =>
+                currentLightboxItem && handleLike(currentLightboxItem)
+              }
               className="gap-2 bg-neutral-900 text-white hover:bg-neutral-800"
             >
               <HeartIcon weight="fill" className="size-4 text-red-400" />

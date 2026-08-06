@@ -33,6 +33,15 @@ type Event = {
   coverImageUrl: string | null;
   protected: boolean;
   hasPassword: boolean;
+
+  primaryColor: string;
+  backgroundVariant: "dark" | "light";
+  povEnabled: boolean;
+  povMaxPerGuest: number;
+  povRevealAt: string | null;
+
+  coverLayout: "banner" | "card";
+  coverOverlay: "none" | "gradient";
 };
 
 type Media = {
@@ -45,6 +54,7 @@ type Media = {
   caption: string | null;
   createdAt: string;
   url: string;
+  status?: "pending" | "approved" | "rejected";
 };
 
 type DownloadProgress = {
@@ -79,12 +89,24 @@ export default function EventDetailPage() {
   const [editError, setEditError] = useState<string | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
+  // Theme + POV + cover style form state
+  const [formPrimaryColor, setFormPrimaryColor] = useState("#ffffff");
+  const [formBackgroundVariant, setFormBackgroundVariant] =
+    useState<"dark" | "light">("dark");
+  const [formPOVEnabled, setFormPOVEnabled] = useState(false);
+  const [formPovMaxPerGuest, setFormPovMaxPerGuest] = useState<number>(0);
+  const [formPovRevealAt, setFormPovRevealAt] = useState("");
+  const [formCoverLayout, setFormCoverLayout] =
+    useState<"banner" | "card">("banner");
+  const [formCoverOverlay, setFormCoverOverlay] =
+    useState<"none" | "gradient">("none");
+
   // Cover upload state
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverError, setCoverError] = useState<string | null>(null);
 
-  // Zoom viewer state (cover)
+  // Zoom viewer state
   const [zoomOpen, setZoomOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
 
@@ -93,7 +115,7 @@ export default function EventDetailPage() {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [loadingMedia, setLoadingMedia] = useState(false);
 
-  // Lightbox state (media viewer)
+  // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
@@ -107,6 +129,11 @@ export default function EventDetailPage() {
   const [slideshowOpen, setSlideshowOpen] = useState(false);
   const [slideshowStartIndex, setSlideshowStartIndex] = useState(0);
 
+  // Moderation state
+  const [moderationOpen, setModerationOpen] = useState(false);
+  const [moderationMedia, setModerationMedia] = useState<Media[]>([]);
+  const [moderationLoading, setModerationLoading] = useState(false);
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -119,6 +146,14 @@ export default function EventDetailPage() {
           setFormName(found.name);
           setFormDate(found.eventDate ? found.eventDate.slice(0, 10) : "");
           setFormProtected(found.protected);
+
+          setFormPrimaryColor(found.primaryColor ?? "#ffffff");
+          setFormBackgroundVariant((found.backgroundVariant as "dark" | "light") ?? "dark");
+          setFormPOVEnabled(found.povEnabled ?? false);
+          setFormPovMaxPerGuest(found.povMaxPerGuest ?? 0);
+          setFormPovRevealAt(found.povRevealAt ? found.povRevealAt.slice(0, 10) : "");
+          setFormCoverLayout(found.coverLayout ?? "banner");
+          setFormCoverOverlay(found.coverOverlay ?? "none");
         }
       } catch (err) {
         console.error(err);
@@ -149,6 +184,13 @@ export default function EventDetailPage() {
     setFormDate(event.eventDate ? event.eventDate.slice(0, 10) : "");
     setFormProtected(event.protected);
     setFormPassword("");
+    setFormPrimaryColor(event.primaryColor ?? "#ffffff");
+    setFormBackgroundVariant((event.backgroundVariant as "dark" | "light") ?? "dark");
+    setFormPOVEnabled(event.povEnabled ?? false);
+    setFormPovMaxPerGuest(event.povMaxPerGuest ?? 0);
+    setFormPovRevealAt(event.povRevealAt ? event.povRevealAt.slice(0, 10) : "");
+    setFormCoverLayout(event.coverLayout ?? "banner");
+    setFormCoverOverlay(event.coverOverlay ?? "none");
     setEditError(null);
     setEditOpen(true);
   };
@@ -167,6 +209,30 @@ export default function EventDetailPage() {
     if (formDate) body.eventDate = new Date(formDate).toISOString();
     if (formProtected !== event.protected) body.protected = formProtected;
     if (formPassword) body.password = formPassword;
+
+    if (formPrimaryColor && formPrimaryColor !== event.primaryColor) {
+      body.primaryColor = formPrimaryColor;
+    }
+    if (formBackgroundVariant && formBackgroundVariant !== event.backgroundVariant) {
+      body.backgroundVariant = formBackgroundVariant;
+    }
+
+    if (formPOVEnabled !== event.povEnabled) {
+      body.povEnabled = formPOVEnabled;
+    }
+    if (formPovMaxPerGuest !== event.povMaxPerGuest) {
+      body.povMaxPerGuest = formPovMaxPerGuest;
+    }
+    if (formPovRevealAt) {
+      body.povRevealAt = new Date(formPovRevealAt).toISOString();
+    }
+
+    if (formCoverLayout !== (event.coverLayout ?? "banner")) {
+      body.coverLayout = formCoverLayout;
+    }
+    if (formCoverOverlay !== (event.coverOverlay ?? "none")) {
+      body.coverOverlay = formCoverOverlay;
+    }
 
     if (Object.keys(body).length === 0) {
       setEditOpen(false);
@@ -370,6 +436,46 @@ export default function EventDetailPage() {
     }
   };
 
+  const loadModeration = async () => {
+    if (!event) return;
+    setModerationLoading(true);
+    setModerationOpen(true);
+    try {
+      const list = await apiFetch<Media[]>(
+        `/events/${event.slug}/media-moderation?status=pending`
+      );
+      setModerationMedia(list);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setModerationLoading(false);
+    }
+  };
+
+  const handleApproveMedia = async (item: Media) => {
+    if (!event) return;
+    try {
+      await apiFetch(`/events/${event.slug}/media/${item.id}/approve`, {
+        method: "POST",
+      });
+      setModerationMedia((prev) => prev.filter((m) => m.id !== item.id));
+    } catch (err) {
+      console.error("Failed to approve media", err);
+    }
+  };
+
+  const handleRejectMedia = async (item: Media) => {
+    if (!event) return;
+    try {
+      await apiFetch(`/events/${event.slug}/media/${item.id}/reject`, {
+        method: "POST",
+      });
+      setModerationMedia((prev) => prev.filter((m) => m.id !== item.id));
+    } catch (err) {
+      console.error("Failed to reject media", err);
+    }
+  };
+
   if (loading) {
     return <div className="text-sm text-muted-foreground">Loading event…</div>;
   }
@@ -379,6 +485,15 @@ export default function EventDetailPage() {
       <div className="text-sm text-red-500">{error ?? "Event not found"}</div>
     );
   }
+
+  const coverCardClass =
+    event.coverLayout === "card"
+      ? "mx-4 mt-4 rounded-3xl overflow-hidden shadow-2xl border"
+      : "rounded-none overflow-hidden";
+  const coverOverlayClass =
+    event.coverOverlay === "gradient"
+      ? "absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"
+      : "";
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -421,6 +536,28 @@ export default function EventDetailPage() {
             <span className="font-medium">Uploads:</span>{" "}
             {event.uploadsEnabled ? "Enabled" : "Disabled"}
           </div>
+          <div>
+            <span className="font-medium">Theme:</span>{" "}
+            {event.backgroundVariant === "dark" ? "Dark" : "Light"} ·{" "}
+            {event.primaryColor}
+          </div>
+          <div>
+            <span className="font-medium">POV mode:</span>{" "}
+            {event.povEnabled
+              ? `Enabled · max ${event.povMaxPerGuest || "∞"} shot(s) per guest`
+              : "Disabled"}
+            {event.povEnabled && event.povRevealAt && (
+              <>
+                {" · reveal "}
+                {new Date(event.povRevealAt).toLocaleDateString()}
+              </>
+            )}
+          </div>
+          <div>
+            <span className="font-medium">Cover layout:</span>{" "}
+            {event.coverLayout === "banner" ? "Banner" : "Card"} ·{" "}
+            {event.coverOverlay === "gradient" ? "Gradient overlay" : "No overlay"}
+          </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Button
@@ -450,6 +587,15 @@ export default function EventDetailPage() {
             >
               {loadingMedia ? "Loading…" : "View media"}
             </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={loadModeration}
+            >
+              Moderation
+            </Button>
           </div>
 
           {/* Cover upload block */}
@@ -460,13 +606,25 @@ export default function EventDetailPage() {
               <button
                 type="button"
                 onClick={() => setZoomOpen(true)}
-                className="w-full overflow-hidden rounded-lg border bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
+                className={cn(
+                  "w-full overflow-hidden border bg-muted focus:outline-none focus:ring-2 focus:ring-primary",
+                  event.coverLayout === "card" ? "rounded-3xl" : ""
+                )}
               >
-                <img
-                  src={event.coverImageUrl ?? ""}
-                  alt="Cover"
-                  className="aspect-[16/9] w-full object-cover sm:aspect-video sm:h-64"
-                />
+                <div className={coverCardClass}>
+                  <div className="relative">
+                    <img
+                      src={event.coverImageUrl ?? ""}
+                      alt="Cover"
+                      className={
+                        event.coverLayout === "card"
+                          ? "aspect-[16/9] w-full object-cover sm:aspect-video sm:h-64"
+                          : "aspect-[16/9] w-full object-cover sm:aspect-video sm:h-64"
+                      }
+                    />
+                    <div className={coverOverlayClass} />
+                  </div>
+                </div>
               </button>
             )}
 
@@ -528,74 +686,206 @@ export default function EventDetailPage() {
 
       {/* Edit modal */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-[calc(100%-2rem)] rounded-xl sm:max-w-md">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-lg">
+          <DialogHeader className="shrink-0 border-b px-4 py-3">
             <DialogTitle>Edit event</DialogTitle>
           </DialogHeader>
 
-          <form className="space-y-3 pt-2 text-sm" onSubmit={handleEditSubmit}>
-            <div className="space-y-1">
-              <label className="text-xs font-medium">Name</label>
-              <input
-                className="w-full rounded-md border px-3 py-2 text-sm"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-              />
-            </div>
+          <form
+            className="flex min-h-0 flex-1 flex-col"
+            onSubmit={handleEditSubmit}
+          >
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+              <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Name</label>
+                    <input
+                      className="w-full rounded-md border px-3 py-2 text-sm"
+                      value={formName}
+                      onChange={(e) => setFormName(e.target.value)}
+                    />
+                  </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium">Date</label>
-              <input
-                type="date"
-                className="w-full rounded-md border px-3 py-2 text-sm"
-                value={formDate}
-                onChange={(e) => setFormDate(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-3 rounded-md border bg-muted/40 p-3">
-              <label className="flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  className="mt-0.5"
-                  checked={formProtected}
-                  onChange={(e) => {
-                    setFormProtected(e.target.checked);
-                    if (!e.target.checked) setFormPassword("");
-                  }}
-                />
-                <span>
-                  <span className="block text-xs font-medium">Protect gallery with password</span>
-                  <span className="block text-[11px] text-muted-foreground">
-                    Guests must enter a password to view photos and videos.
-                  </span>
-                </span>
-              </label>
-
-              {formProtected && (
-                <div className="space-y-1">
-                  <label className="text-xs font-medium">
-                    {event.hasPassword ? "New gallery password (optional)" : "Gallery password"}
-                  </label>
-                  <input
-                    type="password"
-                    className="w-full rounded-md border px-3 py-2 text-sm"
-                    value={formPassword}
-                    onChange={(e) => setFormPassword(e.target.value)}
-                    placeholder={
-                      event.hasPassword
-                        ? "Leave blank to keep current password"
-                        : "At least 4 characters"
-                    }
-                    minLength={event.hasPassword ? undefined : 4}
-                  />
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Date</label>
+                    <input
+                      type="date"
+                      className="w-full rounded-md border px-3 py-2 text-sm"
+                      value={formDate}
+                      onChange={(e) => setFormDate(e.target.value)}
+                    />
+                  </div>
                 </div>
-              )}
+
+                <div className="space-y-3 rounded-md border bg-muted/40 p-3">
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={formProtected}
+                      onChange={(e) => {
+                        setFormProtected(e.target.checked);
+                        if (!e.target.checked) setFormPassword("");
+                      }}
+                    />
+                    <span>
+                      <span className="block text-xs font-medium">
+                        Protect gallery with password
+                      </span>
+                      <span className="block text-[11px] text-muted-foreground">
+                        Guests must enter a password to view photos and videos.
+                      </span>
+                    </span>
+                  </label>
+
+                  {formProtected && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">
+                        {event.hasPassword
+                          ? "New gallery password (optional)"
+                          : "Gallery password"}
+                      </label>
+                      <input
+                        type="password"
+                        className="w-full rounded-md border px-3 py-2 text-sm"
+                        value={formPassword}
+                        onChange={(e) => setFormPassword(e.target.value)}
+                        placeholder={
+                          event.hasPassword
+                            ? "Leave blank to keep current password"
+                            : "At least 4 characters"
+                        }
+                        minLength={event.hasPassword ? undefined : 4}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3 rounded-md border bg-muted/40 p-3">
+                  <div className="text-xs font-medium">Theme</div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="text-[11px]">Primary color</label>
+                      <input
+                        type="color"
+                        className="h-9 w-full cursor-pointer rounded border bg-background"
+                        value={formPrimaryColor}
+                        onChange={(e) => setFormPrimaryColor(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[11px]">Background style</label>
+                      <select
+                        className="w-full rounded-md border px-3 py-2 text-sm"
+                        value={formBackgroundVariant}
+                        onChange={(e) =>
+                          setFormBackgroundVariant(
+                            e.target.value as "dark" | "light"
+                          )
+                        }
+                      >
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 rounded-md border bg-muted/40 p-3">
+                  <div className="text-xs font-medium">POV mode</div>
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={formPOVEnabled}
+                      onChange={(e) => setFormPOVEnabled(e.target.checked)}
+                    />
+                    <span>
+                      <span className="block text-xs font-medium">
+                        Enable POV mode
+                      </span>
+                      <span className="block text-[11px] text-muted-foreground">
+                        Limit shots per guest and optionally hide gallery until a
+                        reveal date.
+                      </span>
+                    </span>
+                  </label>
+
+                  {formPOVEnabled && (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">
+                          Max shots per guest (0 = unlimited)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          className="w-full rounded-md border px-3 py-2 text-sm"
+                          value={formPovMaxPerGuest}
+                          onChange={(e) =>
+                            setFormPovMaxPerGuest(Number(e.target.value))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium">
+                          Reveal gallery on (optional)
+                        </label>
+                        <input
+                          type="date"
+                          className="w-full rounded-md border px-3 py-2 text-sm"
+                          value={formPovRevealAt}
+                          onChange={(e) => setFormPovRevealAt(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3 rounded-md border bg-muted/40 p-3">
+                  <div className="text-xs font-medium">Cover style</div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="text-[11px]">Layout</label>
+                      <select
+                        className="w-full rounded-md border px-3 py-2 text-sm"
+                        value={formCoverLayout}
+                        onChange={(e) =>
+                          setFormCoverLayout(
+                            e.target.value as "banner" | "card"
+                          )
+                        }
+                      >
+                        <option value="banner">Full banner</option>
+                        <option value="card">Card</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[11px]">Overlay</label>
+                      <select
+                        className="w-full rounded-md border px-3 py-2 text-sm"
+                        value={formCoverOverlay}
+                        onChange={(e) =>
+                          setFormCoverOverlay(
+                            e.target.value as "none" | "gradient"
+                          )
+                        }
+                      >
+                        <option value="none">None</option>
+                        <option value="gradient">Gradient</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {editError && (
+                  <div className="text-xs text-red-500">{editError}</div>
+                )}
+              </div>
             </div>
 
-            {editError && <div className="text-xs text-red-500">{editError}</div>}
-
-            <DialogFooter className="mt-4 flex justify-end gap-2">
+            <DialogFooter className="shrink-0 border-t px-4 py-3">
               <Button
                 type="button"
                 variant="outline"
@@ -612,7 +902,7 @@ export default function EventDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Zoom modal (cover image) */}
+      {/* Zoom modal */}
       <Dialog
         open={zoomOpen}
         onOpenChange={(open) => {
@@ -689,7 +979,7 @@ export default function EventDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Gallery modal (uploaded media) */}
+      {/* Gallery modal */}
       <Dialog
         open={galleryOpen}
         onOpenChange={(open) => {
@@ -781,9 +1071,7 @@ export default function EventDetailPage() {
                         <span className="max-w-[50%] truncate text-[10px] text-muted-foreground sm:text-xs">
                           {item.type === "video" ? "Video" : "Photo"}
                           {item.fileSize
-                            ? ` · ${Math.round(
-                                item.fileSize / 1024 / 1024
-                              )} MB`
+                            ? ` · ${Math.round(item.fileSize / 1024 / 1024)} MB`
                             : ""}
                         </span>
                       </div>
@@ -828,9 +1116,7 @@ export default function EventDetailPage() {
                 onClick={handleDownloadZip}
                 disabled={media.length === 0 || downloadProgress.active}
               >
-                {downloadProgress.active
-                  ? "Downloading…"
-                  : "Download all as ZIP"}
+                {downloadProgress.active ? "Downloading…" : "Download all as ZIP"}
               </Button>
               <Button
                 type="button"
@@ -847,7 +1133,7 @@ export default function EventDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Media lightbox modal */}
+      {/* Lightbox modal */}
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
         <DialogContent className="flex h-[95vh] max-h-[95vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[95vw]">
           <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
@@ -916,6 +1202,102 @@ export default function EventDetailPage() {
               size="sm"
               className="w-full sm:ml-auto sm:w-auto"
               onClick={() => setLightboxOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Moderation modal */}
+      <Dialog open={moderationOpen} onOpenChange={setModerationOpen}>
+        <DialogContent className="flex max-h-[95vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[95vw]">
+          <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
+            <DialogTitle className="text-base sm:text-lg">
+              Moderation queue (pending)
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+            {moderationLoading ? (
+              <div className="flex min-h-[30vh] items-center justify-center text-sm text-muted-foreground">
+                Loading pending media…
+              </div>
+            ) : moderationMedia.length === 0 ? (
+              <div className="flex min-h-[30vh] items-center justify-center text-sm text-muted-foreground">
+                No pending media. All uploads are approved or rejected.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4">
+                {moderationMedia.map((item) => {
+                  const isPhoto =
+                    item.type === "photo" ||
+                    (item.mimeType ?? "").startsWith("image/");
+                  const label = item.guestName ?? "Guest upload";
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="group relative flex flex-col overflow-hidden rounded-lg border bg-muted"
+                    >
+                      <div className="flex-1 w-full overflow-hidden">
+                        {isPhoto ? (
+                          <img
+                            src={item.url}
+                            alt={label}
+                            className="aspect-square w-full object-cover"
+                          />
+                        ) : (
+                          <video
+                            src={item.url}
+                            className="aspect-square w-full object-cover"
+                            muted
+                            playsInline
+                          />
+                        )}
+                      </div>
+
+                      {item.guestName && (
+                        <div className="absolute inset-x-0 bottom-8 bg-black/60 px-2 py-1 text-[10px] text-white sm:text-xs">
+                          {item.guestName}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between gap-2 border-t bg-background/80 px-2 py-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleApproveMedia(item)}
+                            className="text-[11px] text-green-600 hover:underline sm:text-xs"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRejectMedia(item)}
+                            className="text-[11px] text-red-500 hover:underline sm:text-xs"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                        <span className="max-w-[50%] truncate text-[10px] text-muted-foreground sm:text-xs">
+                          {item.type === "video" ? "Video" : "Photo"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="shrink-0 border-t px-4 py-3 sm:px-6">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full sm:ml-auto sm:w-auto"
+              onClick={() => setModerationOpen(false)}
             >
               Close
             </Button>

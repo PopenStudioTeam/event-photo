@@ -24,6 +24,13 @@ export const events = pgTable("events", {
   uploadsDeadline: timestamp("uploads_deadline", { withTimezone: true }),
   protected: boolean("protected").default(false).notNull(),
   protectedPasswordHash: text("gallery_password"),
+  primaryColor: text("primary_color").default("#ffffff").notNull(),   // button/accent
+  backgroundVariant: text("background_variant").default("dark").notNull(), // "dark" | "light"
+  povEnabled: boolean("pov_enabled").default(false).notNull(),
+  povMaxPerGuest: integer("pov_max_per_guest").default(0).notNull(),   // 0 = unlimited per guest
+  povRevealAt: timestamp("pov_reveal_at", { withTimezone: true }),
+  coverLayout: text("cover_layout").default("banner").notNull(), // "banner" | "card"
+  coverOverlay: text("cover_overlay").default("none").notNull(), // "none" | "gradient"
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
