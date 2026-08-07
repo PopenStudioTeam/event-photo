@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { PublicHeader } from "@/components/public-header";
 
 const eventTypes = [
   "Weddings",
@@ -167,46 +168,7 @@ export default function LandingPage() {
         <div className="absolute bottom-0 left-[35%] h-[26rem] w-[26rem] rounded-full bg-yellow-100/60 blur-3xl" />
       </div>
 
-      <header className="relative z-20 border-b border-black/5 bg-white/65 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#262125] text-xl text-white">
-              e
-            </div>
-            <div>
-              <div className="text-base font-bold">Event Photo</div>
-              <div className="text-[10px] text-neutral-500">
-                Every moment, together
-              </div>
-            </div>
-          </Link>
-
-          <nav className="hidden items-center gap-8 text-sm text-neutral-600 md:flex">
-            <a href="#how-it-works" className="transition hover:text-black">
-              How it works
-            </a>
-            <a href="#features" className="transition hover:text-black">
-              Features
-            </a>
-            <Link href="/pricing" className="transition hover:text-black">
-              Pricing
-            </Link>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm" className="rounded-full">
-                Log in
-              </Button>
-            </Link>
-            <Link href="/dashboard">
-              <Button size="sm" className="rounded-full px-4">
-                Create event
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       <main>
         <section className="mx-auto grid max-w-7xl gap-14 px-4 pb-24 pt-16 sm:px-6 sm:pt-24 lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:px-8 lg:pb-32">

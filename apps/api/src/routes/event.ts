@@ -22,10 +22,38 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "node:crypto";
+import { canUseFeature, getMaxMediaCount } from "../lib/event-limits.js";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 type EventRow = typeof events.$inferSelect;
+
+const FREE_EVENT = {
+  plan: "free",
+  paymentStatus: "free",
+} as EventRow;
+
+const PLAN_FEATURE_ERRORS = {
+  passwordProtection: "Password protection requires a Premium or Pro plan",
+  customization: "Theme customization requires a Premium or Pro plan",
+  pov: "POV mode requires a Pro plan",
+  revealDate: "Gallery reveal date requires a Pro plan",
+  moderation: "Media moderation requires a Premium or Pro plan",
+} as const;
+
+function wantsCustomization(body: {
+  primaryColor?: string;
+  backgroundVariant?: string;
+  coverLayout?: string;
+  coverOverlay?: string;
+}) {
+  return (
+    (body.primaryColor !== undefined && body.primaryColor !== "#ffffff") ||
+    (body.backgroundVariant !== undefined && body.backgroundVariant !== "dark") ||
+    (body.coverLayout !== undefined && body.coverLayout !== "banner") ||
+    (body.coverOverlay !== undefined && body.coverOverlay !== "none")
+  );
+}
 
 async function hasGalleryAccess(c: Context, event: EventRow): Promise<boolean> {
   if (!event.protected) return true;
@@ -54,6 +82,29 @@ export const eventRoutes = new Hono()
       const { sub: organizerId } = c.get("jwtPayload") as { sub: string };
       const body = c.req.valid("json");
 
+      if (body.plan && body.plan !== "free") {
+        return c.json(
+          { error: "Upgrade your event through checkout to use a paid plan" },
+          403
+        );
+      }
+
+      if (body.protected && !canUseFeature(FREE_EVENT, "passwordProtection")) {
+        return c.json({ error: PLAN_FEATURE_ERRORS.passwordProtection }, 403);
+      }
+
+      if (wantsCustomization(body) && !canUseFeature(FREE_EVENT, "customization")) {
+        return c.json({ error: PLAN_FEATURE_ERRORS.customization }, 403);
+      }
+
+      if (body.povEnabled && !canUseFeature(FREE_EVENT, "pov")) {
+        return c.json({ error: PLAN_FEATURE_ERRORS.pov }, 403);
+      }
+
+      if (body.povRevealAt && !canUseFeature(FREE_EVENT, "revealDate")) {
+        return c.json({ error: PLAN_FEATURE_ERRORS.revealDate }, 403);
+      }
+
       if (body.protected && !body.password) {
         return c.json(
           { error: "Password is required when gallery protection is enabled" },
@@ -69,15 +120,25 @@ export const eventRoutes = new Hono()
           eventDate: body.eventDate ? new Date(body.eventDate) : null,
           coverImageKey: null,
           organizerId,
+        
           protected: body.protected ?? false,
-          protectedPasswordHash: body.password ? hashPassword(body.password) : null,
-
-          // theme & POV defaults
+          protectedPasswordHash: body.password
+            ? hashPassword(body.password)
+            : null,
+        
           primaryColor: body.primaryColor ?? "#ffffff",
           backgroundVariant: body.backgroundVariant ?? "dark",
           povEnabled: body.povEnabled ?? false,
           povMaxPerGuest: body.povMaxPerGuest ?? 0,
-          povRevealAt: body.povRevealAt ? new Date(body.povRevealAt) : null,
+          povRevealAt: body.povRevealAt
+            ? new Date(body.povRevealAt)
+            : null,
+          coverLayout: body.coverLayout ?? "banner",
+          coverOverlay: body.coverOverlay ?? "none",
+        
+          plan: "free",
+          paymentStatus: "free",
+          maxMediaCount: getMaxMediaCount(FREE_EVENT),
         })
         .returning();
 
@@ -134,6 +195,10 @@ export const eventRoutes = new Hono()
           povRevealAt: event.povRevealAt,
           coverLayout: event.coverLayout,
           coverOverlay: event.coverOverlay,
+
+          plan: event.plan,
+          paymentStatus: event.paymentStatus,
+          paidAt: event.paidAt,
         };
       })
     );
@@ -209,6 +274,32 @@ export const eventRoutes = new Hono()
       if (updates.password) {
         patch.protected = true;
         patch.protectedPasswordHash = hashPassword(updates.password);
+      }
+
+      if (updates.protected && !canUseFeature(event, "passwordProtection")) {
+        return c.json({ error: PLAN_FEATURE_ERRORS.passwordProtection }, 403);
+      }
+
+      if (updates.password && !canUseFeature(event, "passwordProtection")) {
+        return c.json({ error: PLAN_FEATURE_ERRORS.passwordProtection }, 403);
+      }
+
+      if (
+        wantsCustomization(updates) &&
+        !canUseFeature(event, "customization")
+      ) {
+        return c.json({ error: PLAN_FEATURE_ERRORS.customization }, 403);
+      }
+
+      if (
+        updates.povEnabled === true &&
+        !canUseFeature(event, "pov")
+      ) {
+        return c.json({ error: PLAN_FEATURE_ERRORS.pov }, 403);
+      }
+
+      if (updates.povRevealAt && !canUseFeature(event, "revealDate")) {
+        return c.json({ error: PLAN_FEATURE_ERRORS.revealDate }, 403);
       }
 
       if (updates.protected && !updates.password && !event.protectedPasswordHash) {
@@ -446,6 +537,10 @@ export const eventRoutes = new Hono()
         return c.json({ error: "Event not found" }, 404);
       }
 
+      if (!canUseFeature(event, "moderation")) {
+        return c.json({ error: PLAN_FEATURE_ERRORS.moderation }, 403);
+      }
+
       const rows = await db
         .select()
         .from(media)
@@ -494,6 +589,10 @@ export const eventRoutes = new Hono()
         return c.json({ error: "Event not found" }, 404);
       }
 
+      if (!canUseFeature(event, "moderation")) {
+        return c.json({ error: PLAN_FEATURE_ERRORS.moderation }, 403);
+      }
+
       const [item] = await db
         .select()
         .from(media)
@@ -523,6 +622,10 @@ export const eventRoutes = new Hono()
       const [event] = await db.select().from(events).where(eq(events.slug, slug));
       if (!event || event.organizerId !== organizerId) {
         return c.json({ error: "Event not found" }, 404);
+      }
+
+      if (!canUseFeature(event, "moderation")) {
+        return c.json({ error: PLAN_FEATURE_ERRORS.moderation }, 403);
       }
 
       const [item] = await db
@@ -591,7 +694,7 @@ export const publicEventRoutes = new Hono()
       .from(media)
       .where(eq(media.eventId, event.id));
 
-    if (mediaCountRow[0].count >= event.maxMediaCount) {
+    if (mediaCountRow[0].count >= getMaxMediaCount(event)) {
       return c.json({ error: "Upload limit reached for this event" }, 400);
     }
 

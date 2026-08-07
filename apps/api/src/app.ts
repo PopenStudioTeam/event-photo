@@ -10,6 +10,9 @@ import {
 import { qrRoutes } from "./routes/qr.js";
 import { googleAuthRoutes } from "./routes/google-auth.js";
 import { rateLimiter } from "hono-rate-limiter";
+import { billingRoutes } from "./routes/billing.js";
+import { stripeWebhookRoutes } from "./routes/stripe-webhook.js";
+import { dashboardRoutes } from "./routes/dashboard.js";
 
 function clientIp(c: Context) {
   const forwarded = c.req.header("x-forwarded-for");
@@ -36,6 +39,9 @@ app.route("/auth", authRoutes);
 app.route("/auth", googleAuthRoutes);
 app.route("/events", eventRoutes);
 app.route("/qr", qrRoutes);
+app.route("/billing", billingRoutes);
+app.route("/webhooks", stripeWebhookRoutes);
+app.route("/dashboard", dashboardRoutes);
 
 app.route(
   "/e",

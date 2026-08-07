@@ -20,7 +20,9 @@
     "google-auth-library": "^11.0.0",
     "hono": "^4.12.34",
     "hono-rate-limiter": "^0.5.3",
-    "nanoid": "^6.0.0"
+    "nanoid": "^6.0.0",
+    "recharts": "^3.10.1",
+    "stripe": "^22.4.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
