@@ -1,24 +1,24 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
+import { Fredoka, Nunito_Sans } from "next/font/google";
 import "./globals.css";
-import { cn } from "@/lib/utils";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { ThemeProvider } from "@/components/theme-provider";
 
-const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fredoka = Fredoka({
   subsets: ["latin"],
+  variable: "--font-heading",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const nunitoSans = Nunito_Sans({
   subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Event photo sharing",
-  description: "Collect event photos from guests with one link",
+  title: "Event Photo",
+  description: "Collect event photos from guests with one private link",
 };
 
 export default function RootLayout({
@@ -29,12 +29,17 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-mono", jetbrainsMono.variable)}
+      suppressHydrationWarning
+      className={`${fredoka.variable} ${nunitoSans.variable}`}
     >
-      <body className="min-h-full flex flex-col">
-        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
-          {children}
-        </GoogleOAuthProvider>
+      <body className="min-h-full bg-background font-sans text-foreground antialiased">
+        <ThemeProvider>
+          <GoogleOAuthProvider
+            clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}
+          >
+            {children}
+          </GoogleOAuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

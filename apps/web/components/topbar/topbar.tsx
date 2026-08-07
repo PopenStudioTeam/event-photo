@@ -1,6 +1,7 @@
 "use client";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ThemeToggle } from "../theme-toggle";
 
 export function TopBar() {
   return (
@@ -8,9 +9,12 @@ export function TopBar() {
       <div className="min-w-0 truncate font-semibold text-sm sm:text-base">
         Event Photo Admin
       </div>
-      <Avatar className="h-8 w-8 shrink-0 sm:h-9 sm:w-9">
-        <AvatarFallback>JK</AvatarFallback>
-      </Avatar>
+      <div className="self-end flex items-center gap-2">
+        <ThemeToggle />
+        <Avatar className="h-8 w-8 shrink-0 sm:h-9 sm:w-9">
+          <AvatarFallback>JK</AvatarFallback>
+        </Avatar>
+      </div>
     </header>
   );
 }
