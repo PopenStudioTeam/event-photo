@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getUserFacingErrorMessage } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -57,7 +57,7 @@ export default function SettingsPage() {
         setEvents(result as Event[]);
       } catch (err) {
         console.error(err);
-        setError("Failed to load billing settings.");
+        setError(getUserFacingErrorMessage(err, "Failed to load billing settings."));
       } finally {
         setLoading(false);
       }
@@ -88,11 +88,7 @@ export default function SettingsPage() {
       window.location.href = checkoutUrl;
     } catch (err) {
       console.error(err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to start Stripe Checkout."
-      );
+      setError(getUserFacingErrorMessage(err, "Unable to start Stripe Checkout."));
       setCheckoutLoading(null);
     }
   };
@@ -107,13 +103,6 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Manage event plans and payments.
-        </p>
-      </div>
-
       {message && (
         <div className="rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-700">
           {message}

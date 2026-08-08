@@ -64,3 +64,7 @@ export function getMaxMediaCount(event: EventRow) {
 
   return getEventPlan(event).maxMediaCount;
 }
+
+export function getInitialMediaStatus(event: EventRow): "pending" | "approved" {
+  return canUseFeature(event, "moderation") ? "pending" : "approved";
+}

@@ -10,7 +10,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getUserFacingErrorMessage } from "@/lib/api";
 
 type NewEventDialogProps = {
   open: boolean;
@@ -75,7 +75,7 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
       router.push(`/events/${event.slug}`);
     } catch (err) {
       console.error(err);
-      setError("Failed to create event");
+      setError(getUserFacingErrorMessage(err, "Failed to create event"));
     } finally {
       setCreating(false);
     }

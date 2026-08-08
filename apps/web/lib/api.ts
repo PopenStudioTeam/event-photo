@@ -2,6 +2,66 @@ import { getToken } from "./auth";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+export type UserFacingErrorOptions = {
+  /** Show API body details for 401 responses (login/register). */
+  showAuthFailureDetail?: boolean;
+};
+
+function isGenericErrorStatus(status: number) {
+  return status === 401 || status === 408 || status >= 500;
+}
+
+function isPlainApiStatusMessage(message: string) {
+  return /^API error \d+$/.test(message);
+}
+
+export function getUserFacingErrorMessage(
+  error: unknown,
+  fallback: string,
+  options?: UserFacingErrorOptions
+): string {
+  if (!(error instanceof ApiError)) {
+    return fallback;
+  }
+
+  if (error.status === 401 && !options?.showAuthFailureDetail) {
+    return "Your session expired. Please sign in again.";
+  }
+
+  if (isGenericErrorStatus(error.status)) {
+    return fallback;
+  }
+
+  if (error.message && !isPlainApiStatusMessage(error.message)) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
+async function readApiErrorResponse(res: Response) {
+  let message = `API error ${res.status}`;
+
+  try {
+    const body = (await res.json()) as { error?: string };
+    if (body.error) message = body.error;
+  } catch {
+    // ignore non-json error bodies
+  }
+
+  return new ApiError(res.status, message);
+}
+
 function galleryTokenForPath(path: string): string | null {
   if (typeof window === "undefined") return null;
   const match = path.match(/^\/e\/([^/?]+)/);
@@ -34,14 +94,7 @@ export async function apiFetch<T = unknown>(path: string, options: RequestInit =
   });
 
   if (!res.ok) {
-    let message = `API error ${res.status}`;
-    try {
-      const body = (await res.json()) as { error?: string };
-      if (body.error) message = body.error;
-    } catch {
-      // ignore non-json error bodies
-    }
-    throw new Error(message);
+    throw await readApiErrorResponse(res);
   }
 
   return res.json() as Promise<T>;
@@ -64,7 +117,7 @@ export async function apiFetchBlob(path: string, options: RequestInit = {}) {
   });
 
   if (!res.ok) {
-    throw new Error(`API error ${res.status}`);
+    throw await readApiErrorResponse(res);
   }
 
   return res.blob();
@@ -91,7 +144,7 @@ export async function apiFetchBlobWithProgress(
   });
 
   if (!res.ok) {
-    throw new Error(`API error ${res.status}`);
+    throw await readApiErrorResponse(res);
   }
 
   const contentLength = res.headers.get("Content-Length");

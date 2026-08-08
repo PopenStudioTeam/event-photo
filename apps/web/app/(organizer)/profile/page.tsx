@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getUserFacingErrorMessage } from "@/lib/api";
 import { getOrganizer, type OrganizerUser } from "@/lib/auth";
 import {
   Card,
@@ -28,7 +28,7 @@ export default function ProfilePage() {
         setEventCount(events.length);
       } catch (err) {
         console.error(err);
-        setError("Failed to load profile details.");
+        setError(getUserFacingErrorMessage(err, "Failed to load profile details."));
       } finally {
         setLoading(false);
       }
@@ -39,13 +39,6 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <div>
-        <h1 className="text-lg font-semibold sm:text-xl">Profile</h1>
-        <p className="text-sm text-muted-foreground">
-          Your organizer account details.
-        </p>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Account</CardTitle>

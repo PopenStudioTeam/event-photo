@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, ChangeEvent, FormEvent } from "react";
+import { useEffect, useState, ChangeEvent, FormEvent, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { API_URL, apiFetch, apiFetchBlobWithProgress } from "@/lib/api";
+import { API_URL, apiFetch, apiFetchBlobWithProgress, getUserFacingErrorMessage } from "@/lib/api";
 import { useBaseWebUrl } from "@/lib/use-base-web-url";
 import {
   Card,
@@ -70,6 +70,23 @@ function mediaFilename(item: Media) {
     item.caption?.slice(0, 20).replace(/\s+/g, "_") ||
     item.id;
   return `${baseName}.${ext}`;
+}
+
+function DetailRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid gap-2 border-b border-border/50 py-4 last:border-b-0">
+      <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="text-sm leading-relaxed text-foreground">{children}</dd>
+    </div>
+  );
 }
 
 export default function EventDetailPage() {
@@ -159,7 +176,7 @@ export default function EventDetailPage() {
         }
       } catch (err) {
         console.error(err);
-        setError("Failed to load event");
+        setError(getUserFacingErrorMessage(err, "Failed to load event"));
       } finally {
         setLoading(false);
       }
@@ -293,7 +310,7 @@ export default function EventDetailPage() {
       setFormPassword("");
     } catch (err) {
       console.error(err);
-      setEditError("Failed to save changes");
+      setEditError(getUserFacingErrorMessage(err, "Failed to save changes"));
     } finally {
       setEditSaving(false);
     }
@@ -340,7 +357,7 @@ export default function EventDetailPage() {
       setCoverFile(null);
     } catch (err) {
       console.error("Cover upload failed", err);
-      setCoverError("Failed to upload cover image");
+      setCoverError(getUserFacingErrorMessage(err, "Failed to upload cover image"));
     } finally {
       setCoverUploading(false);
     }
@@ -526,113 +543,65 @@ export default function EventDetailPage() {
     );
   }
 
-  const coverCardClass =
-    event.coverLayout === "card"
-      ? "mx-4 mt-4 rounded-3xl overflow-hidden shadow-2xl border"
-      : "rounded-none overflow-hidden";
   const coverOverlayClass =
     event.coverOverlay === "gradient"
       ? "absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"
       : "";
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      {/* Event details */}
-      <Card className="rounded-xl">
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-base md:text-lg">Event details</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full sm:w-auto"
-            onClick={openEditDialog}
-          >
-            Edit
-          </Button>
-        </CardHeader>
-
-        <CardContent className="space-y-3 text-sm">
-          <div>
-            <span className="font-medium">Name:</span> {event.name}
-          </div>
-          <div>
-            <span className="font-medium">Date:</span>{" "}
-            {event.eventDate
-              ? new Date(event.eventDate).toLocaleDateString()
-              : "—"}
-          </div>
-          <div>
-            <span className="font-medium">Slug:</span> {event.slug}
-          </div>
-          <div>
-            <span className="font-medium">Gallery protection:</span>{" "}
-            {event.protected
-              ? event.hasPassword
-                ? "Enabled (password set)"
-                : "Enabled (no password yet)"
-              : "Disabled"}
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <span className="font-medium">Uploads:</span>{" "}
-              {event.uploadsEnabled ? "Enabled" : "Disabled"}
+    <div className="space-y-6 lg:space-y-8">
+      {/* Hero: cover, title, actions */}
+      <Card className="overflow-hidden rounded-2xl p-0">
+        <div className="relative w-full overflow-hidden bg-muted/40">
+          {event.coverImageUrl ? (
+            <button
+              type="button"
+              onClick={() => setZoomOpen(true)}
+              className="block w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <div className="relative">
+                <img
+                  src={event.coverImageUrl}
+                  alt={event.name}
+                  className="aspect-[21/9] max-h-72 w-full object-cover sm:max-h-80"
+                />
+                {event.coverOverlay === "gradient" && (
+                  <div className={`absolute inset-0 ${coverOverlayClass}`} />
+                )}
+              </div>
+            </button>
+          ) : (
+            <div className="flex aspect-[21/9] max-h-72 w-full items-center justify-center sm:max-h-80">
+              <span className="text-sm text-muted-foreground">No cover image yet</span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-              onClick={handleToggleUploads}
-              disabled={togglingUploads}
-            >
-              {togglingUploads
-                ? "Updating…"
-                : event.uploadsEnabled
-                  ? "Disable uploads"
-                  : "Enable uploads"}
-            </Button>
-          </div>
-          <div>
-            <span className="font-medium">Theme:</span>{" "}
-            {event.backgroundVariant === "dark" ? "Dark" : "Light"} ·{" "}
-            {event.primaryColor}
-          </div>
-          <div>
-            <span className="font-medium">POV mode:</span>{" "}
-            {event.povEnabled
-              ? `Enabled · max ${event.povMaxPerGuest || "∞"} shot(s) per guest`
-              : "Disabled"}
-            {event.povEnabled && event.povRevealAt && (
-              <>
-                {" · reveal "}
-                {new Date(event.povRevealAt).toLocaleDateString()}
-              </>
-            )}
-          </div>
-          <div>
-            <span className="font-medium">Cover layout:</span>{" "}
-            {event.coverLayout === "banner" ? "Banner" : "Card"} ·{" "}
-            {event.coverOverlay === "gradient" ? "Gradient overlay" : "No overlay"}
+          )}
+        </div>
+
+        <CardContent className="space-y-5 p-5 sm:p-6">
+          <div className="space-y-1">
+            <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+              {event.name}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {event.eventDate
+                ? new Date(event.eventDate).toLocaleDateString(undefined, {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })
+                : "No event date set"}
+            </p>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-              onClick={handleCopyLink}
-            >
-              Copy event link
-            </Button>
-
-            <Button
-              variant="outline"
               size="sm"
               className="w-full sm:w-auto"
               onClick={() => handleOpenSlideshow()}
             >
               Start slideshow
             </Button>
-
             <Button
               variant="outline"
               size="sm"
@@ -642,7 +611,6 @@ export default function EventDetailPage() {
             >
               {loadingMedia ? "Loading…" : "View media"}
             </Button>
-
             <Button
               variant="outline"
               size="sm"
@@ -651,87 +619,135 @@ export default function EventDetailPage() {
             >
               Moderation
             </Button>
-          </div>
-
-          {/* Cover upload block */}
-          <div className="mt-4 space-y-2">
-            <div className="font-medium text-sm">Cover image</div>
-
-            {event.coverImageKey && (
-              <button
-                type="button"
-                onClick={() => setZoomOpen(true)}
-                className={cn(
-                  "w-full overflow-hidden border bg-muted focus:outline-none focus:ring-2 focus:ring-primary",
-                  event.coverLayout === "card" ? "rounded-3xl" : ""
-                )}
-              >
-                <div className={coverCardClass}>
-                  <div className="relative">
-                    <img
-                      src={event.coverImageUrl ?? ""}
-                      alt="Cover"
-                      className={
-                        event.coverLayout === "card"
-                          ? "aspect-[16/9] w-full object-cover sm:aspect-video sm:h-64"
-                          : "aspect-[16/9] w-full object-cover sm:aspect-video sm:h-64"
-                      }
-                    />
-                    <div className={coverOverlayClass} />
-                  </div>
-                </div>
-              </button>
-            )}
-
-            {event.coverImageKey && (
-              <div className="text-xs text-muted-foreground break-all">
-                {event.coverImageKey}
-              </div>
-            )}
-
-            <div
-              className={cn(
-                "flex flex-col gap-3 rounded-md border border-dashed border-border bg-muted/50 px-3 py-3 sm:flex-row sm:items-center"
-              )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={handleCopyLink}
             >
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleCoverFileChange}
-                className="w-full text-xs file:mr-3 file:rounded-md file:border-0 file:bg-background file:px-3 file:py-1.5 file:text-xs"
-              />
-              <Button
-                size="sm"
-                variant="secondary"
-                className="w-full shrink-0 sm:w-auto"
-                onClick={handleCoverUpload}
-                disabled={!coverFile || coverUploading}
-              >
-                {coverUploading ? "Uploading…" : "Upload cover"}
-              </Button>
-            </div>
-
-            {coverError && (
-              <div className="text-xs text-red-500">{coverError}</div>
-            )}
+              Copy event link
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={openEditDialog}
+            >
+              Edit event
+            </Button>
           </div>
+
+          <div
+            className={cn(
+              "flex flex-col gap-4 rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-4 sm:flex-row sm:items-center"
+            )}
+          >
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="text-sm font-medium">Cover image</div>
+              <p className="text-xs text-muted-foreground">
+                Upload or replace the banner shown above.
+              </p>
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleCoverFileChange}
+              className="w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-background file:px-3 file:py-1.5 file:text-xs sm:max-w-[220px]"
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              className="w-full shrink-0 sm:w-auto"
+              onClick={handleCoverUpload}
+              disabled={!coverFile || coverUploading}
+            >
+              {coverUploading ? "Uploading…" : "Upload cover"}
+            </Button>
+          </div>
+
+          {coverError && <div className="text-xs text-red-500">{coverError}</div>}
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
+      {/* Event details */}
+      <Card className="rounded-2xl">
+        <CardHeader className="border-b border-border/50 pb-5">
+          <CardTitle className="text-base md:text-lg">Event details</CardTitle>
+        </CardHeader>
+
+        <CardContent className="pt-2">
+          <dl>
+            <DetailRow label="Date">
+              {event.eventDate
+                ? new Date(event.eventDate).toLocaleDateString()
+                : "—"}
+            </DetailRow>
+            <DetailRow label="Slug">
+              <span className="break-all font-mono text-xs">{event.slug}</span>
+            </DetailRow>
+            <DetailRow label="Gallery protection">
+              {event.protected
+                ? event.hasPassword
+                  ? "Enabled (password set)"
+                  : "Enabled (no password yet)"
+                : "Disabled"}
+            </DetailRow>
+            <DetailRow label="Uploads">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span>{event.uploadsEnabled ? "Enabled" : "Disabled"}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={handleToggleUploads}
+                  disabled={togglingUploads}
+                >
+                  {togglingUploads
+                    ? "Updating…"
+                    : event.uploadsEnabled
+                      ? "Disable uploads"
+                      : "Enable uploads"}
+                </Button>
+              </div>
+            </DetailRow>
+            <DetailRow label="Theme">
+              {event.backgroundVariant === "dark" ? "Dark" : "Light"} ·{" "}
+              {event.primaryColor}
+            </DetailRow>
+            <DetailRow label="POV mode">
+              {event.povEnabled
+                ? `Enabled · max ${event.povMaxPerGuest || "∞"} shot(s) per guest`
+                : "Disabled"}
+              {event.povEnabled && event.povRevealAt && (
+                <>
+                  {" · reveal "}
+                  {new Date(event.povRevealAt).toLocaleDateString()}
+                </>
+              )}
+            </DetailRow>
+            <DetailRow label="Cover layout">
+              {event.coverLayout === "banner" ? "Banner" : "Card"} ·{" "}
+              {event.coverOverlay === "gradient" ? "Gradient overlay" : "No overlay"}
+            </DetailRow>
+          </dl>
         </CardContent>
       </Card>
 
       {/* QR card */}
-      <Card className="rounded-xl">
-        <CardHeader>
+      <Card className="rounded-2xl">
+        <CardHeader className="border-b border-border/50 pb-5">
           <CardTitle className="text-base md:text-lg">QR code</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <div className="mx-auto flex aspect-square w-full max-w-[14rem] items-center justify-center overflow-hidden rounded-lg border bg-white sm:max-w-[16rem]">
+        <CardContent className="space-y-5 pt-6 text-sm">
+          <div className="mx-auto flex aspect-square w-full max-w-56 items-center justify-center overflow-hidden rounded-2xl border border-border/70 bg-white p-3 shadow-sm">
             <img
               src={qrImageUrl}
               alt="Event QR"
               className="h-full w-full object-contain p-2"
             />
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               variant="outline"
               size="sm"
@@ -750,11 +766,12 @@ export default function EventDetailPage() {
               Copy event link
             </Button>
           </div>
-          <div className="break-all text-xs text-muted-foreground">
+          <div className="rounded-xl bg-muted/40 px-4 py-3 break-all text-xs text-muted-foreground">
             {eventUrl}
           </div>
         </CardContent>
       </Card>
+      </div>
 
       {/* Edit modal */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>

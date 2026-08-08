@@ -18,7 +18,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getUserFacingErrorMessage } from "@/lib/api";
 import {
   Card,
   CardContent,
@@ -122,7 +122,7 @@ export default function DashboardPage() {
       setAnalytics(response as DashboardAnalytics);
     } catch (err) {
       console.error(err);
-      setError("Failed to load dashboard analytics.");
+      setError(getUserFacingErrorMessage(err, "Failed to load dashboard analytics."));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -178,16 +178,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <div>
-          <h1 className="text-xl font-semibold sm:text-2xl">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Loading event activity…
-          </p>
-        </div>
-
-        <div className="text-sm text-muted-foreground">
-          Loading analytics…
-        </div>
+        <div className="text-sm text-muted-foreground">Loading analytics…</div>
       </div>
     );
   }
@@ -195,10 +186,8 @@ export default function DashboardPage() {
   if (!analytics) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-semibold sm:text-2xl">Dashboard</h1>
-
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -212,36 +201,23 @@ export default function DashboardPage() {
 
   return (
     <div className="min-w-0 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold sm:text-2xl">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            See how guests are contributing to your events.
-          </p>
-        </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => loadAnalytics(true)}
+          disabled={refreshing}
+        >
+          {refreshing ? "Refreshing…" : "Refresh"}
+        </Button>
 
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => loadAnalytics(true)}
-            disabled={refreshing}
-          >
-            {refreshing ? "Refreshing…" : "Refresh"}
-          </Button>
-
-          <Button
-            size="sm"
-            onClick={() => router.push("/events")}
-          >
-            Manage events
-          </Button>
-        </div>
+        <Button size="sm" onClick={() => router.push("/events")}>
+          Manage events
+        </Button>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}
         </div>
       )}

@@ -12,7 +12,7 @@ import {
   createMediaSchema,
   unlockEventSchema,
 } from "@app/shared/validators";
-import { count, desc, eq, lt, and, sql } from "drizzle-orm";
+import { count, desc, eq, lt, and, sql, ne } from "drizzle-orm";
 import { R2_BUCKET, r2 } from "../lib/r2.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
 import {
@@ -22,7 +22,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "node:crypto";
-import { canUseFeature, getMaxMediaCount } from "../lib/event-limits.js";
+import { canUseFeature, getInitialMediaStatus, getMaxMediaCount } from "../lib/event-limits.js";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
@@ -682,6 +682,7 @@ export const publicEventRoutes = new Hono()
       povRevealAt: event.povRevealAt,
       coverLayout: event.coverLayout,
       coverOverlay: event.coverOverlay,
+      moderationEnabled: canUseFeature(event, "moderation"),
     });
   })
   .post("/:slug/media", zValidator("json", createMediaSchema), async (c) => {
@@ -722,6 +723,8 @@ export const publicEventRoutes = new Hono()
     const type: "photo" | "video" =
       contentType.startsWith("video/") ? "video" : "photo";
 
+    const status = getInitialMediaStatus(event);
+
     const [record] = await db
       .insert(media)
       .values({
@@ -732,7 +735,7 @@ export const publicEventRoutes = new Hono()
         fileSize,
         guestName,
         caption,
-        status: "pending",
+        status,
       })
       .returning();
 
@@ -755,7 +758,9 @@ export const publicEventRoutes = new Hono()
 
     const whereClause = and(
       eq(media.eventId, event.id),
-      eq(media.status, "approved")
+      canUseFeature(event, "moderation")
+        ? eq(media.status, "approved")
+        : ne(media.status, "rejected")
     );
 
     if (event.povEnabled && revealAt && now < revealAt) {

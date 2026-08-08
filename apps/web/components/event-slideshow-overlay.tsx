@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getUserFacingErrorMessage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 
 export type SlideshowMedia = {
@@ -80,7 +80,7 @@ export function EventSlideshowOverlay({
       setCurrentIndex((idx) => (items.length === 0 ? 0 : Math.min(idx, items.length - 1)));
     } catch (err) {
       console.error(err);
-      setError("Failed to load slideshow media.");
+      setError(getUserFacingErrorMessage(err, "Failed to load slideshow media."));
     } finally {
       setLoading(false);
     }

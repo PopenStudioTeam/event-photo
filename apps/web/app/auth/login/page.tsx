@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getUserFacingErrorMessage } from "@/lib/api";
 import { saveOrganizer, saveToken } from "@/lib/auth";
 
 export default function LoginPage() {
@@ -32,8 +32,8 @@ export default function LoginPage() {
       saveToken(res.token);
       saveOrganizer(res.organizer);
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Login failed");
+    } catch (err) {
+      setError(getUserFacingErrorMessage(err, "Login failed", { showAuthFailureDetail: true }));
     } finally {
       setLoading(false);
     }

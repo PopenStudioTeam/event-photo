@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { apiFetch, apiFetchBlobWithProgress } from "@/lib/api";
+import { apiFetch, apiFetchBlobWithProgress, getUserFacingErrorMessage } from "@/lib/api";
 import { NewEventDialog } from "@/components/new-event-dialog";
 import {
   Dialog,
@@ -14,6 +14,18 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+const tableHeadClass =
+  "h-auto px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground whitespace-normal";
+const tableCellClass = "px-5 py-4 align-top text-sm leading-relaxed whitespace-normal";
 
 type Event = {
   id: string;
@@ -92,7 +104,7 @@ export default function EventsPage() {
         setEvents(res as Event[]);
       } catch (err) {
         console.error(err);
-        setError("Failed to load events");
+        setError(getUserFacingErrorMessage(err, "Failed to load events"));
       } finally {
         setLoading(false);
       }
@@ -236,15 +248,12 @@ export default function EventsPage() {
   };
 
   return (
-    <div className="min-w-0 space-y-4">
+    <div className="min-w-0 space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold sm:text-xl">Events</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {events.length} event(s) ·{" "}
-            {events.reduce((sum, evt) => sum + (evt.mediaCount ?? 0), 0)} item(s)
-          </p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          {events.length} event(s) ·{" "}
+          {events.reduce((sum, evt) => sum + (evt.mediaCount ?? 0), 0)} item(s)
+        </p>
         <Button
           variant="outline"
           size="sm"
@@ -266,50 +275,71 @@ export default function EventsPage() {
       ) : (
         <>
           {/* Mobile cards */}
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-4 md:hidden">
             {events.map((evt) => (
               <div
                 key={evt.id}
-                className="space-y-3 rounded-lg border bg-background p-4"
+                className="space-y-5 rounded-2xl border border-border/70 bg-card p-5 shadow-sm"
               >
-                <div className="min-w-0">
-                  <div className="font-medium">
+                <div className="space-y-1">
+                  <h3 className="text-base font-semibold">
                     {evt.name || "Untitled Event"}
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {evt.eventDate
-                      ? new Date(evt.eventDate).toLocaleDateString()
-                      : "No date"}
-                    {" · "}
-                    Uploads {evt.uploadsEnabled ? "enabled" : "disabled"}
-                    {" · "}
-                    {evt.mediaCount} item(s)
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    Protected: {evt.protected ? "Yes" : "No"} · Password:{" "}
-                    {evt.hasPassword ? "Set" : "Not set"}
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    Theme: {evt.backgroundVariant === "dark" ? "Dark" : "Light"} ·{" "}
-                    {evt.primaryColor}
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    POV:{" "}
-                    {evt.povEnabled
-                      ? `On · max ${evt.povMaxPerGuest || "∞"} shot(s)`
-                      : "Off"}
-                    {evt.povEnabled && evt.povRevealAt && (
-                      <>
-                        {" · reveal "}
-                        {new Date(evt.povRevealAt).toLocaleDateString()}
-                      </>
-                    )}
-                  </div>
-                  <div className="mt-1 break-all font-mono text-[11px] text-muted-foreground">
+                  </h3>
+                  <p className="break-all font-mono text-xs text-muted-foreground">
                     {evt.slug}
-                  </div>
+                  </p>
                 </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+
+                <dl className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <dt className="text-xs font-medium text-muted-foreground">Date</dt>
+                    <dd className="text-sm">
+                      {evt.eventDate
+                        ? new Date(evt.eventDate).toLocaleDateString()
+                        : "No date"}
+                    </dd>
+                  </div>
+                  <div className="space-y-1">
+                    <dt className="text-xs font-medium text-muted-foreground">Uploads</dt>
+                    <dd className="text-sm">
+                      {evt.uploadsEnabled ? "Enabled" : "Disabled"}
+                    </dd>
+                  </div>
+                  <div className="space-y-1">
+                    <dt className="text-xs font-medium text-muted-foreground">Items</dt>
+                    <dd className="text-sm">{evt.mediaCount} item(s)</dd>
+                  </div>
+                  <div className="space-y-1">
+                    <dt className="text-xs font-medium text-muted-foreground">Protection</dt>
+                    <dd className="text-sm">
+                      {evt.protected ? "Protected" : "Open"}
+                      {evt.hasPassword ? " · Password set" : ""}
+                    </dd>
+                  </div>
+                  <div className="space-y-1">
+                    <dt className="text-xs font-medium text-muted-foreground">Theme</dt>
+                    <dd className="text-sm">
+                      {evt.backgroundVariant === "dark" ? "Dark" : "Light"} ·{" "}
+                      {evt.primaryColor}
+                    </dd>
+                  </div>
+                  <div className="space-y-1">
+                    <dt className="text-xs font-medium text-muted-foreground">POV</dt>
+                    <dd className="text-sm">
+                      {evt.povEnabled
+                        ? `On · max ${evt.povMaxPerGuest || "∞"} shot(s)`
+                        : "Off"}
+                      {evt.povEnabled && evt.povRevealAt && (
+                        <>
+                          {" · reveal "}
+                          {new Date(evt.povRevealAt).toLocaleDateString()}
+                        </>
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -331,84 +361,90 @@ export default function EventsPage() {
             ))}
           </div>
 
-          {/* Desktop / tablet table */}
-          <div className="hidden w-full min-w-0 overflow-x-auto rounded-lg border bg-background md:block">
-            <table className="w-full min-w-[900px] border-collapse text-sm">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="px-3 py-2 text-left font-medium lg:px-4">
-                    Name
-                  </th>
-                  <th className="px-3 py-2 text-left font-medium lg:px-4">
-                    Date
-                  </th>
-                  <th className="hidden px-3 py-2 text-left font-medium lg:table-cell lg:px-4">
+          <div className="hidden w-full min-w-0 overflow-x-auto rounded-2xl border border-border/70 bg-card shadow-sm md:block">
+            <Table className="min-w-[980px] border-collapse text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-border/60 bg-muted/40 hover:bg-muted/40">
+                  <TableHead className={tableHeadClass}>Name</TableHead>
+                  <TableHead className={tableHeadClass}>Date</TableHead>
+                  <TableHead className={`${tableHeadClass} hidden lg:table-cell`}>
                     Slug
-                  </th>
-                  <th className="px-3 py-2 text-left font-medium lg:px-4">
-                    Uploads
-                  </th>
-                  <th className="px-3 py-2 text-left font-medium lg:px-4">
-                    Items
-                  </th>
-                  <th className="px-3 py-2 text-left font-medium lg:px-4">
-                    Protected
-                  </th>
-                  <th className="px-3 py-2 text-left font-medium lg:px-4">
+                  </TableHead>
+                  <TableHead className={tableHeadClass}>Uploads</TableHead>
+                  <TableHead className={tableHeadClass}>Items</TableHead>
+                  <TableHead className={tableHeadClass}>Protected</TableHead>
+                  <TableHead className={`${tableHeadClass} hidden xl:table-cell`}>
                     Theme
-                  </th>
-                  <th className="px-3 py-2 text-left font-medium lg:px-4">
+                  </TableHead>
+                  <TableHead className={`${tableHeadClass} hidden xl:table-cell`}>
                     POV
-                  </th>
-                  <th className="px-3 py-2 text-right font-medium lg:px-4">
+                  </TableHead>
+                  <TableHead className={`${tableHeadClass} text-right`}>
                     Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {events.map((evt) => (
-                  <tr key={evt.id} className="border-t">
-                    <td className="max-w-[140px] truncate px-3 py-2 align-middle lg:max-w-none lg:px-4">
+                  <TableRow key={evt.id} className="border-b border-border/50">
+                    <TableCell className={`${tableCellClass} max-w-[180px] font-medium`}>
                       {evt.name || "Untitled Event"}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2 align-middle lg:px-4">
+                    </TableCell>
+                    <TableCell className={tableCellClass}>
                       {evt.eventDate
                         ? new Date(evt.eventDate).toLocaleDateString()
                         : "—"}
-                    </td>
-                    <td className="hidden px-3 py-2 align-middle lg:table-cell lg:px-4">
-                      <span className="break-all font-mono text-xs">
+                    </TableCell>
+                    <TableCell className={`${tableCellClass} hidden lg:table-cell`}>
+                      <span className="break-all font-mono text-xs text-muted-foreground">
                         {evt.slug}
                       </span>
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2 align-middle lg:px-4">
-                      {evt.uploadsEnabled ? "Enabled" : "Disabled"}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2 align-middle lg:px-4">
+                    </TableCell>
+                    <TableCell className={tableCellClass}>
+                      <span
+                        className={
+                          evt.uploadsEnabled
+                            ? "text-green-700 dark:text-green-400"
+                            : "text-muted-foreground"
+                        }
+                      >
+                        {evt.uploadsEnabled ? "Enabled" : "Disabled"}
+                      </span>
+                    </TableCell>
+                    <TableCell className={tableCellClass}>
                       {evt.mediaCount} item(s)
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2 align-middle lg:px-4">
-                      {evt.protected ? "Yes" : "No"}
-                      {" · "}
-                      {evt.hasPassword ? "Password set" : "No password"}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2 align-middle lg:px-4">
-                      {evt.backgroundVariant === "dark" ? "Dark" : "Light"}
-                      {" · "}
-                      {evt.primaryColor}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2 align-middle lg:px-4">
-                      {evt.povEnabled
-                        ? `On · max ${evt.povMaxPerGuest || "∞"}`
-                        : "Off"}
-                      {evt.povEnabled && evt.povRevealAt && (
-                        <>
-                          {" · "}
-                          {new Date(evt.povRevealAt).toLocaleDateString()}
-                        </>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 align-middle lg:px-4">
+                    </TableCell>
+                    <TableCell className={tableCellClass}>
+                      <div className="space-y-1">
+                        <div>{evt.protected ? "Yes" : "No"}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {evt.hasPassword ? "Password set" : "No password"}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className={`${tableCellClass} hidden xl:table-cell`}>
+                      <div className="space-y-1">
+                        <div>{evt.backgroundVariant === "dark" ? "Dark" : "Light"}</div>
+                        <div className="text-xs text-muted-foreground">{evt.primaryColor}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className={`${tableCellClass} hidden xl:table-cell`}>
+                      <div className="space-y-1">
+                        <div>{evt.povEnabled ? "Enabled" : "Disabled"}</div>
+                        {evt.povEnabled && (
+                          <div className="text-xs text-muted-foreground">
+                            Max {evt.povMaxPerGuest || "∞"} shot(s)
+                            {evt.povRevealAt && (
+                              <>
+                                {" · reveal "}
+                                {new Date(evt.povRevealAt).toLocaleDateString()}
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className={`${tableCellClass} text-right`}>
                       <div className="flex flex-col items-stretch justify-end gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
                         <Button
                           variant="outline"
@@ -425,16 +461,14 @@ export default function EventsPage() {
                           onClick={() => openDocumentationGallery(evt)}
                         >
                           <span className="lg:hidden">View docs</span>
-                          <span className="hidden lg:inline">
-                            View documentation
-                          </span>
+                          <span className="hidden lg:inline">View documentation</span>
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </>
       )}
@@ -451,8 +485,7 @@ export default function EventsPage() {
           }
         }}
       >
-        <DialogContent className="flex max
-h-[95vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[95vw]">
+        <DialogContent className="flex max-h-[95vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[95vw]">
           <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
             <DialogTitle className="truncate text-base sm:text-lg">
               {galleryEvent

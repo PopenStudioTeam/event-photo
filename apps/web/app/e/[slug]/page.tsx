@@ -2,7 +2,7 @@
 
 import { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { useParams } from "next/navigation";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, ApiError, getUserFacingErrorMessage } from "@/lib/api";
 import {
   getGalleryUnlockToken,
   setGalleryUnlockToken,
@@ -35,6 +35,7 @@ type PublicEvent = {
 
   coverLayout: "banner" | "card";
   coverOverlay: "none" | "gradient";
+  moderationEnabled?: boolean;
 };
 
 type MediaItem = {
@@ -121,7 +122,7 @@ export default function GuestEventPage() {
         }
       } catch (err) {
         console.error(err);
-        setEventError("Failed to load event.");
+        setEventError(getUserFacingErrorMessage(err, "Failed to load event."));
       } finally {
         setLoadingEvent(false);
       }
@@ -165,7 +166,7 @@ export default function GuestEventPage() {
       setRevealAt(revealAtFromApi ?? null);
     } catch (err) {
       console.error(err);
-      if (err instanceof Error && err.message.includes("403")) {
+      if (err instanceof ApiError && err.status === 403) {
         clearGalleryUnlockToken(slug);
         setGalleryUnlocked(false);
         setMedia([]);
@@ -198,7 +199,9 @@ export default function GuestEventPage() {
       setUnlockPassword("");
     } catch (err) {
       setUnlockError(
-        err instanceof Error ? err.message : "Incorrect password. Please try again."
+        getUserFacingErrorMessage(err, "Incorrect password. Please try again.", {
+          showAuthFailureDetail: true,
+        })
       );
     } finally {
       setUnlocking(false);
@@ -326,13 +329,19 @@ export default function GuestEventPage() {
         });
       }
 
-      setUploadSuccess("All files uploaded successfully! Pending approval.");
+      setUploadSuccess(
+        event.moderationEnabled
+          ? "All files uploaded successfully! They will appear after organizer approval."
+          : "All files uploaded successfully!"
+      );
       setUploads([]);
       setUploadPanelOpen(false);
       loadMedia(true);
     } catch (err) {
       console.error(err);
-      setUploadError("Failed to upload some files. Please try again.");
+      setUploadError(
+        getUserFacingErrorMessage(err, "Failed to upload some files. Please try again.")
+      );
     } finally {
       setUploading(false);
     }
