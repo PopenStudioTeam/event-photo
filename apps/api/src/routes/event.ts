@@ -335,6 +335,10 @@ export const eventRoutes = new Hono()
         patch.coverOverlay = updates.coverOverlay;
       }
 
+      if (typeof updates.uploadsEnabled === "boolean") {
+        patch.uploadsEnabled = updates.uploadsEnabled;
+      }
+
       if (Object.keys(patch).length === 0) {
         const { protectedPasswordHash, ...safeEvent } = event;
         return c.json({

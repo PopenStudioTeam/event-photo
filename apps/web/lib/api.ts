@@ -1,3 +1,5 @@
+import { getToken } from "./auth";
+
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 function galleryTokenForPath(path: string): string | null {
@@ -8,10 +10,7 @@ function galleryTokenForPath(path: string): string | null {
 }
 
 export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
-  const token =
-    typeof window !== "undefined"
-      ? window.localStorage.getItem("eventphoto_token")
-      : null;
+  const token = getToken();
 
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string> | undefined),
@@ -49,10 +48,7 @@ export async function apiFetch<T = unknown>(path: string, options: RequestInit =
 }
 
 export async function apiFetchBlob(path: string, options: RequestInit = {}) {
-  const token =
-    typeof window !== "undefined"
-      ? window.localStorage.getItem("eventphoto_token")
-      : null;
+  const token = getToken();
 
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string> | undefined),
@@ -79,10 +75,7 @@ export async function apiFetchBlobWithProgress(
   options: RequestInit = {},
   onProgress?: (percent: number) => void
 ): Promise<Blob> {
-  const token =
-    typeof window !== "undefined"
-      ? window.localStorage.getItem("eventphoto_token")
-      : null;
+  const token = getToken();
 
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string> | undefined),

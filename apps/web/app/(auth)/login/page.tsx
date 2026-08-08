@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
+import { saveOrganizer, saveToken } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,8 +26,8 @@ export default function LoginPage() {
     }
 
     const data = await res.json();
-    window.localStorage.setItem("eventphoto_token", data.token);
-    window.localStorage.setItem("eventphoto_user", JSON.stringify(data.organizer));
+    saveToken(data.token);
+    saveOrganizer(data.organizer);
 
     router.push("/dashboard");
   };
@@ -53,8 +54,8 @@ export default function LoginPage() {
     }
 
     const data = await res.json();
-    window.localStorage.setItem("eventphoto_token", data.token);
-    window.localStorage.setItem("eventphoto_user", JSON.stringify(data.organizer));
+    saveToken(data.token);
+    saveOrganizer(data.organizer);
     router.push("/dashboard");
   };
 

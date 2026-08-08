@@ -1,13 +1,15 @@
 import { Hono } from "hono";
-import { jwt } from "hono/jwt";
 import { eq } from "drizzle-orm";
 import QRCode from "qrcode";
 import { db } from "@app/shared/db";
 import { events } from "@app/shared/schema";
 
-const JWT_SECRET = process.env.JWT_SECRET!;
-
-function resolveWebBaseUrl(c: { req: { query: (key: string) => string | undefined; header: (key: string) => string | undefined } }): string {
+function resolveWebBaseUrl(c: {
+  req: {
+    query: (key: string) => string | undefined;
+    header: (key: string) => string | undefined;
+  };
+}): string {
   const fromQuery = c.req.query("origin");
   if (fromQuery) {
     try {
@@ -29,6 +31,16 @@ function resolveWebBaseUrl(c: { req: { query: (key: string) => string | undefine
   return process.env.BASE_WEB_URL ?? "http://localhost:3000";
 }
 
+function qrFilename(slug: string, name: string) {
+  const safeName =
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "") || slug;
+  return `${safeName}-qr.png`;
+}
+
 export const qrRoutes = new Hono().get("/:slug", async (c) => {
   const slug = c.req.param("slug");
 
@@ -38,6 +50,7 @@ export const qrRoutes = new Hono().get("/:slug", async (c) => {
   }
 
   const url = `${resolveWebBaseUrl(c)}/e/${event.slug}`;
+  const download = c.req.query("download") === "1";
 
   const pngBuffer = await QRCode.toBuffer(url, {
     type: "png",
@@ -46,11 +59,17 @@ export const qrRoutes = new Hono().get("/:slug", async (c) => {
     width: 512,
   });
 
+  const headers: Record<string, string> = {
+    "Content-Type": "image/png",
+    "Cache-Control": download ? "private, no-cache" : "public, max-age=3600",
+  };
+
+  if (download) {
+    headers["Content-Disposition"] = `attachment; filename="${qrFilename(event.slug, event.name)}"`;
+  }
+
   return new Response(new Uint8Array(pngBuffer), {
     status: 200,
-    headers: {
-      "Content-Type": "image/png",
-      "Cache-Control": "public, max-age=3600",
-    },
+    headers,
   });
 });

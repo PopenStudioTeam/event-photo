@@ -52,6 +52,8 @@ export const updateEventSchema = z.object({
 
   coverLayout: z.enum(["banner", "card"]).optional(),
   coverOverlay: z.enum(["none", "gradient"]).optional(),
+
+  uploadsEnabled: z.boolean().optional(),
 });
 
 export const unlockEventSchema = z.object({

@@ -133,6 +133,8 @@ export default function EventDetailPage() {
   const [moderationOpen, setModerationOpen] = useState(false);
   const [moderationMedia, setModerationMedia] = useState<Media[]>([]);
   const [moderationLoading, setModerationLoading] = useState(false);
+  const [togglingUploads, setTogglingUploads] = useState(false);
+  const [downloadingQr, setDownloadingQr] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -171,6 +173,44 @@ export default function EventDetailPage() {
     if (!event) return;
     const url = `${baseWebUrl}/e/${event.slug}`;
     navigator.clipboard.writeText(url);
+  };
+
+  const qrImageUrl = event
+    ? `${API_URL}/qr/${event.slug}?origin=${encodeURIComponent(baseWebUrl)}`
+    : "";
+  const qrDownloadPath = event
+    ? `/qr/${event.slug}?origin=${encodeURIComponent(baseWebUrl)}&download=1`
+    : "";
+
+  const handleDownloadQr = async () => {
+    if (!event || !qrDownloadPath || downloadingQr) return;
+
+    setDownloadingQr(true);
+    try {
+      const blob = await apiFetchBlobWithProgress(qrDownloadPath);
+      saveAs(blob, `${event.slug}-qr.png`);
+    } catch (err) {
+      console.error("QR download failed", err);
+    } finally {
+      setDownloadingQr(false);
+    }
+  };
+
+  const handleToggleUploads = async () => {
+    if (!event || togglingUploads) return;
+
+    setTogglingUploads(true);
+    try {
+      const updated = await apiFetch<Event>(`/events/${slug}`, {
+        method: "PATCH",
+        body: JSON.stringify({ uploadsEnabled: !event.uploadsEnabled }),
+      });
+      setEvent((prev) => (prev ? { ...prev, ...updated } : updated));
+    } catch (err) {
+      console.error("Failed to toggle uploads", err);
+    } finally {
+      setTogglingUploads(false);
+    }
   };
 
   const handleOpenSlideshow = (startIndex = 0) => {
@@ -532,9 +572,24 @@ export default function EventDetailPage() {
                 : "Enabled (no password yet)"
               : "Disabled"}
           </div>
-          <div>
-            <span className="font-medium">Uploads:</span>{" "}
-            {event.uploadsEnabled ? "Enabled" : "Disabled"}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <span className="font-medium">Uploads:</span>{" "}
+              {event.uploadsEnabled ? "Enabled" : "Disabled"}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={handleToggleUploads}
+              disabled={togglingUploads}
+            >
+              {togglingUploads
+                ? "Updating…"
+                : event.uploadsEnabled
+                  ? "Disable uploads"
+                  : "Enable uploads"}
+            </Button>
           </div>
           <div>
             <span className="font-medium">Theme:</span>{" "}
@@ -671,12 +726,29 @@ export default function EventDetailPage() {
         <CardContent className="space-y-3 text-sm">
           <div className="mx-auto flex aspect-square w-full max-w-[14rem] items-center justify-center overflow-hidden rounded-lg border bg-white sm:max-w-[16rem]">
             <img
-              src={`${API_URL}/qr/${event.slug}?origin=${encodeURIComponent(
-                baseWebUrl
-              )}`}
+              src={qrImageUrl}
               alt="Event QR"
               className="h-full w-full object-contain p-2"
             />
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full sm:flex-1"
+              onClick={handleDownloadQr}
+              disabled={downloadingQr}
+            >
+              {downloadingQr ? "Downloading…" : "Download QR code"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full sm:flex-1"
+              onClick={handleCopyLink}
+            >
+              Copy event link
+            </Button>
           </div>
           <div className="break-all text-xs text-muted-foreground">
             {eventUrl}

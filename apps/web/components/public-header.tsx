@@ -96,7 +96,7 @@ export function PublicHeader() {
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-2 md:flex">
-          <Link href="/dashboard">
+          <Link href="/login">
             <Button
               variant="ghost"
               size="sm"
@@ -106,7 +106,7 @@ export function PublicHeader() {
             </Button>
           </Link>
 
-          <Link href="/dashboard">
+          <Link href="/login">
             <Button
               size="sm"
               className="rounded-full bg-[#262125] px-4 text-white shadow-sm hover:bg-black"
@@ -194,7 +194,7 @@ export function PublicHeader() {
             </nav>
 
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <Link href="/dashboard" onClick={closeMobileMenu}>
+              <Link href="/login" onClick={closeMobileMenu}>
                 <Button
                   variant="outline"
                   size="sm"
@@ -204,7 +204,7 @@ export function PublicHeader() {
                 </Button>
               </Link>
 
-              <Link href="/dashboard" onClick={closeMobileMenu}>
+              <Link href="/login" onClick={closeMobileMenu}>
                 <Button
                   size="sm"
                   className="w-full rounded-full bg-[#262125] text-white hover:bg-black"

@@ -4,13 +4,13 @@ import { ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/sidebar/organizer-sidebar";
 import { TopBar } from "@/components/topbar/topbar";
+import { getToken } from "@/lib/auth";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const token = window.localStorage.getItem("eventphoto_token");
-    if (!token) {
+    if (!getToken()) {
       router.replace("/login");
     }
   }, [router]);

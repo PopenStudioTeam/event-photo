@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api";
-import { saveToken } from "@/lib/auth";
+import { saveOrganizer, saveToken } from "@/lib/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -22,11 +22,15 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const res = await apiFetch<{ token: string }>("/auth/register", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
+      const res = await apiFetch<{ token: string; organizer: { id: string; email: string } }>(
+        "/auth/register",
+        {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+        }
+      );
       saveToken(res.token);
+      saveOrganizer(res.organizer);
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Registration failed");
