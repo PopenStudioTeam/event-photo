@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiFetch, getUserFacingErrorMessage } from "@/lib/api";
+import { apiFetch, reportApiError } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -47,7 +47,6 @@ export default function SettingsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -57,7 +56,7 @@ export default function SettingsPage() {
         setEvents(result as Event[]);
       } catch (err) {
         console.error(err);
-        setError(getUserFacingErrorMessage(err, "Failed to load billing settings."));
+        reportApiError(err, "Failed to load billing settings.");
       } finally {
         setLoading(false);
       }
@@ -71,7 +70,6 @@ export default function SettingsPage() {
     plan: "premium" | "pro"
   ) => {
     setCheckoutLoading(`${eventSlug}:${plan}`);
-    setError(null);
 
     try {
       const result = await apiFetch(`/billing/events/${eventSlug}/checkout`, {
@@ -88,7 +86,7 @@ export default function SettingsPage() {
       window.location.href = checkoutUrl;
     } catch (err) {
       console.error(err);
-      setError(getUserFacingErrorMessage(err, "Unable to start Stripe Checkout."));
+      reportApiError(err, "Unable to start Stripe Checkout.");
       setCheckoutLoading(null);
     }
   };
@@ -106,12 +104,6 @@ export default function SettingsPage() {
       {message && (
         <div className="rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-700">
           {message}
-        </div>
-      )}
-
-      {error && (
-        <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">
-          {error}
         </div>
       )}
 

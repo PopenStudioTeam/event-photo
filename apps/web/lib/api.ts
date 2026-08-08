@@ -1,4 +1,7 @@
 import { getToken } from "./auth";
+import { showErrorAlert } from "./error-alert";
+
+export { showErrorAlert } from "./error-alert";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -47,6 +50,14 @@ export function getUserFacingErrorMessage(
   }
 
   return fallback;
+}
+
+export function reportApiError(
+  error: unknown,
+  fallback: string,
+  options?: UserFacingErrorOptions
+) {
+  showErrorAlert(getUserFacingErrorMessage(error, fallback, options));
 }
 
 async function readApiErrorResponse(res: Response) {

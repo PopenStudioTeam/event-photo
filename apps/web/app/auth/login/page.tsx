@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { apiFetch, getUserFacingErrorMessage } from "@/lib/api";
+import { apiFetch, reportApiError } from "@/lib/api";
 import { saveOrganizer, saveToken } from "@/lib/auth";
 
 export default function LoginPage() {
@@ -14,12 +14,10 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       const res = await apiFetch<{ token: string; organizer: { id: string; email: string } }>(
@@ -33,7 +31,7 @@ export default function LoginPage() {
       saveOrganizer(res.organizer);
       router.push("/dashboard");
     } catch (err) {
-      setError(getUserFacingErrorMessage(err, "Login failed", { showAuthFailureDetail: true }));
+      reportApiError(err, "Login failed", { showAuthFailureDetail: true });
     } finally {
       setLoading(false);
     }
@@ -70,7 +68,6 @@ export default function LoginPage() {
               required
             />
           </div>
-          {error && <p className="text-sm text-red-400">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
           </Button>

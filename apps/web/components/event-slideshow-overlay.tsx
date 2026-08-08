@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { apiFetch, getUserFacingErrorMessage } from "@/lib/api";
+import { apiFetch, reportApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 
 export type SlideshowMedia = {
@@ -67,7 +67,6 @@ export function EventSlideshowOverlay({
 }: EventSlideshowOverlayProps) {
   const [media, setMedia] = useState<SlideshowMedia[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [paused, setPaused] = useState(false);
 
@@ -76,11 +75,10 @@ export function EventSlideshowOverlay({
     try {
       const items = sortNewestFirst(await fetchSlideshowMedia(mediaPath));
       setMedia(items);
-      setError(null);
       setCurrentIndex((idx) => (items.length === 0 ? 0 : Math.min(idx, items.length - 1)));
     } catch (err) {
       console.error(err);
-      setError(getUserFacingErrorMessage(err, "Failed to load slideshow media."));
+      reportApiError(err, "Failed to load slideshow media.");
     } finally {
       setLoading(false);
     }
@@ -90,7 +88,6 @@ export function EventSlideshowOverlay({
     if (!open) return;
 
     setLoading(true);
-    setError(null);
     setCurrentIndex(initialIndex);
     setPaused(false);
     loadMedia();
@@ -188,8 +185,6 @@ export function EventSlideshowOverlay({
       <main className="flex flex-1 items-center justify-center overflow-hidden px-3 py-3 sm:px-6 sm:py-4">
         {loading ? (
           <div className="text-sm text-gray-400">Loading slideshow…</div>
-        ) : error ? (
-          <div className="text-sm text-red-400">{error}</div>
         ) : !current ? (
           <div className="text-center text-sm text-gray-400">
             No media yet. Upload photos to start the slideshow.

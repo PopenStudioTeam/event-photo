@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { apiFetch, apiFetchBlobWithProgress, getUserFacingErrorMessage } from "@/lib/api";
+import { apiFetch, apiFetchBlobWithProgress, reportApiError } from "@/lib/api";
 import { NewEventDialog } from "@/components/new-event-dialog";
 import {
   Dialog,
@@ -77,7 +77,6 @@ export default function EventsPage() {
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Gallery state
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -104,7 +103,7 @@ export default function EventsPage() {
         setEvents(res as Event[]);
       } catch (err) {
         console.error(err);
-        setError(getUserFacingErrorMessage(err, "Failed to load events"));
+        reportApiError(err, "Failed to load events");
       } finally {
         setLoading(false);
       }
@@ -266,8 +265,6 @@ export default function EventsPage() {
 
       {loading ? (
         <div className="text-sm text-muted-foreground">Loading events…</div>
-      ) : error ? (
-        <div className="text-sm text-red-500">{error}</div>
       ) : events.length === 0 ? (
         <div className="text-sm text-muted-foreground">
           No events yet. Create your first event to get started.

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { apiFetch, getUserFacingErrorMessage } from "@/lib/api";
+import { apiFetch, reportApiError } from "@/lib/api";
 import { saveOrganizer, saveToken } from "@/lib/auth";
 
 export default function RegisterPage() {
@@ -14,12 +14,10 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       const res = await apiFetch<{ token: string; organizer: { id: string; email: string } }>(
@@ -33,9 +31,7 @@ export default function RegisterPage() {
       saveOrganizer(res.organizer);
       router.push("/dashboard");
     } catch (err) {
-      setError(
-        getUserFacingErrorMessage(err, "Registration failed", { showAuthFailureDetail: true })
-      );
+      reportApiError(err, "Registration failed", { showAuthFailureDetail: true });
     } finally {
       setLoading(false);
     }
@@ -72,7 +68,6 @@ export default function RegisterPage() {
               required
             />
           </div>
-          {error && <p className="text-sm text-red-400">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Registering..." : "Register"}
           </Button>

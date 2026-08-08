@@ -10,7 +10,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { apiFetch, getUserFacingErrorMessage } from "@/lib/api";
+import { apiFetch, reportApiError, showErrorAlert } from "@/lib/api";
 
 type NewEventDialogProps = {
   open: boolean;
@@ -24,30 +24,27 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
   const [protectedGallery, setProtectedGallery] = useState(false);
   const [password, setPassword] = useState("");
   const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const resetForm = () => {
     setName("");
     setDate("");
     setProtectedGallery(false);
     setPassword("");
-    setError(null);
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError("Name is required");
+      showErrorAlert("Name is required");
       return;
     }
 
     if (protectedGallery && password.length < 4) {
-      setError("Gallery password must be at least 4 characters");
+      showErrorAlert("Gallery password must be at least 4 characters");
       return;
     }
 
     setCreating(true);
-    setError(null);
 
     try {
       const body: Record<string, unknown> = {
@@ -75,7 +72,7 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
       router.push(`/events/${event.slug}`);
     } catch (err) {
       console.error(err);
-      setError(getUserFacingErrorMessage(err, "Failed to create event"));
+      reportApiError(err, "Failed to create event");
     } finally {
       setCreating(false);
     }
@@ -148,8 +145,6 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
               </div>
             )}
           </div>
-
-          {error && <div className="text-xs text-red-500">{error}</div>}
 
           <DialogFooter className="mt-4 flex justify-end gap-2">
             <Button

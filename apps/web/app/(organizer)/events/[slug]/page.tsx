@@ -4,7 +4,7 @@ import { useEffect, useState, ChangeEvent, FormEvent, type ReactNode } from "rea
 import { useParams } from "next/navigation";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { API_URL, apiFetch, apiFetchBlobWithProgress, getUserFacingErrorMessage } from "@/lib/api";
+import { API_URL, apiFetch, apiFetchBlobWithProgress, reportApiError, showErrorAlert } from "@/lib/api";
 import { useBaseWebUrl } from "@/lib/use-base-web-url";
 import {
   Card,
@@ -103,7 +103,6 @@ export default function EventDetailPage() {
   const [formDate, setFormDate] = useState("");
   const [formProtected, setFormProtected] = useState(false);
   const [formPassword, setFormPassword] = useState("");
-  const [editError, setEditError] = useState<string | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
   // Theme + POV + cover style form state
@@ -121,7 +120,6 @@ export default function EventDetailPage() {
   // Cover upload state
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverUploading, setCoverUploading] = useState(false);
-  const [coverError, setCoverError] = useState<string | null>(null);
 
   // Zoom viewer state
   const [zoomOpen, setZoomOpen] = useState(false);
@@ -176,7 +174,7 @@ export default function EventDetailPage() {
         }
       } catch (err) {
         console.error(err);
-        setError(getUserFacingErrorMessage(err, "Failed to load event"));
+        reportApiError(err, "Failed to load event");
       } finally {
         setLoading(false);
       }
@@ -248,7 +246,6 @@ export default function EventDetailPage() {
     setFormPovRevealAt(event.povRevealAt ? event.povRevealAt.slice(0, 10) : "");
     setFormCoverLayout(event.coverLayout ?? "banner");
     setFormCoverOverlay(event.coverOverlay ?? "none");
-    setEditError(null);
     setEditOpen(true);
   };
 
@@ -257,7 +254,7 @@ export default function EventDetailPage() {
     if (!event) return;
 
     if (formProtected && !event.hasPassword && formPassword.length < 4) {
-      setEditError("Gallery password must be at least 4 characters");
+      showErrorAlert("Gallery password must be at least 4 characters");
       return;
     }
 
@@ -297,7 +294,6 @@ export default function EventDetailPage() {
     }
 
     setEditSaving(true);
-    setEditError(null);
 
     try {
       const updated = await apiFetch<Event>(`/events/${slug}`, {
@@ -310,7 +306,7 @@ export default function EventDetailPage() {
       setFormPassword("");
     } catch (err) {
       console.error(err);
-      setEditError(getUserFacingErrorMessage(err, "Failed to save changes"));
+      reportApiError(err, "Failed to save changes");
     } finally {
       setEditSaving(false);
     }
@@ -319,7 +315,6 @@ export default function EventDetailPage() {
   const handleCoverFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     setCoverFile(file);
-    setCoverError(null);
   };
 
   const handleCoverUpload = async () => {
@@ -357,7 +352,7 @@ export default function EventDetailPage() {
       setCoverFile(null);
     } catch (err) {
       console.error("Cover upload failed", err);
-      setCoverError(getUserFacingErrorMessage(err, "Failed to upload cover image"));
+      reportApiError(err, "Failed to upload cover image");
     } finally {
       setCoverUploading(false);
     }
@@ -664,8 +659,6 @@ export default function EventDetailPage() {
               {coverUploading ? "Uploading…" : "Upload cover"}
             </Button>
           </div>
-
-          {coverError && <div className="text-xs text-red-500">{coverError}</div>}
         </CardContent>
       </Card>
 
@@ -968,11 +961,8 @@ export default function EventDetailPage() {
                   </div>
                 </div>
 
-                {editError && (
-                  <div className="text-xs text-red-500">{editError}</div>
-                )}
-              </div>
             </div>
+          </div>
 
             <DialogFooter className="shrink-0 border-t px-4 py-3">
               <Button

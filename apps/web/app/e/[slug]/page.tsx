@@ -2,7 +2,7 @@
 
 import { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { useParams } from "next/navigation";
-import { apiFetch, ApiError, getUserFacingErrorMessage } from "@/lib/api";
+import { apiFetch, ApiError, reportApiError, showErrorAlert } from "@/lib/api";
 import {
   getGalleryUnlockToken,
   setGalleryUnlockToken,
@@ -79,14 +79,12 @@ export default function GuestEventPage() {
   // Upload state
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [uploadPanelOpen, setUploadPanelOpen] = useState(false);
 
   // Gallery protection
   const [galleryUnlocked, setGalleryUnlocked] = useState(false);
   const [unlockPassword, setUnlockPassword] = useState("");
-  const [unlockError, setUnlockError] = useState<string | null>(null);
   const [unlocking, setUnlocking] = useState(false);
 
   // Gallery state
@@ -122,7 +120,7 @@ export default function GuestEventPage() {
         }
       } catch (err) {
         console.error(err);
-        setEventError(getUserFacingErrorMessage(err, "Failed to load event."));
+        reportApiError(err, "Failed to load event.");
       } finally {
         setLoadingEvent(false);
       }
@@ -181,7 +179,6 @@ export default function GuestEventPage() {
     if (!slug || !unlockPassword.trim()) return;
 
     setUnlocking(true);
-    setUnlockError(null);
 
     try {
       const res = await apiFetch(`/e/${slug}/unlock`, {
@@ -191,18 +188,16 @@ export default function GuestEventPage() {
 
       const { galleryToken } = res as { galleryToken?: string };
       if (!galleryToken) {
-        setUnlockError("Unlock failed. Please try again.");
+        showErrorAlert("Unlock failed. Please try again.");
         return;
       }
       setGalleryUnlockToken(slug, galleryToken);
       setGalleryUnlocked(true);
       setUnlockPassword("");
     } catch (err) {
-      setUnlockError(
-        getUserFacingErrorMessage(err, "Incorrect password. Please try again.", {
-          showAuthFailureDetail: true,
-        })
-      );
+      reportApiError(err, "Incorrect password. Please try again.", {
+        showAuthFailureDetail: true,
+      });
     } finally {
       setUnlocking(false);
     }
@@ -226,7 +221,6 @@ export default function GuestEventPage() {
     }));
 
     setUploads(items);
-    setUploadError(null);
     setUploadSuccess(null);
     setUploadPanelOpen(true);
   };
@@ -294,7 +288,6 @@ export default function GuestEventPage() {
     if (!event || !event.uploadsEnabled || uploads.length === 0) return;
 
     setUploading(true);
-    setUploadError(null);
     setUploadSuccess(null);
 
     try {
@@ -339,9 +332,7 @@ export default function GuestEventPage() {
       loadMedia(true);
     } catch (err) {
       console.error(err);
-      setUploadError(
-        getUserFacingErrorMessage(err, "Failed to upload some files. Please try again.")
-      );
+      reportApiError(err, "Failed to upload some files. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -612,9 +603,6 @@ export default function GuestEventPage() {
                     placeholder="Gallery password"
                     autoComplete="current-password"
                   />
-                  {unlockError && (
-                    <div className="text-xs text-red-500">{unlockError}</div>
-                  )}
                   <Button
                     type="submit"
                     size="sm"
@@ -822,9 +810,6 @@ export default function GuestEventPage() {
                       </span>
                     </div>
 
-                    {uploadError && (
-                      <div className="mt-2 text-xs text-red-500">{uploadError}</div>
-                    )}
                     {uploadSuccess && (
                       <div className="mt-2 text-xs text-green-600">
                         {uploadSuccess}

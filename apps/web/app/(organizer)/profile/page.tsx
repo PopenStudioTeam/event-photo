@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-import { apiFetch, getUserFacingErrorMessage } from "@/lib/api";
+import { apiFetch, reportApiError } from "@/lib/api";
 import { getOrganizer, type OrganizerUser } from "@/lib/auth";
 import {
   Card,
@@ -17,7 +17,6 @@ export default function ProfilePage() {
   const [organizer, setOrganizer] = useState<OrganizerUser | null>(null);
   const [eventCount, setEventCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setOrganizer(getOrganizer());
@@ -28,7 +27,7 @@ export default function ProfilePage() {
         setEventCount(events.length);
       } catch (err) {
         console.error(err);
-        setError(getUserFacingErrorMessage(err, "Failed to load profile details."));
+        reportApiError(err, "Failed to load profile details.");
       } finally {
         setLoading(false);
       }
@@ -70,8 +69,6 @@ export default function ProfilePage() {
               {loading ? "Loading…" : (eventCount ?? 0)}
             </div>
           </div>
-
-          {error && <div className="text-xs text-red-500">{error}</div>}
 
           <div className="flex flex-col gap-2 pt-2 sm:flex-row">
             <Link href="/events">

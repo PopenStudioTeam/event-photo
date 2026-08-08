@@ -18,7 +18,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { apiFetch, getUserFacingErrorMessage } from "@/lib/api";
+import { apiFetch, reportApiError } from "@/lib/api";
 import {
   Card,
   CardContent,
@@ -106,7 +106,6 @@ export default function DashboardPage() {
     useState<DashboardAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const loadAnalytics = async (refresh = false) => {
     if (refresh) {
@@ -115,14 +114,12 @@ export default function DashboardPage() {
       setLoading(true);
     }
 
-    setError(null);
-
     try {
       const response = await apiFetch("/dashboard/analytics");
       setAnalytics(response as DashboardAnalytics);
     } catch (err) {
       console.error(err);
-      setError(getUserFacingErrorMessage(err, "Failed to load dashboard analytics."));
+      reportApiError(err, "Failed to load dashboard analytics.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -186,12 +183,6 @@ export default function DashboardPage() {
   if (!analytics) {
     return (
       <div className="space-y-4">
-        {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
         <Button onClick={() => loadAnalytics()}>Try again</Button>
       </div>
     );
@@ -215,12 +206,6 @@ export default function DashboardPage() {
           Manage events
         </Button>
       </div>
-
-      {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
 
       {/* Summary */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
