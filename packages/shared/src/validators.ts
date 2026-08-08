@@ -11,6 +11,12 @@ export const googleAuthSchema = z.object({
 
 export const loginSchema = registerSchema;
 
+export const listEventsQuerySchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  uploads: z.enum(["all", "enabled", "disabled"]).optional(),
+  protection: z.enum(["all", "yes", "no"]).optional(),
+});
+
 export const coverUploadSchema = z.object({
   contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
   fileSize: z.number().int().positive().max(5 * 1024 * 1024),
@@ -77,7 +83,16 @@ export const createMediaSchema = z.object({
   contentType: z.string().min(1),
   fileSize: z.number().int().positive(),
   guestName: z.string().min(1).max(80).optional(),
+  guestId: z.string().min(8).max(64).optional(),
   caption: z.string().min(1).max(300).optional(),
+});
+
+export const guestMediaQuerySchema = z.object({
+  guestId: z.string().min(8).max(64),
+});
+
+export const likeMediaSchema = z.object({
+  guestId: z.string().min(8).max(64),
 });
 
 export const createCheckoutSchema = z.object({

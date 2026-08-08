@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { jwt, sign, verify as jwtVerify } from "hono/jwt";
 import { nanoid } from "nanoid";
 import { db } from "@app/shared/db";
-import { media, mediaTypeEnum, events } from "@app/shared/schema";
+import { media, mediaTypeEnum, events, mediaLikes } from "@app/shared/schema";
 import {
   coverUploadSchema,
   createEventSchema,
@@ -11,8 +11,11 @@ import {
   uploadMediaUrlSchema,
   createMediaSchema,
   unlockEventSchema,
+  listEventsQuerySchema,
+  guestMediaQuerySchema,
+  likeMediaSchema,
 } from "@app/shared/validators";
-import { count, desc, eq, lt, and, sql, ne } from "drizzle-orm";
+import { count, desc, eq, lt, and, sql, ne, or, ilike, inArray } from "drizzle-orm";
 import { R2_BUCKET, r2 } from "../lib/r2.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
 import {
@@ -149,13 +152,34 @@ export const eventRoutes = new Hono()
       );
     }
   )
-  .get("/", jwt({ secret: JWT_SECRET, alg: "HS256" }), async (c) => {
+  .get("/", jwt({ secret: JWT_SECRET, alg: "HS256" }), zValidator("query", listEventsQuerySchema), async (c) => {
     const { sub: organizerId } = c.get("jwtPayload") as { sub: string };
+    const { q, uploads, protection } = c.req.valid("query");
+
+    const conditions = [eq(events.organizerId, organizerId)];
+
+    if (q) {
+      const pattern = `%${q}%`;
+      conditions.push(or(ilike(events.name, pattern), ilike(events.slug, pattern))!);
+    }
+
+    if (uploads === "enabled") {
+      conditions.push(eq(events.uploadsEnabled, true));
+    } else if (uploads === "disabled") {
+      conditions.push(eq(events.uploadsEnabled, false));
+    }
+
+    if (protection === "yes") {
+      conditions.push(eq(events.protected, true));
+    } else if (protection === "no") {
+      conditions.push(eq(events.protected, false));
+    }
 
     const myEvents = await db
       .select()
       .from(events)
-      .where(eq(events.organizerId, organizerId));
+      .where(and(...conditions))
+      .orderBy(desc(events.createdAt));
 
     const eventInfos = await Promise.all(
       myEvents.map(async (event) => {
@@ -687,7 +711,7 @@ export const publicEventRoutes = new Hono()
   })
   .post("/:slug/media", zValidator("json", createMediaSchema), async (c) => {
     const slug = c.req.param("slug");
-    const { key, contentType, fileSize, guestName, caption } = c.req.valid("json");
+    const { key, contentType, fileSize, guestName, guestId, caption } = c.req.valid("json");
 
     const [event] = await db.select().from(events).where(eq(events.slug, slug));
     if (!event || !event.uploadsEnabled) {
@@ -709,14 +733,22 @@ export const publicEventRoutes = new Hono()
     }
 
     // POV per-guest limit
-    if (event.povEnabled && event.povMaxPerGuest > 0 && guestName) {
-      const [guestCountRow] = await db
-        .select({ count: count() })
-        .from(media)
-        .where(and(eq(media.eventId, event.id), eq(media.guestName, guestName)));
+    if (event.povEnabled && event.povMaxPerGuest > 0) {
+      const povFilter = guestId
+        ? eq(media.guestId, guestId)
+        : guestName
+          ? eq(media.guestName, guestName)
+          : null;
 
-      if (guestCountRow.count >= event.povMaxPerGuest) {
-        return c.json({ error: "You have used all your shots for this event" }, 400);
+      if (povFilter) {
+        const [guestCountRow] = await db
+          .select({ count: count() })
+          .from(media)
+          .where(and(eq(media.eventId, event.id), povFilter));
+
+        if (guestCountRow.count >= event.povMaxPerGuest) {
+          return c.json({ error: "You have used all your shots for this event" }, 400);
+        }
       }
     }
 
@@ -734,6 +766,7 @@ export const publicEventRoutes = new Hono()
         mimeType: contentType,
         fileSize,
         guestName,
+        guestId,
         caption,
         status,
       })
@@ -741,10 +774,50 @@ export const publicEventRoutes = new Hono()
 
     return c.json(record, 201);
   })
+  .get("/:slug/my-media", zValidator("query", guestMediaQuerySchema), async (c) => {
+    const slug = c.req.param("slug");
+    const { guestId } = c.req.valid("query");
+
+    const [event] = await db.select().from(events).where(eq(events.slug, slug));
+    if (!event) return c.json({ error: "Event not found" }, 404);
+
+    const items = await db
+      .select()
+      .from(media)
+      .where(and(eq(media.eventId, event.id), eq(media.guestId, guestId)))
+      .orderBy(desc(media.createdAt));
+
+    const withUrls = await Promise.all(
+      items.map(async (m) => {
+        const url = await getSignedUrl(
+          r2,
+          new GetObjectCommand({
+            Bucket: R2_BUCKET,
+            Key: m.storageKey,
+          }),
+          { expiresIn: 60 * 10 }
+        );
+
+        return {
+          id: m.id,
+          type: m.type,
+          mimeType: m.mimeType,
+          guestName: m.guestName,
+          caption: m.caption,
+          createdAt: m.createdAt?.toISOString(),
+          url,
+          status: m.status,
+        };
+      })
+    );
+
+    return c.json({ items: withUrls });
+  })
   .get("/:slug/media", async (c) => {
     const slug = c.req.param("slug");
     const limit = Number(c.req.query("limit") ?? "30");
     const cursor = c.req.query("cursor");
+    const guestId = c.req.query("guestId");
 
     const [event] = await db.select().from(events).where(eq(events.slug, slug));
     if (!event) return c.json({ error: "Event not found" }, 404);
@@ -782,6 +855,24 @@ export const publicEventRoutes = new Hono()
       .orderBy(desc(media.createdAt))
       .limit(limit);
 
+    let likedIds = new Set<string>();
+    if (guestId && items.length > 0) {
+      const likes = await db
+        .select({ mediaId: mediaLikes.mediaId })
+        .from(mediaLikes)
+        .where(
+          and(
+            eq(mediaLikes.guestId, guestId),
+            inArray(
+              mediaLikes.mediaId,
+              items.map((item) => item.id)
+            )
+          )
+        );
+
+      likedIds = new Set(likes.map((like) => like.mediaId));
+    }
+
     const withUrls = await Promise.all(
       items.map(async (m) => {
         const url = await getSignedUrl(
@@ -804,6 +895,7 @@ export const publicEventRoutes = new Hono()
           createdAt: m.createdAt?.toISOString(),
           url,
           likesCount: m.likesCount ?? 0,
+          liked: guestId ? likedIds.has(m.id) : false,
         };
       })
     );
@@ -813,9 +905,10 @@ export const publicEventRoutes = new Hono()
 
     return c.json({ items: withUrls, nextCursor });
   })
-  .post("/:slug/media/:id/like", async (c) => {
+  .post("/:slug/media/:id/like", zValidator("json", likeMediaSchema), async (c) => {
     const slug = c.req.param("slug");
     const id = c.req.param("id");
+    const { guestId } = c.req.valid("json");
 
     const [event] = await db.select().from(events).where(eq(events.slug, slug));
     if (!event) return c.json({ error: "Event not found" }, 404);
@@ -831,6 +924,17 @@ export const publicEventRoutes = new Hono()
 
     if (!item) return c.json({ error: "Media not found" }, 404);
 
+    const [existingLike] = await db
+      .select({ id: mediaLikes.id })
+      .from(mediaLikes)
+      .where(and(eq(mediaLikes.mediaId, id), eq(mediaLikes.guestId, guestId)));
+
+    if (existingLike) {
+      return c.json({ likesCount: item.likesCount, liked: true });
+    }
+
+    await db.insert(mediaLikes).values({ mediaId: id, guestId });
+
     const [updated] = await db
       .update(media)
       .set({
@@ -839,7 +943,7 @@ export const publicEventRoutes = new Hono()
       .where(eq(media.id, id))
       .returning({ likesCount: media.likesCount });
 
-    return c.json({ likesCount: updated.likesCount });
+    return c.json({ likesCount: updated.likesCount, liked: true });
   })
   .post("/:slug/unlock", zValidator("json", unlockEventSchema), async (c) => {
     const slug = c.req.param("slug");

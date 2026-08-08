@@ -14,6 +14,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -77,6 +78,9 @@ export default function EventsPage() {
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [uploadsFilter, setUploadsFilter] = useState<"all" | "enabled" | "disabled">("all");
+  const [protectionFilter, setProtectionFilter] = useState<"all" | "yes" | "no">("all");
 
   // Gallery state
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -98,8 +102,17 @@ export default function EventsPage() {
 
   useEffect(() => {
     const loadEvents = async () => {
+      setLoading(true);
+
       try {
-        const res = await apiFetch("/events");
+        const params = new URLSearchParams();
+        const trimmedSearch = search.trim();
+        if (trimmedSearch) params.set("q", trimmedSearch);
+        if (uploadsFilter !== "all") params.set("uploads", uploadsFilter);
+        if (protectionFilter !== "all") params.set("protection", protectionFilter);
+
+        const query = params.toString();
+        const res = await apiFetch(`/events${query ? `?${query}` : ""}`);
         setEvents(res as Event[]);
       } catch (err) {
         console.error(err);
@@ -109,8 +122,9 @@ export default function EventsPage() {
       }
     };
 
-    loadEvents();
-  }, []);
+    const timer = window.setTimeout(loadEvents, search.trim() ? 300 : 0);
+    return () => window.clearTimeout(timer);
+  }, [search, uploadsFilter, protectionFilter]);
 
   const handleOpenEvent = (slug: string) => {
     router.push(`/events/${slug}`);
@@ -255,19 +269,53 @@ export default function EventsPage() {
         </p>
         <Button
           variant="outline"
-          size="sm"
-          className="w-full sm:w-auto"
+          size="lg"
+          className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/60 hover:text-primary-foreground/90 px-5"
           onClick={handleNewEvent}
         >
           New Event
         </Button>
       </div>
 
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <Input
+          type="search"
+          placeholder="Search by name or slug"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full sm:max-w-xs"
+        />
+        <select
+          className="h-8 w-full rounded-md border border-input bg-transparent px-2.5 text-xs sm:w-auto"
+          value={uploadsFilter}
+          onChange={(e) =>
+            setUploadsFilter(e.target.value as "all" | "enabled" | "disabled")
+          }
+        >
+          <option value="all">All uploads</option>
+          <option value="enabled">Uploads enabled</option>
+          <option value="disabled">Uploads disabled</option>
+        </select>
+        <select
+          className="h-8 w-full rounded-md border border-input bg-transparent px-2.5 text-xs sm:w-auto"
+          value={protectionFilter}
+          onChange={(e) =>
+            setProtectionFilter(e.target.value as "all" | "yes" | "no")
+          }
+        >
+          <option value="all">All protection</option>
+          <option value="yes">Protected</option>
+          <option value="no">Open gallery</option>
+        </select>
+      </div>
+
       {loading ? (
         <div className="text-sm text-muted-foreground">Loading events…</div>
       ) : events.length === 0 ? (
         <div className="text-sm text-muted-foreground">
-          No events yet. Create your first event to get started.
+          {search.trim() || uploadsFilter !== "all" || protectionFilter !== "all"
+            ? "No events match your search or filters."
+            : "No events yet. Create your first event to get started."}
         </div>
       ) : (
         <>

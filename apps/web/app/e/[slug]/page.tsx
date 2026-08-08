@@ -18,6 +18,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { HeartIcon } from "@phosphor-icons/react";
 import { EventSlideshowOverlay } from "@/components/event-slideshow-overlay";
+import { GuestMyUploadsDialog } from "@/components/guest-my-uploads";
+import { getGuestSession, saveGuestSession } from "@/lib/guest-session";
 
 type PublicEvent = {
   slug: string;
@@ -49,6 +51,7 @@ type MediaItem = {
   createdAt: string;
   url: string;
   likesCount: number;
+  liked?: boolean;
 };
 
 type MediaResponse = {
@@ -68,13 +71,18 @@ export default function GuestEventPage() {
   const params = useParams();
   const slug = params?.slug as string;
 
+  const initialGuest =
+    typeof window !== "undefined" && slug ? getGuestSession(slug) : null;
+
   const [event, setEvent] = useState<PublicEvent | null>(null);
   const [loadingEvent, setLoadingEvent] = useState(true);
   const [eventError, setEventError] = useState<string | null>(null);
 
   // Guest name and welcome step
-  const [guestName, setGuestName] = useState("");
-  const [welcomeDone, setWelcomeDone] = useState(false);
+  const [guestName, setGuestName] = useState(initialGuest?.name ?? "");
+  const [guestId, setGuestId] = useState(initialGuest?.guestId ?? "");
+  const [welcomeDone, setWelcomeDone] = useState(Boolean(initialGuest));
+  const [myUploadsRefreshKey, setMyUploadsRefreshKey] = useState(0);
 
   // Upload state
   const [uploads, setUploads] = useState<UploadItem[]>([]);
@@ -146,6 +154,9 @@ export default function GuestEventPage() {
       if (!initial && mediaCursor) {
         query.set("cursor", mediaCursor);
       }
+      if (guestId) {
+        query.set("guestId", guestId);
+      }
 
       const res = await apiFetch(
         query.toString() ? `/e/${slug}/media?${query.toString()}` : `/e/${slug}/media`
@@ -205,7 +216,11 @@ export default function GuestEventPage() {
 
   const handleWelcomeSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!guestName.trim()) return;
+    if (!guestName.trim() || !slug) return;
+
+    const session = saveGuestSession(slug, guestName);
+    setGuestName(session.name);
+    setGuestId(session.guestId);
     setWelcomeDone(true);
   };
 
@@ -317,6 +332,7 @@ export default function GuestEventPage() {
             contentType,
             fileSize,
             guestName: guestName || undefined,
+            guestId: guestId || undefined,
             caption: item.caption || undefined,
           }),
         });
@@ -329,6 +345,7 @@ export default function GuestEventPage() {
       );
       setUploads([]);
       setUploadPanelOpen(false);
+      setMyUploadsRefreshKey((key) => key + 1);
       loadMedia(true);
     } catch (err) {
       console.error(err);
@@ -339,13 +356,18 @@ export default function GuestEventPage() {
   };
 
   const handleLike = async (item: MediaItem) => {
+    if (!guestId || item.liked) return;
+
     try {
       const res = await apiFetch(`/e/${slug}/media/${item.id}/like`, {
         method: "POST",
+        body: JSON.stringify({ guestId }),
       });
-      const { likesCount } = res as { likesCount: number };
+      const { likesCount, liked } = res as { likesCount: number; liked: boolean };
       setMedia((prev) =>
-        prev.map((m) => (m.id === item.id ? { ...m, likesCount } : m))
+        prev.map((m) =>
+          m.id === item.id ? { ...m, likesCount, liked: liked ?? true } : m
+        )
       );
     } catch (err) {
       console.error("Failed to like media", err);
@@ -521,6 +543,13 @@ export default function GuestEventPage() {
                   Start slideshow
                 </Button>
               )}
+              {guestId && (
+                <GuestMyUploadsDialog
+                  slug={slug}
+                  guestId={guestId}
+                  refreshKey={myUploadsRefreshKey}
+                />
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -665,9 +694,13 @@ export default function GuestEventPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleLike(item)}
+                          disabled={!guestId || item.liked}
                           className="h-8 gap-1.5 px-2 text-foreground hover:bg-muted"
                         >
-                          <HeartIcon weight="fill" className="size-4 text-red-500" />
+                          <HeartIcon
+                            weight={item.liked ? "fill" : "regular"}
+                            className={`size-4 ${item.liked ? "text-red-500" : "text-muted-foreground"}`}
+                          />
                           <span className="text-xs font-medium">
                             {item.likesCount}
                           </span>
@@ -805,8 +838,7 @@ export default function GuestEventPage() {
                         {uploading ? "Uploading…" : "Upload"}
                       </Button>
                       <span className="text-xs text-muted-foreground">
-                        Uploading as{" "}
-                        <span className="font-semibold">{guestName}</span>
+                        {guestName}
                       </span>
                     </div>
 
@@ -894,13 +926,16 @@ export default function GuestEventPage() {
               type="button"
               variant="default"
               size="sm"
-              disabled={!currentLightboxItem}
+              disabled={!currentLightboxItem || !guestId || currentLightboxItem.liked}
               onClick={() =>
                 currentLightboxItem && handleLike(currentLightboxItem)
               }
               className="gap-2 bg-neutral-900 text-white hover:bg-neutral-800"
             >
-              <HeartIcon weight="fill" className="size-4 text-red-400" />
+              <HeartIcon
+                weight={currentLightboxItem?.liked ? "fill" : "regular"}
+                className={`size-4 ${currentLightboxItem?.liked ? "text-red-400" : "text-neutral-300"}`}
+              />
               Like ({currentLightboxItem?.likesCount ?? 0})
             </Button>
 

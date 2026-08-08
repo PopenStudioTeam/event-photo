@@ -6,6 +6,7 @@ import {
   boolean,
   integer,
   pgEnum,
+  unique,
 } from "drizzle-orm/pg-core";
 
 export const mediaTypeEnum = pgEnum("media_type", ["photo", "video"]);
@@ -96,6 +97,7 @@ export const media = pgTable("media", {
   mimeType: text("mime_type").notNull(),
   fileSize: integer("file_size").notNull(),
   guestName: text("guest_name"),
+  guestId: text("guest_id"),
   caption: text("caption"),
 
   likesCount: integer("likes_count").default(0).notNull(),
@@ -107,3 +109,20 @@ export const media = pgTable("media", {
     .defaultNow()
     .notNull(),
 });
+
+export const mediaLikes = pgTable(
+  "media_likes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    mediaId: uuid("media_id")
+      .references(() => media.id, { onDelete: "cascade" })
+      .notNull(),
+    guestId: text("guest_id").notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [unique().on(table.mediaId, table.guestId)]
+);

@@ -5,35 +5,39 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import Link from "next/link";
+import { apiFetch, reportApiError, showErrorAlert } from "@/lib/api";
 import { saveOrganizer, saveToken } from "@/lib/auth";
+
+type AuthResponse = {
+  token: string;
+  organizer: { id: string; email: string };
+};
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
+  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
     const idToken = credentialResponse.credential;
-    if (!idToken) return;
-
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken }),
-    });
-
-    if (!res.ok) {
-      // TODO: show error
+    if (!idToken) {
+      showErrorAlert("Google sign-in did not return a credential.");
       return;
     }
 
-    const data = await res.json();
-    saveToken(data.token);
-    saveOrganizer(data.organizer);
-
-    router.push("/dashboard");
+    try {
+      const data = await apiFetch<AuthResponse>("/auth/google", {
+        method: "POST",
+        body: JSON.stringify({ idToken }),
+      });
+      saveToken(data.token);
+      saveOrganizer(data.organizer);
+      router.push("/dashboard");
+    } catch (err) {
+      reportApiError(err, "Google sign-in failed", { showAuthFailureDetail: true });
+    }
   };
 
   const handleGoogleError = () => {
-    // TODO: show error toast
+    showErrorAlert("Google sign-in was cancelled or failed.");
   };
 
   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -42,21 +46,17 @@ export default function LoginPage() {
     const email = formData.get("email");
     const password = formData.get("password");
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!res.ok) {
-      // TODO: show error
-      return;
+    try {
+      const data = await apiFetch<AuthResponse>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      saveToken(data.token);
+      saveOrganizer(data.organizer);
+      router.push("/dashboard");
+    } catch (err) {
+      reportApiError(err, "Login failed", { showAuthFailureDetail: true });
     }
-
-    const data = await res.json();
-    saveToken(data.token);
-    saveOrganizer(data.organizer);
-    router.push("/dashboard");
   };
 
   return (
@@ -65,7 +65,7 @@ export default function LoginPage() {
       <div className="hidden md:flex flex-1 flex-col justify-center px-12 bg-muted border-r">
         <div className="max-w-md space-y-4">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Event Photo Admin
+            Event Photo Organizer
           </h1>
           <p className="text-sm text-muted-foreground">
             Collect all your guests&apos; photos and videos in one place. Create events, share a link or QR, and download everything from your dashboard.
@@ -106,6 +106,7 @@ export default function LoginPage() {
                   name="email"
                   type="email"
                   required
+                  placeholder="Enter your email"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
@@ -118,6 +119,7 @@ export default function LoginPage() {
                   name="password"
                   type="password"
                   required
+                  placeholder="Enter your password"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
