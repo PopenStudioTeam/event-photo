@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, ChangeEvent, FormEvent, type ReactNode } from "react";
+import { useEffect, useState, ChangeEvent, FormEvent, useMemo, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { EventSlideshowOverlay } from "@/components/event-slideshow-overlay";
+import { QrDownloadDialog, type QrDownloadOptions } from "@/components/qr-download-dialog";
+import { renderQrCard } from "@/lib/qr-card-renderer";
 
 type Event = {
   id: string;
@@ -151,6 +153,9 @@ export default function EventDetailPage() {
   const [moderationLoading, setModerationLoading] = useState(false);
   const [togglingUploads, setTogglingUploads] = useState(false);
   const [downloadingQr, setDownloadingQr] = useState(false);
+
+  // QR download dialog state
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -529,6 +534,36 @@ export default function EventDetailPage() {
     }
   };
 
+  const handleDownloadQrTemplate = async ({ layout, greeting }: QrDownloadOptions) => {
+    if (!event) return;
+
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = `${API_URL}/qr/${event.slug}?origin=${encodeURIComponent(baseWebUrl)}`;
+
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("Failed to load QR image"));
+      });
+
+      const dataUrl = await renderQrCard({
+        layout,
+        eventName: event.name,
+        eventDate: event.eventDate,
+        greeting,
+        qrImage: img,
+      });
+
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `${event.slug}-qr-${layout}.png`;
+      link.click();
+    } finally {
+      setQrDialogOpen(false);
+    }
+  };
+
   if (loading) {
     return <div className="text-sm text-muted-foreground">Loading event…</div>;
   }
@@ -657,105 +692,104 @@ export default function EventDetailPage() {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
-      {/* Event details */}
-      <Card className="rounded-2xl">
-        <CardHeader className="border-b border-border/50 pb-5">
-          <CardTitle className="text-base md:text-lg">Event details</CardTitle>
-        </CardHeader>
+        {/* Event details */}
+        <Card className="rounded-2xl">
+          <CardHeader className="border-b border-border/50 pb-5">
+            <CardTitle className="text-base md:text-lg">Event details</CardTitle>
+          </CardHeader>
 
-        <CardContent className="pt-2">
-          <dl>
-            <DetailRow label="Date">
-              {formatEventDate(event.eventDate)}
-            </DetailRow>
-            <DetailRow label="Slug">
-              <span className="break-all font-mono text-xs">{event.slug}</span>
-            </DetailRow>
-            <DetailRow label="Gallery protection">
-              {event.protected
-                ? event.hasPassword
-                  ? "Enabled (password set)"
-                  : "Enabled (no password yet)"
-                : "Disabled"}
-            </DetailRow>
-            <DetailRow label="Uploads">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <span>{event.uploadsEnabled ? "Enabled" : "Disabled"}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full sm:w-auto"
-                  onClick={handleToggleUploads}
-                  disabled={togglingUploads}
-                >
-                  {togglingUploads
-                    ? "Updating…"
-                    : event.uploadsEnabled
-                      ? "Disable uploads"
-                      : "Enable uploads"}
-                </Button>
-              </div>
-            </DetailRow>
-            <DetailRow label="Theme">
-              {event.backgroundVariant === "dark" ? "Dark" : "Light"} ·{" "}
-              {event.primaryColor}
-            </DetailRow>
-            <DetailRow label="POV mode">
-              {event.povEnabled
-                ? `Enabled · max ${event.povMaxPerGuest || "∞"} shot(s) per guest`
-                : "Disabled"}
-              {event.povEnabled && event.povRevealAt && (
-                <>
-                  {" · reveal "}
-                  {formatEventDate(event.povRevealAt)}
-                </>
-              )}
-            </DetailRow>
-            <DetailRow label="Cover layout">
-              {event.coverLayout === "banner" ? "Banner" : "Card"} ·{" "}
-              {event.coverOverlay === "gradient" ? "Gradient overlay" : "No overlay"}
-            </DetailRow>
-          </dl>
-        </CardContent>
-      </Card>
+          <CardContent className="pt-2">
+            <dl>
+              <DetailRow label="Date">
+                {formatEventDate(event.eventDate)}
+              </DetailRow>
+              <DetailRow label="Slug">
+                <span className="break-all font-mono text-xs">{event.slug}</span>
+              </DetailRow>
+              <DetailRow label="Gallery protection">
+                {event.protected
+                  ? event.hasPassword
+                    ? "Enabled (password set)"
+                    : "Enabled (no password yet)"
+                  : "Disabled"}
+              </DetailRow>
+              <DetailRow label="Uploads">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <span>{event.uploadsEnabled ? "Enabled" : "Disabled"}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full sm:w-auto"
+                    onClick={handleToggleUploads}
+                    disabled={togglingUploads}
+                  >
+                    {togglingUploads
+                      ? "Updating…"
+                      : event.uploadsEnabled
+                        ? "Disable uploads"
+                        : "Enable uploads"}
+                  </Button>
+                </div>
+              </DetailRow>
+              <DetailRow label="Theme">
+                {event.backgroundVariant === "dark" ? "Dark" : "Light"} ·{" "}
+                {event.primaryColor}
+              </DetailRow>
+              <DetailRow label="POV mode">
+                {event.povEnabled
+                  ? `Enabled · max ${event.povMaxPerGuest || "∞"} shot(s) per guest`
+                  : "Disabled"}
+                {event.povEnabled && event.povRevealAt && (
+                  <>
+                    {" · reveal "}
+                    {formatEventDate(event.povRevealAt)}
+                  </>
+                )}
+              </DetailRow>
+              <DetailRow label="Cover layout">
+                {event.coverLayout === "banner" ? "Banner" : "Card"} ·{" "}
+                {event.coverOverlay === "gradient" ? "Gradient overlay" : "No overlay"}
+              </DetailRow>
+            </dl>
+          </CardContent>
+        </Card>
 
-      {/* QR card */}
-      <Card className="rounded-2xl">
-        <CardHeader className="border-b border-border/50 pb-5">
-          <CardTitle className="text-base md:text-lg">QR code</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5 pt-6 text-sm">
-          <div className="mx-auto flex aspect-square w-full max-w-56 items-center justify-center overflow-hidden rounded-2xl border border-border/70 bg-white p-3 shadow-sm">
-            <img
-              src={qrImageUrl}
-              alt="Event QR"
-              className="h-full w-full object-contain p-2"
-            />
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:flex-1"
-              onClick={handleDownloadQr}
-              disabled={downloadingQr}
-            >
-              {downloadingQr ? "Downloading…" : "Download QR code"}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:flex-1"
-              onClick={handleCopyLink}
-            >
-              Copy event link
-            </Button>
-          </div>
-          <div className="rounded-xl bg-muted/40 px-4 py-3 break-all text-xs text-muted-foreground">
-            {eventUrl}
-          </div>
-        </CardContent>
-      </Card>
+        {/* QR card */}
+        <Card className="rounded-2xl">
+          <CardHeader className="border-b border-border/50 pb-5">
+            <CardTitle className="text-base md:text-lg">QR code</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5 pt-6 text-sm">
+            <div className="mx-auto flex aspect-square w-full max-w-56 items-center justify-center overflow-hidden rounded-2xl border border-border/70 bg-white p-3 shadow-sm">
+              <img
+                src={qrImageUrl}
+                alt="Event QR"
+                className="h-full w-full object-contain p-2"
+              />
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-auto"
+                onClick={() => setQrDialogOpen(true)}
+              >
+                Download QR
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full sm:flex-1"
+                onClick={handleCopyLink}
+              >
+                Copy event link
+              </Button>
+            </div>
+            <div className="rounded-xl bg-muted/40 px-4 py-3 break-all text-xs text-muted-foreground">
+              {eventUrl}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Edit modal */}
@@ -953,8 +987,8 @@ export default function EventDetailPage() {
                   </div>
                 </div>
 
+              </div>
             </div>
-          </div>
 
             <DialogFooter className="shrink-0 border-t px-4 py-3">
               <Button
@@ -1218,7 +1252,7 @@ export default function EventDetailPage() {
           <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-muted/30 p-3 sm:p-6">
             {media[lightboxIndex] ? (
               media[lightboxIndex].type === "photo" ||
-              (media[lightboxIndex].mimeType ?? "").startsWith("image/") ? (
+                (media[lightboxIndex].mimeType ?? "").startsWith("image/") ? (
                 <img
                   src={media[lightboxIndex].url}
                   alt={media[lightboxIndex].guestName ?? "Media"}
@@ -1382,6 +1416,15 @@ export default function EventDetailPage() {
         mediaPath={event ? `/events/${event.slug}/media` : ""}
         eventName={event?.name}
         initialIndex={slideshowStartIndex}
+      />
+
+      <QrDownloadDialog
+        open={qrDialogOpen}
+        onOpenChange={setQrDialogOpen}
+        eventName={event.name}
+        eventDate={event.eventDate}
+        qrImageUrl={`${API_URL}/qr/${event.slug}?origin=${encodeURIComponent(baseWebUrl)}`}
+        onDownload={handleDownloadQrTemplate}
       />
     </div>
   );

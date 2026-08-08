@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
-import { Fredoka, Nunito_Sans } from "next/font/google";
+import {
+  Cormorant_Garamond,
+  Fredoka,
+  Nunito_Sans,
+  Playfair_Display,
+} from "next/font/google";
 import "./globals.css";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -13,6 +18,19 @@ const fredoka = Fredoka({
 const nunitoSans = Nunito_Sans({
   subsets: ["latin"],
   variable: "--font-body",
+  display: "swap",
+});
+
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const cormorantGaramond = Cormorant_Garamond({
+  subsets: ["latin"],
+  variable: "--font-script",
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -30,7 +48,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${fredoka.variable} ${nunitoSans.variable}`}
+      className={`${fredoka.variable} ${nunitoSans.variable} ${playfairDisplay.variable} ${cormorantGaramond.variable}`}
     >
       <body className="min-h-full bg-background font-sans text-foreground antialiased">
         <ThemeProvider>
