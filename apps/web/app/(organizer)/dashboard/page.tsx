@@ -19,6 +19,7 @@ import {
 } from "recharts";
 
 import { apiFetch, reportApiError } from "@/lib/api";
+import { formatEventDate } from "@/lib/format-date";
 import {
   Card,
   CardContent,
@@ -506,7 +507,7 @@ export default function DashboardPage() {
 
                     <div className="mt-1 text-xs text-muted-foreground">
                       {event.eventDate
-                        ? new Date(event.eventDate).toLocaleDateString()
+                        ? formatEventDate(event.eventDate)
                         : "No event date"}
                     </div>
                   </div>

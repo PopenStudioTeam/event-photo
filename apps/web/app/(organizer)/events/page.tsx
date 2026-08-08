@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { apiFetch, apiFetchBlobWithProgress, reportApiError } from "@/lib/api";
+import { formatEventDate } from "@/lib/format-date";
 import { NewEventDialog } from "@/components/new-event-dialog";
 import {
   Dialog,
@@ -339,9 +340,7 @@ export default function EventsPage() {
                   <div className="space-y-1">
                     <dt className="text-xs font-medium text-muted-foreground">Date</dt>
                     <dd className="text-sm">
-                      {evt.eventDate
-                        ? new Date(evt.eventDate).toLocaleDateString()
-                        : "No date"}
+                      {formatEventDate(evt.eventDate)}
                     </dd>
                   </div>
                   <div className="space-y-1">
@@ -377,7 +376,7 @@ export default function EventsPage() {
                       {evt.povEnabled && evt.povRevealAt && (
                         <>
                           {" · reveal "}
-                          {new Date(evt.povRevealAt).toLocaleDateString()}
+                          {formatEventDate(evt.povRevealAt)}
                         </>
                       )}
                     </dd>
@@ -437,7 +436,7 @@ export default function EventsPage() {
                     </TableCell>
                     <TableCell className={tableCellClass}>
                       {evt.eventDate
-                        ? new Date(evt.eventDate).toLocaleDateString()
+                        ? formatEventDate(evt.eventDate)
                         : "—"}
                     </TableCell>
                     <TableCell className={`${tableCellClass} hidden lg:table-cell`}>
@@ -482,7 +481,7 @@ export default function EventsPage() {
                             {evt.povRevealAt && (
                               <>
                                 {" · reveal "}
-                                {new Date(evt.povRevealAt).toLocaleDateString()}
+                                {formatEventDate(evt.povRevealAt)}
                               </>
                             )}
                           </div>

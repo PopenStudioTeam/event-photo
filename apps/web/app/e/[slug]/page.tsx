@@ -3,6 +3,7 @@
 import { useEffect, useState, ChangeEvent, FormEvent } from "react";
 import { useParams } from "next/navigation";
 import { apiFetch, ApiError, reportApiError, showErrorAlert } from "@/lib/api";
+import { formatEventDate } from "@/lib/format-date";
 import {
   getGalleryUnlockToken,
   setGalleryUnlockToken,
@@ -518,7 +519,7 @@ export default function GuestEventPage() {
                 <div className="text-sm font-semibold">{event.name}</div>
                 {event.eventDate && (
                   <div className="text-[11px] text-gray-300">
-                    {new Date(event.eventDate).toLocaleDateString()}
+                    {formatEventDate(event.eventDate)}
                   </div>
                 )}
               </div>
@@ -597,7 +598,7 @@ export default function GuestEventPage() {
             <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground mb-2">
               Gallery will unlock on{" "}
               <span className="font-semibold">
-                {new Date(event.povRevealAt).toLocaleDateString()}
+                {formatEventDate(event.povRevealAt)}
               </span>
               . You can still upload your shots now.
             </div>
@@ -648,7 +649,7 @@ export default function GuestEventPage() {
           ) : revealAt && media.length === 0 ? (
             <div className="text-sm text-muted-foreground">
               Gallery is in POV reveal mode and will unlock on{" "}
-              {new Date(event.povRevealAt ?? revealAt).toLocaleDateString()}.
+              {formatEventDate(event.povRevealAt ?? revealAt)}.
             </div>
           ) : media.length === 0 ? (
             <div className="text-sm text-muted-foreground">

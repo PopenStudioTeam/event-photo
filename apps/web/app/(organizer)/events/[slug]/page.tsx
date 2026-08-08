@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { API_URL, apiFetch, apiFetchBlobWithProgress, reportApiError, showErrorAlert } from "@/lib/api";
+import { formatEventDate } from "@/lib/format-date";
 import { useBaseWebUrl } from "@/lib/use-base-web-url";
 import {
   Card,
@@ -578,14 +579,7 @@ export default function EventDetailPage() {
               {event.name}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {event.eventDate
-                ? new Date(event.eventDate).toLocaleDateString(undefined, {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })
-                : "No event date set"}
+              {event.eventDate ? formatEventDate(event.eventDate) : "No event date set"}
             </p>
           </div>
 
@@ -672,9 +666,7 @@ export default function EventDetailPage() {
         <CardContent className="pt-2">
           <dl>
             <DetailRow label="Date">
-              {event.eventDate
-                ? new Date(event.eventDate).toLocaleDateString()
-                : "—"}
+              {formatEventDate(event.eventDate)}
             </DetailRow>
             <DetailRow label="Slug">
               <span className="break-all font-mono text-xs">{event.slug}</span>
@@ -715,7 +707,7 @@ export default function EventDetailPage() {
               {event.povEnabled && event.povRevealAt && (
                 <>
                   {" · reveal "}
-                  {new Date(event.povRevealAt).toLocaleDateString()}
+                  {formatEventDate(event.povRevealAt)}
                 </>
               )}
             </DetailRow>
