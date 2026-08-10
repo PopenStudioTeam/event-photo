@@ -18,7 +18,7 @@ export default function OnboardingLayout({
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_oklch(0.55_0.01_280)_0%,_oklch(0.32_0.015_280)_45%,_oklch(0.22_0.01_280)_100%)] text-foreground dark:bg-[radial-gradient(ellipse_at_top,_oklch(0.28_0.02_280)_0%,_oklch(0.18_0.015_280)_55%,_oklch(0.14_0.01_280)_100%)]">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_#1e293b_0%,_#0f172a_55%,_#0f172a_100%)] text-foreground">
       {children}
     </div>
   );

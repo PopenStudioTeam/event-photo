@@ -235,7 +235,7 @@ export default function OnboardingPage() {
               </p>
             </div>
 
-            <div className="overflow-hidden rounded-2xl bg-zinc-800 p-6 text-center text-white">
+            <div className="overflow-hidden rounded-2xl bg-brand-slate-navy p-6 text-center text-brand-off-white">
               <p className="mb-4 text-sm font-medium">Scan to view or add photos!</p>
               <div className="mx-auto inline-block rounded-xl border-2 border-primary/40 bg-white p-3">
                 <img

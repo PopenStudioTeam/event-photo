@@ -137,7 +137,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
 
   if (type === "success") {
     icon = (
-      <CheckCircleIcon className="text-green-600 dark:text-green-400" aria-hidden="true" />
+      <CheckCircleIcon className="text-brand-champagne-gold" aria-hidden="true" />
     )
   }
 

@@ -61,11 +61,11 @@ function NavLink({
           : "gap-3 rounded-xl px-3 py-2.5 text-sm",
         active
           ? compact
-            ? "bg-primary/10 font-medium text-primary"
-            : "border-l-2 border-primary bg-primary/10 font-medium text-primary"
+            ? "bg-primary/15 font-medium text-primary"
+            : "border-l-2 border-primary bg-primary/15 font-medium text-primary"
           : compact
-            ? "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+            ? "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
       )}
     >
       <Icon className={cn(compact ? "h-5 w-5" : "h-4 w-4 shrink-0")} />
@@ -119,16 +119,16 @@ export function Sidebar() {
 
   const sidebarInner = (
     <>
-      <div className="mb-4 shrink-0 rounded-2xl bg-muted/50 p-4">
+      <div className="mb-4 shrink-0 rounded-2xl bg-sidebar-accent p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
             <Sparkles className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <div className="truncate font-heading text-base font-semibold tracking-tight">
+            <div className="truncate font-heading text-base font-semibold tracking-tight text-sidebar-foreground">
               Event Photo
             </div>
-            <div className="text-xs text-muted-foreground">Organizer workspace</div>
+            <div className="text-xs text-sidebar-foreground/60">Organizer workspace</div>
           </div>
         </div>
       </div>
@@ -136,7 +136,7 @@ export function Sidebar() {
       {inEventContext && (
         <div className="mb-4 shrink-0 space-y-2 px-1">
           <div className="flex items-center justify-between px-1">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/60">
               Current Event
             </span>
             <Link
@@ -183,7 +183,7 @@ export function Sidebar() {
 
           <Link
             href="/settings"
-            className="flex items-center justify-center gap-2 rounded-xl bg-amber-400/90 px-3 py-2.5 text-sm font-semibold text-amber-950 shadow-sm transition hover:bg-amber-400"
+            className="flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-[var(--primary-hover)]"
           >
             <Star className="h-4 w-4" />
             Upgrade Your Event
@@ -204,9 +204,9 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-4 shrink-0 rounded-2xl border border-dashed border-border/80 bg-muted/30 p-4">
-        <div className="text-xs font-medium text-foreground">My Account</div>
-        <div className="mt-1 truncate text-xs text-muted-foreground">
+      <div className="mt-4 shrink-0 rounded-2xl border border-dashed border-sidebar-border bg-sidebar-accent/50 p-4">
+        <div className="text-xs font-medium text-sidebar-foreground">My Account</div>
+        <div className="mt-1 truncate text-xs text-sidebar-foreground/60">
           {organizer?.email ?? "Organizer"}
         </div>
       </div>
@@ -216,13 +216,13 @@ export function Sidebar() {
   return (
     <>
       <aside className="fixed left-4 top-4 z-30 hidden h-[calc(100dvh-2rem)] w-[17rem] md:flex xl:left-5 xl:top-5 xl:h-[calc(100dvh-2.5rem)] xl:w-72">
-        <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/90 p-3 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.1)] backdrop-blur-sm lg:rounded-3xl dark:shadow-[0_8px_30px_-12px_rgba(0,0,0,0.35)]">
+        <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-sidebar-border bg-sidebar p-3 text-sidebar-foreground shadow-[0_8px_30px_-12px_rgba(15,23,42,0.2)] lg:rounded-3xl dark:shadow-[0_8px_30px_-12px_rgba(0,0,0,0.35)]">
           {sidebarInner}
         </div>
       </aside>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 px-4 pb-4 pt-2 md:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-3 gap-1 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-[0_10px_40px_-12px_rgba(15,23,42,0.18)] backdrop-blur-xl">
+        <div className="mx-auto grid max-w-md grid-cols-3 gap-1 rounded-2xl border border-sidebar-border bg-sidebar p-1.5 text-sidebar-foreground shadow-[0_10px_40px_-12px_rgba(15,23,42,0.25)]">
           {navItems.map((item) => {
             const isEventHome = item.href.match(/^\/events\/[^/]+$/) !== null;
             const active = isEventHome

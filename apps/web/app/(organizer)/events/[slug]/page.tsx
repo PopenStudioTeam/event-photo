@@ -105,7 +105,7 @@ export default function EventDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+      <div className="rounded-2xl border border-[color-mix(in_srgb,var(--brand-champagne-gold)_35%,transparent)] bg-[color-mix(in_srgb,var(--brand-champagne-gold)_12%,var(--background))] px-4 py-3 text-sm text-foreground">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p>
             You&apos;re currently using the limited free plan. Upgrade your event
@@ -113,7 +113,7 @@ export default function EventDashboardPage() {
           </p>
           <Link
             href="/settings"
-            className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-amber-300 bg-white px-3 text-sm hover:bg-amber-50"
+            className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[color-mix(in_srgb,var(--brand-champagne-gold)_40%,transparent)] bg-card px-3 text-sm hover:bg-muted"
           >
             Upgrade Plan
           </Link>
