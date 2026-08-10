@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { ErrorAlertProvider } from "@/components/error-alert-provider";
+import { Toaster } from "@/components/ui/toast";
 
 type ThemeProviderProps = {
   children: React.ReactNode;
@@ -16,7 +17,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       enableSystem
       disableTransitionOnChange
     >
-      <ErrorAlertProvider>{children}</ErrorAlertProvider>
+      <Toaster>
+        <ErrorAlertProvider>{children}</ErrorAlertProvider>
+      </Toaster>
     </NextThemesProvider>
   );
 }

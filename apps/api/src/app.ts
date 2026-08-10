@@ -13,6 +13,7 @@ import { rateLimiter } from "hono-rate-limiter";
 import { billingRoutes } from "./routes/billing.js";
 import { stripeWebhookRoutes } from "./routes/stripe-webhook.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
+import { publicRoutes } from "./routes/public.js";
 
 function clientIp(c: Context) {
   const forwarded = c.req.header("x-forwarded-for");
@@ -42,6 +43,7 @@ app.route("/qr", qrRoutes);
 app.route("/billing", billingRoutes);
 app.route("/webhooks", stripeWebhookRoutes);
 app.route("/dashboard", dashboardRoutes);
+app.route("/public", publicRoutes);
 
 app.route(
   "/e",

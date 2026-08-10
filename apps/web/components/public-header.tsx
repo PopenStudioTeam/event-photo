@@ -16,8 +16,16 @@ const navigation = [
     href: "/how-it-works",
   },
   {
+    label: "Stories",
+    href: "/stories",
+  },
+  {
     label: "Pricing",
     href: "/pricing",
+  },
+  {
+    label: "Guides",
+    href: "/guides",
   },
 ];
 

@@ -31,9 +31,9 @@ const JWT_SECRET = process.env.JWT_SECRET!;
 
 type EventRow = typeof events.$inferSelect;
 
-const FREE_EVENT = {
-  plan: "free",
-  paymentStatus: "free",
+const DEFAULT_EVENT = {
+  plan: "pro",
+  paymentStatus: "paid",
 } as EventRow;
 
 const PLAN_FEATURE_ERRORS = {
@@ -92,19 +92,19 @@ export const eventRoutes = new Hono()
         );
       }
 
-      if (body.protected && !canUseFeature(FREE_EVENT, "passwordProtection")) {
+      if (body.protected && !canUseFeature(DEFAULT_EVENT, "passwordProtection")) {
         return c.json({ error: PLAN_FEATURE_ERRORS.passwordProtection }, 403);
       }
 
-      if (wantsCustomization(body) && !canUseFeature(FREE_EVENT, "customization")) {
+      if (wantsCustomization(body) && !canUseFeature(DEFAULT_EVENT, "customization")) {
         return c.json({ error: PLAN_FEATURE_ERRORS.customization }, 403);
       }
 
-      if (body.povEnabled && !canUseFeature(FREE_EVENT, "pov")) {
+      if (body.povEnabled && !canUseFeature(DEFAULT_EVENT, "pov")) {
         return c.json({ error: PLAN_FEATURE_ERRORS.pov }, 403);
       }
 
-      if (body.povRevealAt && !canUseFeature(FREE_EVENT, "revealDate")) {
+      if (body.povRevealAt && !canUseFeature(DEFAULT_EVENT, "revealDate")) {
         return c.json({ error: PLAN_FEATURE_ERRORS.revealDate }, 403);
       }
 
@@ -120,6 +120,7 @@ export const eventRoutes = new Hono()
         .values({
           slug: nanoid(12),
           name: body.name ?? "Untitled Event",
+          category: body.category ?? "other",
           eventDate: body.eventDate ? new Date(body.eventDate) : null,
           coverImageKey: null,
           organizerId,
@@ -139,9 +140,10 @@ export const eventRoutes = new Hono()
           coverLayout: body.coverLayout ?? "banner",
           coverOverlay: body.coverOverlay ?? "none",
         
-          plan: "free",
-          paymentStatus: "free",
-          maxMediaCount: getMaxMediaCount(FREE_EVENT),
+          plan: "pro",
+          paymentStatus: "paid",
+          paidAt: new Date(),
+          maxMediaCount: getMaxMediaCount(DEFAULT_EVENT),
         })
         .returning();
 
@@ -200,6 +202,7 @@ export const eventRoutes = new Hono()
           id: event.id,
           slug: event.slug,
           name: event.name,
+          category: event.category,
           eventDate: event.eventDate,
           coverImageKey: event.coverImageKey,
           uploadsEnabled: event.uploadsEnabled,
@@ -273,6 +276,9 @@ export const eventRoutes = new Hono()
 
       if (updates.name) {
         patch.name = updates.name;
+      }
+      if (updates.category) {
+        patch.category = updates.category;
       }
       if (updates.eventDate) {
         patch.eventDate = new Date(updates.eventDate);

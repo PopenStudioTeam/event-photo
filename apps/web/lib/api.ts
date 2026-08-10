@@ -2,6 +2,7 @@ import { getToken } from "./auth";
 import { showErrorAlert } from "./error-alert";
 
 export { showErrorAlert } from "./error-alert";
+export { showSuccessToast } from "./success-toast";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 

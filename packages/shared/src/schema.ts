@@ -25,11 +25,34 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "refunded",
 ]);
 
+export const eventCategoryEnum = pgEnum("event_category", [
+  "wedding",
+  "party",
+  "conference",
+  "birthday",
+  "other",
+]);
+
+export const testimonialCategoryEnum = pgEnum("testimonial_category", [
+  "wedding",
+  "party",
+  "birthday",
+  "corporate",
+  "other",
+]);
+
+export const testimonialSourceEnum = pgEnum("testimonial_source", [
+  "guest",
+  "organizer",
+  "admin",
+]);
+
 export const organizers = pgTable("organizers", {
   id: uuid("id").defaultRandom().primaryKey(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash"),
   googleId: text("google_id").unique(),
+  onboardingCompleted: boolean("onboarding_completed").default(false).notNull(),
   createdAt: timestamp("created_at", {
     withTimezone: true,
   })
@@ -41,6 +64,7 @@ export const events = pgTable("events", {
   id: uuid("id").defaultRandom().primaryKey(),
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
+  category: eventCategoryEnum("category").default("other").notNull(),
   eventDate: timestamp("event_date", { withTimezone: true }),
   coverImageKey: text("cover_image_key"),
   uploadsEnabled: boolean("uploads_enabled").default(true).notNull(),
@@ -126,3 +150,78 @@ export const mediaLikes = pgTable(
   },
   (table) => [unique().on(table.mediaId, table.guestId)]
 );
+
+export const testimonials = pgTable("testimonials", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  eventId: uuid("event_id").references(() => events.id, {
+    onDelete: "set null",
+  }),
+
+  authorName: text("author_name").notNull(),
+  authorRole: text("author_role"),
+  category: testimonialCategoryEnum("category").default("other").notNull(),
+  source: testimonialSourceEnum("source").default("guest").notNull(),
+
+  rating: integer("rating").default(5).notNull(),
+  quote: text("quote").notNull(),
+  photoKey: text("photo_key"),
+
+  verified: boolean("verified").default(false).notNull(),
+  published: boolean("published").default(false).notNull(),
+  featured: boolean("featured").default(false).notNull(),
+
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const pricingPlans = pgTable("pricing_plans", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  key: text("key").notNull().unique(),
+  name: text("name").notNull(),
+  priceCents: integer("price_cents").notNull(),
+  originalPriceCents: integer("original_price_cents"),
+  billingNote: text("billing_note").notNull(),
+  description: text("description").notNull(),
+  badge: text("badge"),
+
+  sortOrder: integer("sort_order").default(0).notNull(),
+  active: boolean("active").default(true).notNull(),
+
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const pricingPlanFeatures = pgTable("pricing_plan_features", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  planId: uuid("plan_id")
+    .references(() => pricingPlans.id, { onDelete: "cascade" })
+    .notNull(),
+
+  label: text("label").notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+});
+
+export const faqPageEnum = pgEnum("faq_page", ["home", "pricing"]);
+
+export const faqs = pgTable("faqs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  page: faqPageEnum("page").notNull(),
+  question: text("question").notNull(),
+  answer: text("answer").notNull(),
+
+  sortOrder: integer("sort_order").default(0).notNull(),
+  published: boolean("published").default(true).notNull(),
+
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});

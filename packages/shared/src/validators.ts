@@ -22,8 +22,17 @@ export const coverUploadSchema = z.object({
   fileSize: z.number().int().positive().max(5 * 1024 * 1024),
 });
 
+export const eventCategorySchema = z.enum([
+  "wedding",
+  "party",
+  "conference",
+  "birthday",
+  "other",
+]);
+
 export const createEventSchema = z.object({
   name: z.string().min(1).max(120),
+  category: eventCategorySchema.optional(),
   eventDate: z.string().datetime().optional(),
   protected: z.boolean().optional(),
   password: z.string().min(4).max(128).optional(),
@@ -43,6 +52,7 @@ export const createEventSchema = z.object({
 
 export const updateEventSchema = z.object({
   name: z.string().min(1).max(120).optional(),
+  category: eventCategorySchema.optional(),
   eventDate: z.string().datetime().optional(),
   coverImageKey: z.string().optional(),
 

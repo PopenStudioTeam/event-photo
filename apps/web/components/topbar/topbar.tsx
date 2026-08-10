@@ -42,6 +42,28 @@ const PAGE_META: Record<string, { title: string; description: string }> = {
 };
 
 function getPageMeta(pathname: string) {
+  const eventHomeMatch = pathname.match(/^\/events\/([^/]+)$/);
+  if (eventHomeMatch) {
+    return {
+      title: "Event Home",
+      description: "Album link, QR code, and photo wall for your event",
+    };
+  }
+
+  if (pathname.includes("/media")) {
+    return {
+      title: "Photos & Videos",
+      description: "View, download, and moderate guest uploads",
+    };
+  }
+
+  if (pathname.includes("/settings")) {
+    return {
+      title: "Event Settings",
+      description: "General, appearance, moderation, and more",
+    };
+  }
+
   if (pathname.startsWith("/events/") && pathname !== "/events") {
     return {
       title: "Event details",

@@ -14,6 +14,58 @@ const eventTypes = [
   "Graduations",
 ];
 
+const processSteps = [
+  {
+    number: "1",
+    title: "Create your event",
+    text: "Set up your gallery in under two minutes.",
+  },
+  {
+    number: "2",
+    title: "Share your QR code",
+    text: "Print it, send it, or display it on a screen.",
+  },
+  {
+    number: "3",
+    title: "Watch memories arrive",
+    text: "Every guest upload lands in your gallery instantly.",
+  },
+];
+
+type HowItWorksVisualVariant = "create" | "share" | "contribute" | "relive";
+
+const howItWorksSteps: {
+  number: string;
+  title: string;
+  text: string;
+  visual: HowItWorksVisualVariant;
+}[] = [
+    {
+      number: "01",
+      title: "Create a gallery",
+      text: "Name your event, add a cover, and make the page feel like yours.",
+      visual: "create",
+    },
+    {
+      number: "02",
+      title: "Share one QR code",
+      text: "Print it on a table card, send the link, or display it on a screen.",
+      visual: "share",
+    },
+    {
+      number: "03",
+      title: "Guests contribute",
+      text: "Photos and videos arrive directly from their phones.",
+      visual: "contribute",
+    },
+    {
+      number: "04",
+      title: "Relive everything",
+      text: "Moderate, like, browse, and download the complete collection.",
+      visual: "relive",
+    },
+  ];
+
 const features = [
   {
     number: "01",
@@ -33,6 +85,26 @@ const features = [
     text: "Review uploads, let guests like their favorite moments, and download the complete collection in original quality.",
     accent: "bg-[#fff0bd]",
   },
+];
+
+const allYouNeedFeatures = [
+  { icon: "🖼️", title: "Digital album", text: "One shared gallery for every photo and video." },
+  { icon: "⬇️", title: "One-click download", text: "Grab the full collection in original quality." },
+  { icon: "📵", title: "No app required", text: "Guests upload straight from their phone browser." },
+  { icon: "🔗", title: "QR code & link", text: "Print it, text it, or display it on a screen." },
+  { icon: "📺", title: "Live photo wall", text: "Show uploads on a screen as they arrive." },
+  { icon: "🎨", title: "Custom theme", text: "Match the cover and colors to your event." },
+  { icon: "💬", title: "Captions & names", text: "Guests can sign and caption what they share." },
+  { icon: "🔒", title: "Private & secured", text: "Password-protect the gallery when it matters." },
+];
+
+const useCases = [
+  { label: "Weddings", title: "Every angle of your day", color: "bg-[#ffd7df]" },
+  { label: "Parties", title: "The night from everyone", color: "bg-[#d8efff]" },
+  { label: "Birthdays", title: "More than one perspective", color: "bg-[#fff0bd]" },
+  { label: "Corporate", title: "Bring the room together", color: "bg-[#e3d9ff]" },
+  { label: "Conferences", title: "Every session, covered", color: "bg-[#d7f5e3]" },
+  { label: "Any event", title: "Whatever you're celebrating", color: "bg-[#ffe2c9]" },
 ];
 
 const faqs = [
@@ -157,8 +229,103 @@ function GalleryPreview() {
   );
 }
 
+function HowItWorksVisual({ variant }: { variant: HowItWorksVisualVariant }) {
+  if (variant === "create") {
+    return (
+      <div className="mx-auto max-w-sm rounded-[2rem] border border-black/5 bg-white p-5 shadow-xl">
+        <div className="h-24 rounded-2xl bg-gradient-to-br from-[#ffb5c4] via-[#ffc889] to-[#fff0b8]" />
+        <div className="mt-4 h-3 w-2/3 rounded-full bg-neutral-800" />
+        <div className="mt-2 h-2 w-1/3 rounded-full bg-neutral-200" />
+        <div className="mt-4 flex gap-2">
+          <span className="h-6 w-6 rounded-full bg-rose-400" />
+          <span className="h-6 w-6 rounded-full bg-sky-400" />
+          <span className="h-6 w-6 rounded-full bg-amber-300" />
+          <span className="h-6 w-6 rounded-full bg-violet-400" />
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "share") {
+    return (
+      <div className="mx-auto flex max-w-sm items-center gap-4 rounded-[2rem] border border-black/5 bg-white p-6 shadow-xl">
+        <div className="grid h-24 w-24 shrink-0 grid-cols-5 gap-1 rounded-xl bg-neutral-900 p-2">
+          {Array.from({ length: 25 }).map((_, index) => (
+            <span
+              key={index}
+              className={
+                (index * 7) % 3 === 0 ? "bg-white" : "bg-transparent"
+              }
+            />
+          ))}
+        </div>
+        <div>
+          <div className="text-sm font-bold">Scan to contribute</div>
+          <div className="mt-1 text-xs text-neutral-500">
+            One code. Every perspective.
+          </div>
+          <div className="mt-3 inline-flex rounded-full bg-neutral-100 px-3 py-1 text-[10px] text-neutral-500">
+            eventphoto.app/e/rachel-john
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "contribute") {
+    return (
+      <div className="mx-auto grid max-w-sm grid-cols-2 gap-2">
+        {[
+          "from-rose-400 to-orange-200",
+          "from-cyan-400 to-blue-500",
+          "from-amber-300 to-fuchsia-400",
+          "from-emerald-300 to-teal-500",
+        ].map((gradient) => (
+          <div
+            key={gradient}
+            className={`aspect-square rounded-2xl bg-gradient-to-br p-2 shadow-lg ${gradient}`}
+          >
+            <div className="flex h-full items-end rounded-xl bg-black/10 p-2 text-[9px] text-white">
+              Guest upload
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-sm rounded-[2rem] border border-black/5 bg-white p-5 shadow-xl">
+      <div className="grid grid-cols-4 gap-1.5">
+        {[
+          "bg-rose-300",
+          "bg-sky-300",
+          "bg-amber-200",
+          "bg-violet-300",
+          "bg-emerald-200",
+          "bg-fuchsia-300",
+          "bg-cyan-200",
+          "bg-orange-200",
+        ].map((color, index) => (
+          <span key={index} className={`aspect-square rounded-lg ${color}`} />
+        ))}
+      </div>
+      <div className="mt-4 flex items-center justify-between rounded-xl bg-neutral-900 px-4 py-3 text-white">
+        <span className="text-xs font-medium">Download all (128)</span>
+        <span className="text-sm">⬇</span>
+      </div>
+    </div>
+  );
+}
+
+function formatCount(value: number) {
+  return new Intl.NumberFormat("en-US").format(value);
+}
+
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  // Dummy data for now — swap for a live /public/stats fetch later.
+  const stats = { totalMedia: 12480, totalEvents: 640 };
 
   return (
     <div className="min-h-screen overflow-hidden bg-[#fffdfb] text-[#262125]">
@@ -219,7 +386,30 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="overflow-hidden border-y border-black/5 bg-white/70 py-5">
+        <section className="border-y border-black/5 bg-[#fff0bd]/60">
+          <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 sm:py-12 md:grid-cols-3 lg:px-8">
+            {processSteps.map((step, index) => (
+              <div key={step.number} className="relative flex items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#262125] text-sm font-bold text-white">
+                  {step.number}
+                </div>
+                <div>
+                  <div className="text-sm font-bold">{step.title}</div>
+                  <div className="mt-1 text-xs leading-5 text-neutral-600">
+                    {step.text}
+                  </div>
+                </div>
+                {index < processSteps.length - 1 && (
+                  <span className="absolute -right-4 top-5 hidden text-neutral-300 md:block">
+                    ···
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="overflow-hidden border-b border-black/5 bg-white/70 py-5">
           <div className="landing-marquee flex min-w-max gap-10 text-sm font-medium text-neutral-500">
             {[...eventTypes, ...eventTypes].map((eventType, index) => (
               <span key={`${eventType}-${index}`} className="flex items-center gap-10">
@@ -234,81 +424,39 @@ export default function LandingPage() {
           id="how-it-works"
           className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32"
         >
-          <div className="grid gap-14 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
-            <div className="landing-rise">
-              <div className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
-                How it works
-              </div>
-              <h2 className="mt-5 max-w-lg text-4xl leading-tight sm:text-5xl">
-                The gallery your guests build for you.
-              </h2>
-              <p className="mt-5 max-w-md text-sm leading-7 text-neutral-600 sm:text-base">
-                Your guests already have the best camera in their pocket. Give
-                them one easy place to put what they captured.
-              </p>
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
+              How it works
+            </div>
+            <h2 className="mt-5 text-4xl leading-tight sm:text-5xl">
+              The gallery your guests build for you.
+            </h2>
+            <p className="mt-5 text-sm leading-7 text-neutral-600 sm:text-base">
+              Your guests already have the best camera in their pocket. Give
+              them one easy place to put what they captured.
+            </p>
+          </div>
 
-              <div className="mt-8 inline-flex rotate-[-3deg] items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-lg">
-                <div className="grid h-12 w-12 grid-cols-3 gap-1 rounded-lg bg-neutral-100 p-1">
-                  {Array.from({ length: 9 }).map((_, index) => (
-                    <span
-                      key={index}
-                      className={
-                        index % 2 === 0 ? "bg-neutral-800" : "bg-white"
-                      }
-                    />
-                  ))}
-                </div>
+          <div className="mt-16 flex flex-col gap-20">
+            {howItWorksSteps.map((step, index) => (
+              <div
+                key={step.number}
+                className={`grid items-center gap-10 lg:grid-cols-2 lg:gap-16 ${index % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""
+                  }`}
+              >
                 <div>
-                  <div className="text-xs font-bold">Scan to contribute</div>
-                  <div className="mt-1 text-[10px] text-neutral-500">
-                    One code. Every perspective.
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff0bd] text-xs font-bold">
+                    {step.number}
                   </div>
+                  <h3 className="mt-5 text-2xl sm:text-3xl">{step.title}</h3>
+                  <p className="mt-3 max-w-md text-sm leading-7 text-neutral-500 sm:text-base">
+                    {step.text}
+                  </p>
                 </div>
-              </div>
-            </div>
 
-            <div className="grid gap-3">
-              {[
-                [
-                  "01",
-                  "Create a gallery",
-                  "Name your event, add a cover, and make the page feel like yours.",
-                ],
-                [
-                  "02",
-                  "Share one QR code",
-                  "Print it on a table card, send the link, or display it on a screen.",
-                ],
-                [
-                  "03",
-                  "Guests contribute",
-                  "Photos and videos arrive directly from their phones.",
-                ],
-                [
-                  "04",
-                  "Relive everything",
-                  "Moderate, like, browse, and download the complete collection.",
-                ],
-              ].map(([number, title, text]) => (
-                <div
-                  key={number}
-                  className="group flex items-start gap-5 rounded-[1.75rem] border border-black/5 bg-white/75 p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#fff0bd] text-xs font-bold">
-                    {number}
-                  </div>
-                  <div>
-                    <h3 className="text-lg">{title}</h3>
-                    <p className="mt-1 text-sm leading-6 text-neutral-500">
-                      {text}
-                    </p>
-                  </div>
-                  <span className="ml-auto text-xl text-neutral-300 transition group-hover:translate-x-1 group-hover:text-neutral-700">
-                    →
-                  </span>
-                </div>
-              ))}
-            </div>
+                <HowItWorksVisual variant={step.visual} />
+              </div>
+            ))}
           </div>
         </section>
 
@@ -350,25 +498,63 @@ export default function LandingPage() {
         </section>
 
         <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              ["Weddings", "Every angle of your day", "bg-[#ffd7df]"],
-              ["Parties", "The night from everyone", "bg-[#d8efff]"],
-              ["Birthdays", "More than one perspective", "bg-[#fff0bd]"],
-              ["Corporate", "Bring the room together", "bg-[#e3d9ff]"],
-            ].map(([label, title, color]) => (
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
+              All in one place
+            </div>
+            <h2 className="mt-5 text-4xl leading-tight sm:text-5xl">
+              Everything you need for a perfect event.
+            </h2>
+          </div>
+
+          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {allYouNeedFeatures.map((feature) => (
               <div
-                key={label}
-                className={`group relative min-h-[290px] overflow-hidden rounded-[2rem] ${color} p-6 transition duration-500 hover:-translate-y-2`}
+                key={feature.title}
+                className="rounded-[1.75rem] border border-black/5 bg-white/75 p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+              >
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff0bd] text-lg">
+                  {feature.icon}
+                </div>
+                <h3 className="mt-5 text-sm font-bold">{feature.title}</h3>
+                <p className="mt-2 text-xs leading-5 text-neutral-500">
+                  {feature.text}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
+              For any occasion
+            </div>
+            <h2 className="mt-5 text-4xl leading-tight sm:text-5xl">
+              Event photo sharing for every celebration.
+            </h2>
+          </div>
+
+          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {useCases.map((useCase) => (
+              <div
+                key={useCase.label}
+                className={`group relative min-h-[280px] overflow-hidden rounded-[2rem] ${useCase.color} p-6 transition duration-500 hover:-translate-y-2`}
               >
                 <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-white/40 blur-2xl transition group-hover:scale-150" />
                 <div className="relative flex h-full flex-col justify-between">
                   <div className="text-xs font-bold uppercase tracking-[0.15em] opacity-50">
-                    {label}
+                    {useCase.label}
                   </div>
                   <div>
-                    <div className="text-3xl leading-tight">{title}</div>
-                    <div className="mt-5 text-5xl opacity-25">✦</div>
+                    <div className="text-3xl leading-tight">{useCase.title}</div>
+                    <a
+                      href="#how-it-works"
+                      className="mt-5 inline-flex items-center gap-1 text-sm font-medium opacity-70 transition group-hover:opacity-100"
+                    >
+                      Learn more
+                      <span className="transition group-hover:translate-x-1">→</span>
+                    </a>
                   </div>
                 </div>
               </div>
@@ -404,24 +590,44 @@ export default function LandingPage() {
               ].map(([name, price, description], index) => (
                 <div
                   key={name}
-                  className={`rounded-[1.75rem] border p-5 ${
-                    index === 1
+                  className={`rounded-[1.75rem] border p-5 ${index === 1
                       ? "border-[#262125] bg-[#262125] text-white"
                       : "bg-white"
-                  }`}
+                    }`}
                 >
                   <div className="text-sm font-bold">{name}</div>
                   <div className="mt-7 text-3xl">{price}</div>
                   <div
-                    className={`mt-2 text-xs ${
-                      index === 1 ? "text-white/55" : "text-neutral-500"
-                    }`}
+                    className={`mt-2 text-xs ${index === 1 ? "text-white/55" : "text-neutral-500"
+                      }`}
                   >
                     {description}
                   </div>
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section className="px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
+          <div className="mx-auto max-w-5xl rounded-[2.75rem] bg-[#262125] px-6 py-16 text-center text-white sm:px-10 sm:py-20">
+            <h2 className="text-3xl leading-tight sm:text-4xl">
+              {formatCount(stats.totalMedia)} moments captured across{" "}
+              {formatCount(stats.totalEvents)} events.
+            </h2>
+            <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-white/55">
+              From intimate birthdays to weddings with hundreds of guests —
+              built for whatever you're celebrating.
+            </p>
+            <Link href="/dashboard" className="mt-8 inline-block">
+              <Button
+                size="lg"
+                className="rounded-full bg-white px-7 text-[#262125] hover:bg-white/90"
+              >
+                Create your event
+                <span className="ml-2">↗</span>
+              </Button>
+            </Link>
           </div>
         </section>
 
@@ -490,6 +696,9 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-7xl flex-col gap-3 text-xs text-neutral-500 sm:flex-row sm:items-center sm:justify-between">
           <span>© {new Date().getFullYear()} Event Photo</span>
           <div className="flex gap-4">
+            <Link href="/stories" className="hover:text-black">
+              Stories
+            </Link>
             <Link href="/pricing" className="hover:text-black">
               Pricing
             </Link>

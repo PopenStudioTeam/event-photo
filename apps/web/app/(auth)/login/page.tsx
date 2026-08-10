@@ -7,10 +7,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import Link from "next/link";
 import { apiFetch, reportApiError, showErrorAlert } from "@/lib/api";
 import { saveOrganizer, saveToken } from "@/lib/auth";
+import { resolvePostAuthPath } from "@/lib/auth-redirect";
 
 type AuthResponse = {
   token: string;
-  organizer: { id: string; email: string };
+  organizer: { id: string; email: string; onboardingCompleted?: boolean };
+  needsOnboarding?: boolean;
 };
 
 export default function LoginPage() {
@@ -30,7 +32,8 @@ export default function LoginPage() {
       });
       saveToken(data.token);
       saveOrganizer(data.organizer);
-      router.push("/dashboard");
+      const path = await resolvePostAuthPath(data);
+      router.push(path);
     } catch (err) {
       reportApiError(err, "Google sign-in failed", { showAuthFailureDetail: true });
     }
@@ -53,7 +56,8 @@ export default function LoginPage() {
       });
       saveToken(data.token);
       saveOrganizer(data.organizer);
-      router.push("/dashboard");
+      const path = await resolvePostAuthPath(data);
+      router.push(path);
     } catch (err) {
       reportApiError(err, "Login failed", { showAuthFailureDetail: true });
     }

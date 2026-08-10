@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PublicHeader } from "@/components/public-header";
+import { SiteFooter } from "@/components/site-footer";
 
 const steps = [
   {
@@ -547,19 +548,7 @@ export default function HowItWorksPage() {
         </section>
       </main>
 
-      <footer className="border-t border-black/5 bg-white/70 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 text-xs text-neutral-500 sm:flex-row sm:items-center sm:justify-between">
-          <span>© {new Date().getFullYear()} Event Photo</span>
-          <div className="flex gap-4">
-            <Link href="/" className="hover:text-black">
-              Home
-            </Link>
-            <Link href="/pricing" className="hover:text-black">
-              Pricing
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

@@ -6,6 +6,7 @@ const USER_KEY = "eventphoto_user";
 export type OrganizerUser = {
   id: string;
   email: string;
+  onboardingCompleted?: boolean;
 };
 
 export function saveToken(token: string) {

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { apiFetch, reportApiError } from "@/lib/api";
 import { saveOrganizer, saveToken } from "@/lib/auth";
+import { resolvePostAuthPath } from "@/lib/auth-redirect";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -20,7 +21,11 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const res = await apiFetch<{ token: string; organizer: { id: string; email: string } }>(
+      const res = await apiFetch<{
+        token: string;
+        organizer: { id: string; email: string; onboardingCompleted?: boolean };
+        needsOnboarding?: boolean;
+      }>(
         "/auth/register",
         {
           method: "POST",
@@ -28,8 +33,8 @@ export default function RegisterPage() {
         }
       );
       saveToken(res.token);
-      saveOrganizer(res.organizer);
-      router.push("/dashboard");
+      const path = await resolvePostAuthPath(res);
+      router.push(path);
     } catch (err) {
       reportApiError(err, "Registration failed", { showAuthFailureDetail: true });
     } finally {

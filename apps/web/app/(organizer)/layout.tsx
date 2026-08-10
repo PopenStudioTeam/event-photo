@@ -1,19 +1,37 @@
 "use client";
 
 import { ReactNode, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/sidebar/organizer-sidebar";
 import { TopBar } from "@/components/topbar/topbar";
 import { getToken } from "@/lib/auth";
+import { fetchAuthMe } from "@/lib/auth-redirect";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!getToken()) {
-      router.replace("/login");
-    }
-  }, [router]);
+    const guard = async () => {
+      if (!getToken()) {
+        router.replace("/login");
+        return;
+      }
+
+      if (pathname === "/onboarding") return;
+
+      try {
+        const me = await fetchAuthMe();
+        if (me.needsOnboarding) {
+          router.replace("/onboarding");
+        }
+      } catch {
+        // Allow page to render; individual pages will surface errors.
+      }
+    };
+
+    guard();
+  }, [router, pathname]);
 
   return (
     <div className="organizer-shell min-h-screen bg-[radial-gradient(ellipse_at_top,_oklch(0.97_0.01_280)_0%,_var(--background)_55%)] dark:bg-[radial-gradient(ellipse_at_top,_oklch(0.22_0.02_280)_0%,_var(--background)_50%)]">

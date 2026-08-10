@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { sign } from "hono/jwt";
-import { eq } from "drizzle-orm";
+import { sign, jwt } from "hono/jwt";
+import { eq, count } from "drizzle-orm";
 import { OAuth2Client } from "google-auth-library";
 import { db } from "@app/shared/db";
-import { organizers } from "@app/shared/schema";
+import { organizers, events } from "@app/shared/schema";
 import { googleAuthSchema } from "@app/shared/validators";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -56,6 +56,22 @@ export const googleAuthRoutes = new Hono().post(
       { sub: organizer.id, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 },
       JWT_SECRET
     );
-    return c.json({ token, organizer: { id: organizer.id, email: organizer.email } });
+
+    const [eventCountRow] = await db
+      .select({ count: count() })
+      .from(events)
+      .where(eq(events.organizerId, organizer.id));
+
+    const isNewAccount = !organizer.onboardingCompleted && (eventCountRow?.count ?? 0) === 0;
+
+    return c.json({
+      token,
+      organizer: {
+        id: organizer.id,
+        email: organizer.email,
+        onboardingCompleted: organizer.onboardingCompleted,
+      },
+      needsOnboarding: isNewAccount,
+    });
   }
 );

@@ -1,1430 +1,274 @@
 "use client";
 
-import { useEffect, useState, ChangeEvent, FormEvent, useMemo, type ReactNode } from "react";
-import { useParams } from "next/navigation";
-import JSZip from "jszip";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { Copy, ExternalLink, Download } from "lucide-react";
 import { saveAs } from "file-saver";
-import { API_URL, apiFetch, apiFetchBlobWithProgress, reportApiError, showErrorAlert } from "@/lib/api";
-import { formatEventDate } from "@/lib/format-date";
+import {
+  API_URL,
+  apiFetch,
+  apiFetchBlobWithProgress,
+  reportApiError,
+} from "@/lib/api";
 import { useBaseWebUrl } from "@/lib/use-base-web-url";
+import { getCategoryIntro } from "@/lib/event-categories";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+  hasSeenWelcome,
+  markWelcomeSeen,
+  shouldShowWelcomeFromOnboarding,
+} from "@/lib/auth-redirect";
+import { EventWelcomeDialog } from "@/components/event-welcome-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { EventSlideshowOverlay } from "@/components/event-slideshow-overlay";
-import { QrDownloadDialog, type QrDownloadOptions } from "@/components/qr-download-dialog";
-import { renderQrCard } from "@/lib/qr-card-renderer";
 
-type Event = {
+type EventRecord = {
   id: string;
   name: string;
   slug: string;
-  eventDate: string | null;
-  uploadsEnabled: boolean;
-  coverImageKey: string | null;
-  coverImageUrl: string | null;
-  protected: boolean;
-  hasPassword: boolean;
-
-  primaryColor: string;
-  backgroundVariant: "dark" | "light";
-  povEnabled: boolean;
-  povMaxPerGuest: number;
-  povRevealAt: string | null;
-
-  coverLayout: "banner" | "card";
-  coverOverlay: "none" | "gradient";
+  category: string;
+  plan: string;
+  mediaCount?: number;
 };
 
-type Media = {
-  id: string;
-  storageKey: string;
-  type: "photo" | "video";
-  mimeType: string;
-  fileSize: number;
-  guestName: string | null;
-  caption: string | null;
-  createdAt: string;
-  url: string;
-  status?: "pending" | "approved" | "rejected";
-};
-
-type DownloadProgress = {
-  active: boolean;
-  label: string;
-  percent: number | null;
-};
-
-function mediaFilename(item: Media) {
-  const ext = (item.mimeType ?? "application/octet-stream").split("/")[1] || "bin";
-  const baseName =
-    item.guestName?.replace(/\s+/g, "_") ||
-    item.caption?.slice(0, 20).replace(/\s+/g, "_") ||
-    item.id;
-  return `${baseName}.${ext}`;
-}
-
-function DetailRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="grid gap-2 border-b border-border/50 py-4 last:border-b-0">
-      <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-        {label}
-      </dt>
-      <dd className="text-sm leading-relaxed text-foreground">{children}</dd>
-    </div>
-  );
-}
-
-export default function EventDetailPage() {
+export default function EventDashboardPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = params?.slug as string;
 
-  const [event, setEvent] = useState<Event | null>(null);
+  const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Edit modal state
-  const [editOpen, setEditOpen] = useState(false);
-  const [formName, setFormName] = useState("");
-  const [formDate, setFormDate] = useState("");
-  const [formProtected, setFormProtected] = useState(false);
-  const [formPassword, setFormPassword] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
-
-  // Theme + POV + cover style form state
-  const [formPrimaryColor, setFormPrimaryColor] = useState("#ffffff");
-  const [formBackgroundVariant, setFormBackgroundVariant] =
-    useState<"dark" | "light">("dark");
-  const [formPOVEnabled, setFormPOVEnabled] = useState(false);
-  const [formPovMaxPerGuest, setFormPovMaxPerGuest] = useState<number>(0);
-  const [formPovRevealAt, setFormPovRevealAt] = useState("");
-  const [formCoverLayout, setFormCoverLayout] =
-    useState<"banner" | "card">("banner");
-  const [formCoverOverlay, setFormCoverOverlay] =
-    useState<"none" | "gradient">("none");
-
-  // Cover upload state
-  const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [coverUploading, setCoverUploading] = useState(false);
-
-  // Zoom viewer state
-  const [zoomOpen, setZoomOpen] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
-
-  // Gallery state
-  const [media, setMedia] = useState<Media[]>([]);
-  const [galleryOpen, setGalleryOpen] = useState(false);
-  const [loadingMedia, setLoadingMedia] = useState(false);
-
-  // Lightbox state
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
-
-  // Download state
-  const [downloadProgress, setDownloadProgress] = useState<DownloadProgress>({
-    active: false,
-    label: "",
-    percent: null,
-  });
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [slideshowOpen, setSlideshowOpen] = useState(false);
-  const [slideshowStartIndex, setSlideshowStartIndex] = useState(0);
-
-  // Moderation state
-  const [moderationOpen, setModerationOpen] = useState(false);
-  const [moderationMedia, setModerationMedia] = useState<Media[]>([]);
-  const [moderationLoading, setModerationLoading] = useState(false);
-  const [togglingUploads, setTogglingUploads] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [downloadingQr, setDownloadingQr] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  // QR download dialog state
-  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const baseWebUrl = useBaseWebUrl();
+  const albumUrl = event ? `${baseWebUrl}/e/${event.slug}` : "";
+  const slideshowUrl = event ? `${baseWebUrl}/events/${event.slug}/slideshow` : "";
+  const qrImageUrl = event
+    ? `${API_URL}/qr/${event.slug}?origin=${encodeURIComponent(baseWebUrl)}`
+    : "";
 
   useEffect(() => {
     const load = async () => {
       try {
-        const events = await apiFetch<Event[]>("/events");
+        const events = (await apiFetch("/events")) as EventRecord[];
         const found = events.find((e) => e.slug === slug) ?? null;
         if (!found) {
-          setError("Event not found");
-        } else {
-          setEvent(found);
-          setFormName(found.name);
-          setFormDate(found.eventDate ? found.eventDate.slice(0, 10) : "");
-          setFormProtected(found.protected);
+          router.replace("/events");
+          return;
+        }
+        setEvent(found);
 
-          setFormPrimaryColor(found.primaryColor ?? "#ffffff");
-          setFormBackgroundVariant((found.backgroundVariant as "dark" | "light") ?? "dark");
-          setFormPOVEnabled(found.povEnabled ?? false);
-          setFormPovMaxPerGuest(found.povMaxPerGuest ?? 0);
-          setFormPovRevealAt(found.povRevealAt ? found.povRevealAt.slice(0, 10) : "");
-          setFormCoverLayout(found.coverLayout ?? "banner");
-          setFormCoverOverlay(found.coverOverlay ?? "none");
+        if (
+          shouldShowWelcomeFromOnboarding(slug) ||
+          (!hasSeenWelcome(slug) && found)
+        ) {
+          setWelcomeOpen(true);
         }
       } catch (err) {
-        console.error(err);
         reportApiError(err, "Failed to load event");
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, [slug]);
+  }, [slug, router]);
 
-  const baseWebUrl = useBaseWebUrl();
-
-  const handleCopyLink = () => {
-    if (!event) return;
-    const url = `${baseWebUrl}/e/${event.slug}`;
-    navigator.clipboard.writeText(url);
+  const handleCopy = async (url: string) => {
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
   };
 
-  const qrImageUrl = event
-    ? `${API_URL}/qr/${event.slug}?origin=${encodeURIComponent(baseWebUrl)}`
-    : "";
-  const qrDownloadPath = event
-    ? `/qr/${event.slug}?origin=${encodeURIComponent(baseWebUrl)}&download=1`
-    : "";
-
   const handleDownloadQr = async () => {
-    if (!event || !qrDownloadPath || downloadingQr) return;
-
+    if (!event || downloadingQr) return;
     setDownloadingQr(true);
     try {
-      const blob = await apiFetchBlobWithProgress(qrDownloadPath);
+      const blob = await apiFetchBlobWithProgress(
+        `/qr/${event.slug}?origin=${encodeURIComponent(baseWebUrl)}&download=1`
+      );
       saveAs(blob, `${event.slug}-qr.png`);
     } catch (err) {
-      console.error("QR download failed", err);
+      console.error(err);
     } finally {
       setDownloadingQr(false);
     }
   };
 
-  const handleToggleUploads = async () => {
-    if (!event || togglingUploads) return;
-
-    setTogglingUploads(true);
-    try {
-      const updated = await apiFetch<Event>(`/events/${slug}`, {
-        method: "PATCH",
-        body: JSON.stringify({ uploadsEnabled: !event.uploadsEnabled }),
-      });
-      setEvent((prev) => (prev ? { ...prev, ...updated } : updated));
-    } catch (err) {
-      console.error("Failed to toggle uploads", err);
-    } finally {
-      setTogglingUploads(false);
-    }
-  };
-
-  const handleOpenSlideshow = (startIndex = 0) => {
-    setSlideshowStartIndex(startIndex);
-    setSlideshowOpen(true);
-  };
-
-  const openEditDialog = () => {
-    if (!event) return;
-    setFormName(event.name);
-    setFormDate(event.eventDate ? event.eventDate.slice(0, 10) : "");
-    setFormProtected(event.protected);
-    setFormPassword("");
-    setFormPrimaryColor(event.primaryColor ?? "#ffffff");
-    setFormBackgroundVariant((event.backgroundVariant as "dark" | "light") ?? "dark");
-    setFormPOVEnabled(event.povEnabled ?? false);
-    setFormPovMaxPerGuest(event.povMaxPerGuest ?? 0);
-    setFormPovRevealAt(event.povRevealAt ? event.povRevealAt.slice(0, 10) : "");
-    setFormCoverLayout(event.coverLayout ?? "banner");
-    setFormCoverOverlay(event.coverOverlay ?? "none");
-    setEditOpen(true);
-  };
-
-  const handleEditSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!event) return;
-
-    if (formProtected && !event.hasPassword && formPassword.length < 4) {
-      showErrorAlert("Gallery password must be at least 4 characters");
-      return;
-    }
-
-    const body: Record<string, unknown> = {};
-    if (formName && formName !== event.name) body.name = formName;
-    if (formDate) body.eventDate = new Date(formDate).toISOString();
-    if (formProtected !== event.protected) body.protected = formProtected;
-    if (formPassword) body.password = formPassword;
-
-    if (formPrimaryColor && formPrimaryColor !== event.primaryColor) {
-      body.primaryColor = formPrimaryColor;
-    }
-    if (formBackgroundVariant && formBackgroundVariant !== event.backgroundVariant) {
-      body.backgroundVariant = formBackgroundVariant;
-    }
-
-    if (formPOVEnabled !== event.povEnabled) {
-      body.povEnabled = formPOVEnabled;
-    }
-    if (formPovMaxPerGuest !== event.povMaxPerGuest) {
-      body.povMaxPerGuest = formPovMaxPerGuest;
-    }
-    if (formPovRevealAt) {
-      body.povRevealAt = new Date(formPovRevealAt).toISOString();
-    }
-
-    if (formCoverLayout !== (event.coverLayout ?? "banner")) {
-      body.coverLayout = formCoverLayout;
-    }
-    if (formCoverOverlay !== (event.coverOverlay ?? "none")) {
-      body.coverOverlay = formCoverOverlay;
-    }
-
-    if (Object.keys(body).length === 0) {
-      setEditOpen(false);
-      return;
-    }
-
-    setEditSaving(true);
-
-    try {
-      const updated = await apiFetch<Event>(`/events/${slug}`, {
-        method: "PATCH",
-        body: JSON.stringify(body),
-      });
-
-      setEvent((prev) => (prev ? { ...prev, ...updated } : updated));
-      setEditOpen(false);
-      setFormPassword("");
-    } catch (err) {
-      console.error(err);
-      reportApiError(err, "Failed to save changes");
-    } finally {
-      setEditSaving(false);
-    }
-  };
-
-  const handleCoverFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    setCoverFile(file);
-  };
-
-  const handleCoverUpload = async () => {
-    if (!event || !coverFile) return;
-
-    setCoverUploading(true);
-    try {
-      const contentType = coverFile.type || "image/jpeg";
-      const fileSize = coverFile.size;
-
-      const presign = await apiFetch<{ uploadUrl: string; key: string }>(
-        `/events/${event.slug}/cover-url`,
-        {
-          method: "POST",
-          body: JSON.stringify({ contentType, fileSize }),
-        }
-      );
-
-      const putRes = await fetch(presign.uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": contentType },
-        body: coverFile,
-      });
-
-      if (!putRes.ok) {
-        throw new Error("Upload to R2 failed");
-      }
-
-      const updated = await apiFetch<Event>(`/events/${event.slug}`, {
-        method: "PATCH",
-        body: JSON.stringify({ coverImageKey: presign.key }),
-      });
-
-      setEvent((prev) => (prev ? { ...prev, ...updated } : updated));
-      setCoverFile(null);
-    } catch (err) {
-      console.error("Cover upload failed", err);
-      reportApiError(err, "Failed to upload cover image");
-    } finally {
-      setCoverUploading(false);
-    }
-  };
-
-  const loadMedia = async () => {
-    if (!event) return;
-    setLoadingMedia(true);
-    setGalleryOpen(true);
-    try {
-      const list = await apiFetch<Media[]>(`/events/${event.slug}/media`);
-      setMedia(list);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingMedia(false);
-    }
-  };
-
-  const openLightbox = (index: number) => {
-    setLightboxIndex(index);
-    setLightboxOpen(true);
-  };
-
-  const handleZoomIn = () => setZoomLevel((z) => Math.min(z + 0.25, 3));
-  const handleZoomOut = () => setZoomLevel((z) => Math.max(z - 0.25, 0.5));
-  const handleZoomReset = () => setZoomLevel(1);
-
-  const eventUrl = event ? `${baseWebUrl}/e/${event.slug}` : "";
-
-  const handleDownloadSingle = async (item: Media) => {
-    if (!event || downloadProgress.active) return;
-
-    setDownloadingId(item.id);
-    setDownloadProgress({
-      active: true,
-      label: `Downloading ${mediaFilename(item)}…`,
-      percent: 0,
-    });
-
-    try {
-      const blob = await apiFetchBlobWithProgress(
-        `/events/${event.slug}/media/${item.id}/download`,
-        {},
-        (percent) => {
-          setDownloadProgress((prev) => ({ ...prev, percent }));
-        }
-      );
-
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = mediaFilename(item);
-      link.click();
-      URL.revokeObjectURL(link.href);
-    } catch (err) {
-      console.error("Download failed", err);
-    } finally {
-      setDownloadingId(null);
-      setDownloadProgress({ active: false, label: "", percent: null });
-    }
-  };
-
-  const handleDownloadZip = async () => {
-    if (!event || media.length === 0 || downloadProgress.active) return;
-
-    setDownloadProgress({
-      active: true,
-      label: "Preparing ZIP…",
-      percent: 0,
-    });
-
-    try {
-      const zip = new JSZip();
-      const total = media.length;
-
-      for (let i = 0; i < media.length; i++) {
-        const item = media[i];
-        setDownloadProgress({
-          active: true,
-          label: `Downloading ${i + 1} of ${total}…`,
-          percent: Math.round((i / total) * 75),
-        });
-
-        const blob = await apiFetchBlobWithProgress(
-          `/events/${event.slug}/media/${item.id}/download`
-        );
-        zip.file(mediaFilename(item), blob);
-
-        setDownloadProgress({
-          active: true,
-          label: `Downloaded ${i + 1} of ${total}…`,
-          percent: Math.round(((i + 1) / total) * 75),
-        });
-      }
-
-      setDownloadProgress({
-        active: true,
-        label: "Creating ZIP file…",
-        percent: 76,
-      });
-
-      const content = await zip.generateAsync({ type: "blob" }, (metadata) => {
-        setDownloadProgress({
-          active: true,
-          label: "Creating ZIP file…",
-          percent: 76 + Math.round(metadata.percent * 0.24),
-        });
-      });
-
-      const eventNameSafe = (event.name || event.slug)
-        .toLowerCase()
-        .replace(/\s+/g, "_");
-
-      saveAs(content, `${eventNameSafe}_media.zip`);
-    } catch (err) {
-      console.error("ZIP download failed", err);
-    } finally {
-      setDownloadProgress({ active: false, label: "", percent: null });
-    }
-  };
-
-  const handleDeleteMedia = async (item: Media) => {
-    if (!event) return;
-    if (!confirm("Delete this item?")) return;
-
-    try {
-      await apiFetch(`/events/${event.slug}/media/${item.id}`, {
-        method: "DELETE",
-      });
-      setMedia((prev) => prev.filter((m) => m.id !== item.id));
-    } catch (err) {
-      console.error("Failed to delete media", err);
-    }
-  };
-
-  const loadModeration = async () => {
-    if (!event) return;
-    setModerationLoading(true);
-    setModerationOpen(true);
-    try {
-      const list = await apiFetch<Media[]>(
-        `/events/${event.slug}/media-moderation?status=pending`
-      );
-      setModerationMedia(list);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setModerationLoading(false);
-    }
-  };
-
-  const handleApproveMedia = async (item: Media) => {
-    if (!event) return;
-    try {
-      await apiFetch(`/events/${event.slug}/media/${item.id}/approve`, {
-        method: "POST",
-      });
-      setModerationMedia((prev) => prev.filter((m) => m.id !== item.id));
-    } catch (err) {
-      console.error("Failed to approve media", err);
-    }
-  };
-
-  const handleRejectMedia = async (item: Media) => {
-    if (!event) return;
-    try {
-      await apiFetch(`/events/${event.slug}/media/${item.id}/reject`, {
-        method: "POST",
-      });
-      setModerationMedia((prev) => prev.filter((m) => m.id !== item.id));
-    } catch (err) {
-      console.error("Failed to reject media", err);
-    }
-  };
-
-  const handleDownloadQrTemplate = async ({ layout, greeting }: QrDownloadOptions) => {
-    if (!event) return;
-
-    try {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = `${API_URL}/qr/${event.slug}?origin=${encodeURIComponent(baseWebUrl)}`;
-
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error("Failed to load QR image"));
-      });
-
-      const dataUrl = await renderQrCard({
-        layout,
-        eventName: event.name,
-        eventDate: event.eventDate,
-        greeting,
-        qrImage: img,
-      });
-
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = `${event.slug}-qr-${layout}.png`;
-      link.click();
-    } finally {
-      setQrDialogOpen(false);
-    }
-  };
-
   if (loading) {
-    return <div className="text-sm text-muted-foreground">Loading event…</div>;
+    return <div className="text-sm text-muted-foreground">Loading dashboard…</div>;
   }
 
-  if (error || !event) {
-    return (
-      <div className="text-sm text-red-500">{error ?? "Event not found"}</div>
-    );
-  }
-
-  const coverOverlayClass =
-    event.coverOverlay === "gradient"
-      ? "absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"
-      : "";
+  if (!event) return null;
 
   return (
-    <div className="space-y-6 lg:space-y-8">
-      {/* Hero: cover, title, actions */}
-      <Card className="overflow-hidden rounded-2xl p-0">
-        <div className="relative w-full overflow-hidden bg-muted/40">
-          {event.coverImageUrl ? (
-            <button
-              type="button"
-              onClick={() => setZoomOpen(true)}
-              className="block w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <div className="relative">
-                <img
-                  src={event.coverImageUrl}
-                  alt={event.name}
-                  className="aspect-[21/9] max-h-72 w-full object-cover sm:max-h-80"
-                />
-                {event.coverOverlay === "gradient" && (
-                  <div className={`absolute inset-0 ${coverOverlayClass}`} />
-                )}
-              </div>
-            </button>
-          ) : (
-            <div className="flex aspect-[21/9] max-h-72 w-full items-center justify-center sm:max-h-80">
-              <span className="text-sm text-muted-foreground">No cover image yet</span>
-            </div>
-          )}
-        </div>
-
-        <CardContent className="space-y-5 p-5 sm:p-6">
-          <div className="space-y-1">
-            <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-              {event.name}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {event.eventDate ? formatEventDate(event.eventDate) : "No event date set"}
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button
-              size="sm"
-              className="w-full sm:w-auto"
-              onClick={() => handleOpenSlideshow()}
-            >
-              Start slideshow
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-              onClick={loadMedia}
-              disabled={loadingMedia}
-            >
-              {loadingMedia ? "Loading…" : "View media"}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-              onClick={loadModeration}
-            >
-              Moderation
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-              onClick={handleCopyLink}
-            >
-              Copy event link
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-              onClick={openEditDialog}
-            >
-              Edit event
-            </Button>
-          </div>
-
-          <div
-            className={cn(
-              "flex flex-col gap-4 rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-4 sm:flex-row sm:items-center"
-            )}
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            You&apos;re currently using the limited free plan. Upgrade your event
+            to unlock all features.
+          </p>
+          <Link
+            href="/settings"
+            className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-amber-300 bg-white px-3 text-sm hover:bg-amber-50"
           >
-            <div className="min-w-0 flex-1 space-y-1">
-              <div className="text-sm font-medium">Cover image</div>
-              <p className="text-xs text-muted-foreground">
-                Upload or replace the banner shown above.
-              </p>
-            </div>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleCoverFileChange}
-              className="w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-background file:px-3 file:py-1.5 file:text-xs sm:max-w-[220px]"
-            />
-            <Button
-              size="sm"
-              variant="secondary"
-              className="w-full shrink-0 sm:w-auto"
-              onClick={handleCoverUpload}
-              disabled={!coverFile || coverUploading}
-            >
-              {coverUploading ? "Uploading…" : "Upload cover"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            Upgrade Plan
+          </Link>
+        </div>
+      </div>
 
-      <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
-        {/* Event details */}
-        <Card className="rounded-2xl">
-          <CardHeader className="border-b border-border/50 pb-5">
-            <CardTitle className="text-base md:text-lg">Event details</CardTitle>
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+            {event.name}
+          </h2>
+          <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium capitalize text-primary">
+            Plan: {event.plan}
+          </span>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          {getCategoryIntro(event.category)}
+        </p>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="overflow-hidden rounded-2xl border-border/70 bg-gradient-to-br from-primary/5 via-background to-background">
+          <CardHeader className="border-b border-border/50 pb-4">
+            <CardTitle className="text-lg">Your Digital Album</CardTitle>
           </CardHeader>
+          <CardContent className="space-y-5 pt-5">
+            <p className="text-sm text-muted-foreground">
+              Guests can upload or view photos and videos through this link. Share
+              it with everyone at your event.
+            </p>
 
-          <CardContent className="pt-2">
-            <dl>
-              <DetailRow label="Date">
-                {formatEventDate(event.eventDate)}
-              </DetailRow>
-              <DetailRow label="Slug">
-                <span className="break-all font-mono text-xs">{event.slug}</span>
-              </DetailRow>
-              <DetailRow label="Gallery protection">
-                {event.protected
-                  ? event.hasPassword
-                    ? "Enabled (password set)"
-                    : "Enabled (no password yet)"
-                  : "Disabled"}
-              </DetailRow>
-              <DetailRow label="Uploads">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <span>{event.uploadsEnabled ? "Enabled" : "Disabled"}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full sm:w-auto"
-                    onClick={handleToggleUploads}
-                    disabled={togglingUploads}
-                  >
-                    {togglingUploads
-                      ? "Updating…"
-                      : event.uploadsEnabled
-                        ? "Disable uploads"
-                        : "Enable uploads"}
-                  </Button>
-                </div>
-              </DetailRow>
-              <DetailRow label="Theme">
-                {event.backgroundVariant === "dark" ? "Dark" : "Light"} ·{" "}
-                {event.primaryColor}
-              </DetailRow>
-              <DetailRow label="POV mode">
-                {event.povEnabled
-                  ? `Enabled · max ${event.povMaxPerGuest || "∞"} shot(s) per guest`
-                  : "Disabled"}
-                {event.povEnabled && event.povRevealAt && (
-                  <>
-                    {" · reveal "}
-                    {formatEventDate(event.povRevealAt)}
-                  </>
-                )}
-              </DetailRow>
-              <DetailRow label="Cover layout">
-                {event.coverLayout === "banner" ? "Banner" : "Card"} ·{" "}
-                {event.coverOverlay === "gradient" ? "Gradient overlay" : "No overlay"}
-              </DetailRow>
-            </dl>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                readOnly
+                value={albumUrl.replace(/^https?:\/\//, "")}
+                className="min-w-0 flex-1 rounded-xl border bg-background px-3 py-2 text-sm"
+              />
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0 rounded-xl"
+                  onClick={() => handleCopy(albumUrl)}
+                  aria-label="Copy link"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <a
+                  href={albumUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-sm font-medium text-primary-foreground"
+                >
+                  Open
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </div>
+            </div>
+            {copied && (
+              <p className="text-xs text-primary">Link copied to clipboard.</p>
+            )}
+
+            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+              <div className="rounded-2xl border-2 border-primary/30 bg-white p-3 shadow-sm">
+                <img
+                  src={qrImageUrl}
+                  alt="Event QR code"
+                  className="h-40 w-40 object-contain"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={handleDownloadQr}
+                  disabled={downloadingQr}
+                >
+                  <Download className="mr-1.5 h-4 w-4" />
+                  {downloadingQr ? "Downloading…" : "Download QR Code"}
+                </Button>
+                <p className="max-w-xs text-xs text-muted-foreground">
+                  Print this QR code on table cards, signs, or screens so guests
+                  can scan and upload instantly.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* QR card */}
-        <Card className="rounded-2xl">
-          <CardHeader className="border-b border-border/50 pb-5">
-            <CardTitle className="text-base md:text-lg">QR code</CardTitle>
+        <Card className="overflow-hidden rounded-2xl border-border/70 bg-gradient-to-br from-muted/40 via-background to-background">
+          <CardHeader className="border-b border-border/50 pb-4">
+            <CardTitle className="text-lg">Your Photo Wall</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-5 pt-6 text-sm">
-            <div className="mx-auto flex aspect-square w-full max-w-56 items-center justify-center overflow-hidden rounded-2xl border border-border/70 bg-white p-3 shadow-sm">
-              <img
-                src={qrImageUrl}
-                alt="Event QR"
-                className="h-full w-full object-contain p-2"
+          <CardContent className="space-y-5 pt-5">
+            <p className="text-sm text-muted-foreground">
+              Display uploaded photos on projectors or TVs with the live slideshow
+              link below.
+            </p>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                readOnly
+                value={slideshowUrl.replace(/^https?:\/\//, "")}
+                className="min-w-0 flex-1 rounded-xl border bg-background px-3 py-2 text-sm"
               />
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full sm:w-auto"
-                onClick={() => setQrDialogOpen(true)}
+              <a
+                href={slideshowUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-sm font-medium text-primary-foreground"
               >
-                Download QR
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full sm:flex-1"
-                onClick={handleCopyLink}
+                Open
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </div>
+
+            <div
+              className={cn(
+                "relative overflow-hidden rounded-2xl border bg-zinc-900 p-6 text-center text-white",
+                "min-h-[220px] flex flex-col items-center justify-center gap-3"
+              )}
+            >
+              <p className="text-sm font-medium">Scan to view or add photos!</p>
+              <div className="rounded-lg border-2 border-primary bg-white p-2">
+                <img
+                  src={qrImageUrl}
+                  alt="Slideshow QR preview"
+                  className="h-24 w-24 object-contain"
+                />
+              </div>
+              <p className="text-xs text-white/70">
+                Open this link on a TV, monitor, or projector for a live photo wall.
+              </p>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Display on: TV · Monitor · Laptop ·{" "}
+              <Link
+                href="/how-it-works"
+                className="font-medium text-primary hover:underline"
               >
-                Copy event link
-              </Button>
-            </div>
-            <div className="rounded-xl bg-muted/40 px-4 py-3 break-all text-xs text-muted-foreground">
-              {eventUrl}
-            </div>
+                How to do it?
+              </Link>
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Edit modal */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="flex max-h-[90vh] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-lg">
-          <DialogHeader className="shrink-0 border-b px-4 py-3">
-            <DialogTitle>Edit event</DialogTitle>
-          </DialogHeader>
-
-          <form
-            className="flex min-h-0 flex-1 flex-col"
-            onSubmit={handleEditSubmit}
-          >
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-              <div className="space-y-3 text-sm">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">Name</label>
-                    <input
-                      className="w-full rounded-md border px-3 py-2 text-sm"
-                      value={formName}
-                      onChange={(e) => setFormName(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">Date</label>
-                    <input
-                      type="date"
-                      className="w-full rounded-md border px-3 py-2 text-sm"
-                      value={formDate}
-                      onChange={(e) => setFormDate(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-3 rounded-md border bg-muted/40 p-3">
-                  <label className="flex items-start gap-2">
-                    <input
-                      type="checkbox"
-                      className="mt-0.5"
-                      checked={formProtected}
-                      onChange={(e) => {
-                        setFormProtected(e.target.checked);
-                        if (!e.target.checked) setFormPassword("");
-                      }}
-                    />
-                    <span>
-                      <span className="block text-xs font-medium">
-                        Protect gallery with password
-                      </span>
-                      <span className="block text-[11px] text-muted-foreground">
-                        Guests must enter a password to view photos and videos.
-                      </span>
-                    </span>
-                  </label>
-
-                  {formProtected && (
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium">
-                        {event.hasPassword
-                          ? "New gallery password (optional)"
-                          : "Gallery password"}
-                      </label>
-                      <input
-                        type="password"
-                        className="w-full rounded-md border px-3 py-2 text-sm"
-                        value={formPassword}
-                        onChange={(e) => setFormPassword(e.target.value)}
-                        placeholder={
-                          event.hasPassword
-                            ? "Leave blank to keep current password"
-                            : "At least 4 characters"
-                        }
-                        minLength={event.hasPassword ? undefined : 4}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-3 rounded-md border bg-muted/40 p-3">
-                  <div className="text-xs font-medium">Theme</div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <label className="text-[11px]">Primary color</label>
-                      <input
-                        type="color"
-                        className="h-9 w-full cursor-pointer rounded border bg-background"
-                        value={formPrimaryColor}
-                        onChange={(e) => setFormPrimaryColor(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[11px]">Background style</label>
-                      <select
-                        className="w-full rounded-md border px-3 py-2 text-sm"
-                        value={formBackgroundVariant}
-                        onChange={(e) =>
-                          setFormBackgroundVariant(
-                            e.target.value as "dark" | "light"
-                          )
-                        }
-                      >
-                        <option value="dark">Dark</option>
-                        <option value="light">Light</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3 rounded-md border bg-muted/40 p-3">
-                  <div className="text-xs font-medium">POV mode</div>
-                  <label className="flex items-start gap-2">
-                    <input
-                      type="checkbox"
-                      className="mt-0.5"
-                      checked={formPOVEnabled}
-                      onChange={(e) => setFormPOVEnabled(e.target.checked)}
-                    />
-                    <span>
-                      <span className="block text-xs font-medium">
-                        Enable POV mode
-                      </span>
-                      <span className="block text-[11px] text-muted-foreground">
-                        Limit shots per guest and optionally hide gallery until a
-                        reveal date.
-                      </span>
-                    </span>
-                  </label>
-
-                  {formPOVEnabled && (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium">
-                          Max shots per guest (0 = unlimited)
-                        </label>
-                        <input
-                          type="number"
-                          min={0}
-                          className="w-full rounded-md border px-3 py-2 text-sm"
-                          value={formPovMaxPerGuest}
-                          onChange={(e) =>
-                            setFormPovMaxPerGuest(Number(e.target.value))
-                          }
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium">
-                          Reveal gallery on (optional)
-                        </label>
-                        <input
-                          type="date"
-                          className="w-full rounded-md border px-3 py-2 text-sm"
-                          value={formPovRevealAt}
-                          onChange={(e) => setFormPovRevealAt(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-3 rounded-md border bg-muted/40 p-3">
-                  <div className="text-xs font-medium">Cover style</div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <label className="text-[11px]">Layout</label>
-                      <select
-                        className="w-full rounded-md border px-3 py-2 text-sm"
-                        value={formCoverLayout}
-                        onChange={(e) =>
-                          setFormCoverLayout(
-                            e.target.value as "banner" | "card"
-                          )
-                        }
-                      >
-                        <option value="banner">Full banner</option>
-                        <option value="card">Card</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[11px]">Overlay</label>
-                      <select
-                        className="w-full rounded-md border px-3 py-2 text-sm"
-                        value={formCoverOverlay}
-                        onChange={(e) =>
-                          setFormCoverOverlay(
-                            e.target.value as "none" | "gradient"
-                          )
-                        }
-                      >
-                        <option value="none">None</option>
-                        <option value="gradient">Gradient</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            <DialogFooter className="shrink-0 border-t px-4 py-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setEditOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" size="sm" disabled={editSaving}>
-                {editSaving ? "Saving…" : "Save changes"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Zoom modal */}
-      <Dialog
-        open={zoomOpen}
+      <EventWelcomeDialog
+        open={welcomeOpen}
         onOpenChange={(open) => {
-          setZoomOpen(open);
-          if (!open) setZoomLevel(1);
+          setWelcomeOpen(open);
+          if (!open) markWelcomeSeen(slug);
         }}
-      >
-        <DialogContent className="flex h-[95vh] max-h-[95vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[95vw]">
-          <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
-            <DialogTitle>Cover image</DialogTitle>
-          </DialogHeader>
-
-          <div className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <div className="break-all text-xs text-muted-foreground">
-              {event.coverImageKey ?? ""}
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleZoomOut}
-              >
-                -
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleZoomReset}
-              >
-                Reset
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleZoomIn}
-              >
-                +
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-muted/30 p-3 sm:p-6">
-            {event.coverImageUrl ? (
-              <img
-                src={event.coverImageUrl}
-                alt="Cover"
-                className="max-h-full max-w-full rounded-lg object-contain transition-transform duration-150"
-                style={{
-                  transform: `scale(${zoomLevel})`,
-                  transformOrigin: "center center",
-                }}
-              />
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                No cover image available.
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="shrink-0 border-t px-4 py-3 sm:px-6">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full sm:ml-auto sm:w-auto"
-              onClick={() => setZoomOpen(false)}
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Gallery modal */}
-      <Dialog
-        open={galleryOpen}
-        onOpenChange={(open) => {
-          if (!open && downloadProgress.active) return;
-          setGalleryOpen(open);
-          if (!open) {
-            setDownloadProgress({ active: false, label: "", percent: null });
-            setDownloadingId(null);
-          }
-        }}
-      >
-        <DialogContent className="flex max-h-[95vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[95vw]">
-          <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
-            <DialogTitle className="text-base sm:text-lg">
-              Uploaded media
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
-            {loadingMedia ? (
-              <div className="flex min-h-[30vh] items-center justify-center text-sm text-muted-foreground">
-                Loading media…
-              </div>
-            ) : media.length === 0 ? (
-              <div className="flex min-h-[30vh] items-center justify-center text-sm text-muted-foreground">
-                No media uploaded yet.
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4">
-                {media.map((item, idx) => {
-                  const isPhoto =
-                    item.type === "photo" ||
-                    (item.mimeType ?? "").startsWith("image/");
-                  const label = item.guestName ?? "Guest upload";
-
-                  return (
-                    <div
-                      key={item.id}
-                      className="group relative flex flex-col overflow-hidden rounded-lg border bg-muted"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => openLightbox(idx)}
-                        className="flex-1 w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        {isPhoto ? (
-                          <img
-                            src={item.url}
-                            alt={label}
-                            className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
-                          />
-                        ) : (
-                          <video
-                            src={item.url}
-                            className="aspect-square w-full object-cover"
-                            muted
-                            playsInline
-                          />
-                        )}
-                      </button>
-
-                      {item.guestName && (
-                        <div className="absolute inset-x-0 bottom-8 bg-black/60 px-2 py-1 text-[10px] text-white sm:text-xs">
-                          {item.guestName}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between gap-2 border-t bg-background/80 px-2 py-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleDownloadSingle(item)}
-                            disabled={downloadProgress.active}
-                            className="text-[11px] text-primary hover:underline disabled:opacity-50 sm:text-xs"
-                          >
-                            {downloadingId === item.id
-                              ? "Downloading…"
-                              : "Download"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteMedia(item)}
-                            disabled={downloadProgress.active}
-                            className="text-[11px] text-red-500 hover:underline disabled:opacity-50 sm:text-xs"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                        <span className="max-w-[50%] truncate text-[10px] text-muted-foreground sm:text-xs">
-                          {item.type === "video" ? "Video" : "Photo"}
-                          {item.fileSize
-                            ? ` · ${Math.round(item.fileSize / 1024 / 1024)} MB`
-                            : ""}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="shrink-0 flex-col gap-3 border-t px-4 py-3 sm:px-6">
-            {downloadProgress.active && (
-              <div className="w-full space-y-2">
-                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span className="truncate">{downloadProgress.label}</span>
-                  <span className="shrink-0 tabular-nums">
-                    {downloadProgress.percent != null
-                      ? `${downloadProgress.percent}%`
-                      : "…"}
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-[width] duration-200"
-                    style={{
-                      width:
-                        downloadProgress.percent != null
-                          ? `${Math.max(downloadProgress.percent, 4)}%`
-                          : "35%",
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-between">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full sm:w-auto"
-                onClick={handleDownloadZip}
-                disabled={media.length === 0 || downloadProgress.active}
-              >
-                {downloadProgress.active ? "Downloading…" : "Download all as ZIP"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full sm:w-auto"
-                disabled={downloadProgress.active}
-                onClick={() => setGalleryOpen(false)}
-              >
-                Close
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Lightbox modal */}
-      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-        <DialogContent className="flex h-[95vh] max-h-[95vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[95vw]">
-          <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
-            <DialogTitle className="truncate text-base sm:text-lg">
-              {media[lightboxIndex]?.guestName
-                ? `Media by ${media[lightboxIndex].guestName}`
-                : "Media"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-muted/30 p-3 sm:p-6">
-            {media[lightboxIndex] ? (
-              media[lightboxIndex].type === "photo" ||
-                (media[lightboxIndex].mimeType ?? "").startsWith("image/") ? (
-                <img
-                  src={media[lightboxIndex].url}
-                  alt={media[lightboxIndex].guestName ?? "Media"}
-                  className="max-w-full max-h-full rounded-lg object-contain"
-                />
-              ) : (
-                <video
-                  src={media[lightboxIndex].url}
-                  controls
-                  className="max-w-full max-h-full rounded-lg object-contain"
-                />
-              )
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                No media available.
-              </div>
-            )}
-          </div>
-
-          <div className="flex shrink-0 flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-              disabled={lightboxIndex <= 0}
-              onClick={() => setLightboxIndex((i) => i - 1)}
-            >
-              Previous
-            </Button>
-
-            <div className="text-center text-xs text-muted-foreground">
-              {media.length > 0 ? `${lightboxIndex + 1} / ${media.length}` : "0 / 0"}
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full sm:w-auto"
-              disabled={lightboxIndex >= media.length - 1}
-              onClick={() => setLightboxIndex((i) => i + 1)}
-            >
-              Next
-            </Button>
-          </div>
-
-          <DialogFooter className="shrink-0 border-t px-4 py-3 sm:px-6">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full sm:ml-auto sm:w-auto"
-              onClick={() => setLightboxOpen(false)}
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Moderation modal */}
-      <Dialog open={moderationOpen} onOpenChange={setModerationOpen}>
-        <DialogContent className="flex max-h-[95vh] w-[95vw] max-w-[95vw] flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-w-[95vw]">
-          <DialogHeader className="shrink-0 border-b px-4 py-3 sm:px-6">
-            <DialogTitle className="text-base sm:text-lg">
-              Moderation queue (pending)
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
-            {moderationLoading ? (
-              <div className="flex min-h-[30vh] items-center justify-center text-sm text-muted-foreground">
-                Loading pending media…
-              </div>
-            ) : moderationMedia.length === 0 ? (
-              <div className="flex min-h-[30vh] items-center justify-center text-sm text-muted-foreground">
-                No pending media. All uploads are approved or rejected.
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4">
-                {moderationMedia.map((item) => {
-                  const isPhoto =
-                    item.type === "photo" ||
-                    (item.mimeType ?? "").startsWith("image/");
-                  const label = item.guestName ?? "Guest upload";
-
-                  return (
-                    <div
-                      key={item.id}
-                      className="group relative flex flex-col overflow-hidden rounded-lg border bg-muted"
-                    >
-                      <div className="flex-1 w-full overflow-hidden">
-                        {isPhoto ? (
-                          <img
-                            src={item.url}
-                            alt={label}
-                            className="aspect-square w-full object-cover"
-                          />
-                        ) : (
-                          <video
-                            src={item.url}
-                            className="aspect-square w-full object-cover"
-                            muted
-                            playsInline
-                          />
-                        )}
-                      </div>
-
-                      {item.guestName && (
-                        <div className="absolute inset-x-0 bottom-8 bg-black/60 px-2 py-1 text-[10px] text-white sm:text-xs">
-                          {item.guestName}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between gap-2 border-t bg-background/80 px-2 py-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleApproveMedia(item)}
-                            className="text-[11px] text-green-600 hover:underline sm:text-xs"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleRejectMedia(item)}
-                            className="text-[11px] text-red-500 hover:underline sm:text-xs"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                        <span className="max-w-[50%] truncate text-[10px] text-muted-foreground sm:text-xs">
-                          {item.type === "video" ? "Video" : "Photo"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="shrink-0 border-t px-4 py-3 sm:px-6">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full sm:ml-auto sm:w-auto"
-              onClick={() => setModerationOpen(false)}
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <EventSlideshowOverlay
-        open={slideshowOpen}
-        onClose={() => setSlideshowOpen(false)}
-        mediaPath={event ? `/events/${event.slug}/media` : ""}
-        eventName={event?.name}
-        initialIndex={slideshowStartIndex}
-      />
-
-      <QrDownloadDialog
-        open={qrDialogOpen}
-        onOpenChange={setQrDialogOpen}
-        eventName={event.name}
-        eventDate={event.eventDate}
-        qrImageUrl={`${API_URL}/qr/${event.slug}?origin=${encodeURIComponent(baseWebUrl)}`}
-        onDownload={handleDownloadQrTemplate}
       />
     </div>
   );
