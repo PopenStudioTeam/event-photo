@@ -297,3 +297,21 @@
   background-color: var(--background);
   color: var(--foreground);
 }
+
+.guide-page-shell {
+  background-color: #faf8ff;
+  background-image:
+    radial-gradient(ellipse 90% 55% at 50% -15%, rgba(111, 0, 255, 0.1), transparent 68%),
+    radial-gradient(ellipse 55% 45% at 100% 35%, rgba(234, 224, 250, 0.85), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 0% 75%, rgba(241, 238, 251, 0.9), transparent 72%),
+    linear-gradient(180deg, #ffffff 0%, #f7f2ff 42%, #f4eeff 100%);
+}
+
+.dark .guide-page-shell {
+  background-color: #0f172a;
+  background-image:
+    radial-gradient(ellipse 90% 55% at 50% -15%, rgba(111, 0, 255, 0.18), transparent 68%),
+    radial-gradient(ellipse 55% 45% at 100% 35%, rgba(91, 35, 255, 0.12), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 0% 75%, rgba(114, 62, 195, 0.1), transparent 72%),
+    linear-gradient(180deg, #0f172a 0%, #151032 42%, #0f172a 100%);
+}

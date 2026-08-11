@@ -44,7 +44,7 @@ export default async function GuidePage({ params }: GuidePageProps) {
   const relatedGuides = getRelatedGuides(slug);
 
   return (
-    <div className="min-h-screen overflow-hidden bg-background text-foreground">
+    <div className="guide-page-shell min-h-screen overflow-hidden text-foreground">
       <PublicHeader />
 
       <main>

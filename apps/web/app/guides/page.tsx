@@ -12,10 +12,10 @@ export const metadata: Metadata = {
 
 export default function GuidesPage() {
   return (
-    <div className="min-h-screen overflow-hidden bg-background text-foreground">
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-48 -top-48 h-[34rem] w-[34rem] rounded-full bg-primary/15 blur-3xl" />
-        <div className="absolute -right-48 top-40 h-[34rem] w-[34rem] rounded-full bg-card/70 blur-3xl" />
+    <div className="guide-page-shell min-h-screen overflow-hidden text-foreground">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden opacity-60">
+        <div className="absolute -left-48 -top-48 h-[34rem] w-[34rem] rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute -right-48 top-40 h-[34rem] w-[34rem] rounded-full bg-brand-ivory-white blur-3xl" />
       </div>
 
       <PublicHeader />
