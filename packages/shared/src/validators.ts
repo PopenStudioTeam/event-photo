@@ -108,3 +108,15 @@ export const likeMediaSchema = z.object({
 export const createCheckoutSchema = z.object({
   plan: z.enum(["premium", "pro"]),
 });
+
+export const guideSlugParamSchema = z
+  .string()
+  .min(1)
+  .max(80)
+  .regex(/^[a-z0-9-]+$/);
+
+export const createGuideCommentSchema = z.object({
+  authorName: z.string().trim().min(1).max(80),
+  authorEmail: z.string().trim().email().max(160),
+  body: z.string().trim().min(1).max(2000),
+});

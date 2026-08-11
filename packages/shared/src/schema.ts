@@ -225,3 +225,16 @@ export const faqs = pgTable("faqs", {
     .defaultNow()
     .notNull(),
 });
+
+export const guideComments = pgTable("guide_comments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  guideSlug: text("guide_slug").notNull(),
+  authorName: text("author_name").notNull(),
+  authorEmail: text("author_email").notNull(),
+  body: text("body").notNull(),
+
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});

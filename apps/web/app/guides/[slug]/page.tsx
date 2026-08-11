@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { GuideArticleLayout } from "@/components/guide-article-layout";
+import { GuideComments } from "@/components/guide-comments";
 import { PublicHeader } from "@/components/public-header";
+import { RelatedGuides } from "@/components/related-guides";
 import { SiteFooter } from "@/components/site-footer";
-import { getGuideBySlug, guides } from "@/lib/guides-data";
+import { getGuideBySlug, getRelatedGuides, guides } from "@/lib/guides-data";
 
 type GuidePageProps = {
   params: Promise<{ slug: string }>;
@@ -38,36 +41,29 @@ export default async function GuidePage({ params }: GuidePageProps) {
     notFound();
   }
 
+  const relatedGuides = getRelatedGuides(slug);
+
   return (
     <div className="min-h-screen overflow-hidden bg-background text-foreground">
       <PublicHeader />
 
       <main>
-        <section className="mx-auto max-w-3xl px-4 pb-16 pt-16 sm:px-6 sm:pt-24 lg:px-8">
+        <div className="mx-auto max-w-6xl px-4 pt-10 sm:px-6 sm:pt-16 lg:px-8">
           <Link
             href="/guides"
             className="text-sm text-muted-foreground hover:text-foreground"
           >
             ← Back to guides
           </Link>
+        </div>
 
-          <div className="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-            {guide.category} · {guide.readTime}
-          </div>
-
-          <h1 className="mt-4 text-4xl leading-tight sm:text-5xl">
-            {guide.title}
-          </h1>
-
-          <div className="mt-8 space-y-5 text-sm leading-7 text-foreground/80 sm:text-base">
-            {guide.body.map((paragraph, index) => (
-              <p key={index}>{paragraph}</p>
-            ))}
-          </div>
-        </section>
+        <GuideArticleLayout guide={guide}>
+          <GuideComments guideSlug={guide.slug} />
+          <RelatedGuides guides={relatedGuides} />
+        </GuideArticleLayout>
 
         <section className="px-4 pb-24 sm:px-6 lg:px-8 lg:pb-32">
-          <div className="mx-auto max-w-3xl overflow-hidden rounded-[2.5rem] bg-brand-deep-navy px-6 py-12 text-center text-brand-off-white sm:px-10 sm:py-16">
+          <div className="mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-brand-deep-navy px-6 py-12 text-center text-brand-off-white sm:px-10 sm:py-16">
             <h2 className="text-3xl leading-tight sm:text-4xl">
               Ready to try it on your event?
             </h2>
