@@ -34,7 +34,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }, [router, pathname]);
 
   return (
-    <div className="organizer-shell min-h-screen bg-[radial-gradient(ellipse_at_top,_#e7ebf2_0%,_var(--background)_55%)] dark:bg-[radial-gradient(ellipse_at_top,_#1e293b_0%,_var(--background)_50%)]">
+    <div className="organizer-shell min-h-screen bg-[radial-gradient(ellipse_at_top,_#E3DBF5_0%,_var(--background)_55%)] dark:bg-[radial-gradient(ellipse_at_top,_#1e293b_0%,_var(--background)_50%)]">
       <Sidebar />
 
       <div className="flex min-h-screen flex-col pb-24 md:ml-[calc(17rem+2rem)] md:pb-4 md:pr-4 md:pt-4 xl:ml-[calc(18rem+2.5rem)] xl:pb-5 xl:pr-5 xl:pt-5">

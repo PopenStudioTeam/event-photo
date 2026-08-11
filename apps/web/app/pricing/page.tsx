@@ -104,7 +104,7 @@ export default function PricingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[#fafafa] text-[#171717]">
+    <div className="min-h-screen overflow-hidden bg-background text-foreground">
       <style jsx global>{`
         @keyframes pricing-fade-up {
           from {
@@ -142,8 +142,8 @@ export default function PricingPage() {
       `}</style>
 
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-48 -top-48 h-[36rem] w-[36rem] rounded-full bg-rose-200/35 blur-3xl" />
-        <div className="absolute -right-48 top-24 h-[34rem] w-[34rem] rounded-full bg-cyan-200/35 blur-3xl" />
+        <div className="absolute -left-48 -top-48 h-[36rem] w-[36rem] rounded-full bg-primary/15 blur-3xl" />
+        <div className="absolute -right-48 top-24 h-[34rem] w-[34rem] rounded-full bg-card/70 blur-3xl" />
       </div>
 
       <PublicHeader />
@@ -151,16 +151,16 @@ export default function PricingPage() {
       <main>
         <section className="px-4 pb-14 pt-16 text-center sm:px-6 sm:pt-24 lg:px-8">
           <div className="pricing-fade-up mx-auto max-w-3xl">
-            <div className="inline-flex rounded-full border border-black/10 bg-white/70 px-4 py-2 text-xs text-neutral-500 shadow-sm">
+            <div className="inline-flex rounded-full border border-border bg-card/70 px-4 py-2 text-xs text-muted-foreground shadow-sm">
               One event. One payment. No subscription.
             </div>
 
             <h1 className="mt-7 text-5xl font-semibold tracking-[-0.06em] sm:text-7xl">
               Choose how you want to
-              <span className="block text-neutral-400">remember it.</span>
+              <span className="block text-muted-foreground">remember it.</span>
             </h1>
 
-            <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-neutral-600 sm:text-lg">
+            <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
               Start free or unlock more control with a one-time Premium or Pro
               event plan.
             </p>
@@ -177,12 +177,12 @@ export default function PricingPage() {
                   3
                 )} relative rounded-[2rem] border p-7 sm:p-8 ${
                   plan.featured
-                    ? "border-neutral-900 bg-neutral-900 text-white shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]"
-                    : "border-black/5 bg-white/75 shadow-sm"
+                    ? "border-brand-deep-navy bg-brand-deep-navy text-brand-off-white shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]"
+                    : "border-border bg-card/75 text-foreground shadow-sm"
                 }`}
               >
                 {plan.featured && (
-                  <div className="absolute -top-3 left-7 rounded-full bg-rose-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-white">
+                  <div className="absolute -top-3 left-7 rounded-full bg-primary px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-primary-foreground">
                     Most popular
                   </div>
                 )}
@@ -191,7 +191,7 @@ export default function PricingPage() {
                   <h2 className="text-xl font-semibold">{plan.name}</h2>
                   <span
                     className={`text-xs ${
-                      plan.featured ? "text-white/50" : "text-neutral-400"
+                      plan.featured ? "text-brand-off-white/50" : "text-muted-foreground"
                     }`}
                   >
                     per event
@@ -204,7 +204,7 @@ export default function PricingPage() {
 
                 <p
                   className={`mt-4 min-h-12 text-sm leading-6 ${
-                    plan.featured ? "text-white/60" : "text-neutral-500"
+                    plan.featured ? "text-brand-off-white/60" : "text-muted-foreground"
                   }`}
                 >
                   {plan.description}
@@ -214,7 +214,7 @@ export default function PricingPage() {
                   <Button
                     className={`w-full rounded-full ${
                       plan.featured
-                        ? "bg-white text-neutral-900 hover:bg-white/90"
+                        ? "bg-brand-off-white text-brand-deep-navy hover:bg-brand-off-white/90"
                         : ""
                     }`}
                     variant={plan.featured ? "secondary" : "default"}
@@ -227,12 +227,12 @@ export default function PricingPage() {
 
                 <div
                   className={`mt-8 border-t pt-7 ${
-                    plan.featured ? "border-white/10" : "border-black/10"
+                    plan.featured ? "border-brand-off-white/10" : "border-border"
                   }`}
                 >
                   <div
                     className={`mb-4 text-xs font-semibold uppercase tracking-[0.15em] ${
-                      plan.featured ? "text-white/40" : "text-neutral-400"
+                      plan.featured ? "text-brand-off-white/40" : "text-muted-foreground"
                     }`}
                   >
                     Includes
@@ -240,7 +240,7 @@ export default function PricingPage() {
 
                   <ul
                     className={`space-y-3 text-sm ${
-                      plan.featured ? "text-white/75" : "text-neutral-600"
+                      plan.featured ? "text-brand-off-white/75" : "text-muted-foreground"
                     }`}
                   >
                     {plan.features.map((feature) => (
@@ -248,7 +248,7 @@ export default function PricingPage() {
                         <span
                           className={
                             plan.featured
-                              ? "text-rose-300"
+                              ? "text-primary"
                               : "text-emerald-600"
                           }
                         >
@@ -264,10 +264,10 @@ export default function PricingPage() {
           </div>
         </section>
 
-        <section className="border-y border-black/5 bg-white/60 px-4 py-20 sm:px-6 lg:px-8">
+        <section className="border-y border-border bg-background/60 px-4 py-20 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
             <div className="max-w-2xl">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                 Compare plans
               </div>
               <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
@@ -275,25 +275,25 @@ export default function PricingPage() {
               </h2>
             </div>
 
-            <div className="mt-10 overflow-x-auto rounded-[1.75rem] border border-black/5 bg-white shadow-sm">
+            <div className="mt-10 overflow-x-auto rounded-[1.75rem] border border-border bg-card shadow-sm">
               <table className="w-full min-w-[700px] border-collapse text-left text-sm">
                 <thead>
-                  <tr className="border-b bg-neutral-50">
-                    <th className="px-5 py-4 font-medium">Feature</th>
-                    <th className="px-5 py-4 font-medium">Free</th>
-                    <th className="px-5 py-4 font-medium">Premium</th>
-                    <th className="px-5 py-4 font-medium">Pro</th>
+                  <tr className="border-b border-border bg-muted">
+                    <th className="px-5 py-4 font-medium text-foreground">Feature</th>
+                    <th className="px-5 py-4 font-medium text-foreground">Free</th>
+                    <th className="px-5 py-4 font-medium text-foreground">Premium</th>
+                    <th className="px-5 py-4 font-medium text-foreground">Pro</th>
                   </tr>
                 </thead>
                 <tbody>
                   {comparisonRows.map((row) => (
-                    <tr key={row[0]} className="border-b last:border-0">
-                      <td className="px-5 py-4 font-medium text-neutral-800">
+                    <tr key={row[0]} className="border-b border-border last:border-0">
+                      <td className="px-5 py-4 font-medium text-foreground">
                         {row[0]}
                       </td>
-                      <td className="px-5 py-4 text-neutral-500">{row[1]}</td>
-                      <td className="px-5 py-4 text-neutral-500">{row[2]}</td>
-                      <td className="px-5 py-4 text-neutral-500">{row[3]}</td>
+                      <td className="px-5 py-4 text-muted-foreground">{row[1]}</td>
+                      <td className="px-5 py-4 text-muted-foreground">{row[2]}</td>
+                      <td className="px-5 py-4 text-muted-foreground">{row[3]}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -304,7 +304,7 @@ export default function PricingPage() {
 
         <section className="mx-auto max-w-4xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
           <div className="text-center">
-            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400">
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Frequently asked
             </div>
             <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
@@ -312,7 +312,7 @@ export default function PricingPage() {
             </h2>
           </div>
 
-          <div className="mt-10 divide-y divide-black/10 border-y border-black/10">
+          <div className="mt-10 divide-y divide-border border-y border-border">
             {faqs.map((faq, index) => {
               const isOpen = openFaq === index;
 
@@ -323,16 +323,16 @@ export default function PricingPage() {
                     onClick={() => setOpenFaq(isOpen ? null : index)}
                     className="flex w-full items-center justify-between gap-5 py-5 text-left"
                   >
-                    <span className="text-sm font-medium sm:text-base">
+                    <span className="text-sm font-medium text-foreground sm:text-base">
                       {faq.question}
                     </span>
-                    <span className="text-xl text-neutral-400">
+                    <span className="text-xl text-muted-foreground">
                       {isOpen ? "−" : "+"}
                     </span>
                   </button>
 
                   {isOpen && (
-                    <div className="pb-5 pr-8 text-sm leading-6 text-neutral-500">
+                    <div className="pb-5 pr-8 text-sm leading-6 text-muted-foreground">
                       {faq.answer}
                     </div>
                   )}
@@ -343,18 +343,18 @@ export default function PricingPage() {
         </section>
 
         <section className="px-4 pb-20 sm:px-6 lg:px-8 lg:pb-28">
-          <div className="mx-auto max-w-7xl rounded-[2.5rem] bg-[#171717] px-6 py-14 text-center text-white sm:px-10 sm:py-20">
+          <div className="mx-auto max-w-7xl rounded-[2.5rem] bg-brand-deep-navy px-6 py-14 text-center text-brand-off-white sm:px-10 sm:py-20">
             <h2 className="text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">
               Your next event deserves every perspective.
             </h2>
-            <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-white/55 sm:text-base">
+            <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-brand-off-white/55 sm:text-base">
               Create your gallery, share the QR code, and let the memories come
               to you.
             </p>
             <Link href="/dashboard" className="mt-8 inline-block">
               <Button
                 size="lg"
-                className="rounded-full bg-white px-7 text-neutral-900 hover:bg-white/90"
+                className="rounded-full bg-primary px-7 text-primary-foreground hover:bg-[var(--primary-hover)]"
               >
                 Create your event
                 <span className="ml-2">↗</span>
