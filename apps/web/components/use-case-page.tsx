@@ -42,7 +42,7 @@ export function UseCasePage({ useCase }: { useCase: UseCase }) {
             <Link href="/dashboard">
               <Button
                 size="lg"
-                className="w-full rounded-full bg-brand-deep-navy px-7 text-brand-off-white hover:opacity-90 sm:w-auto"
+                className="w-full rounded-full bg-primary px-7 text-primary-foreground hover:bg-[var(--primary-hover)] sm:w-auto"
               >
                 Create your event
                 <span className="ml-2">↗</span>
