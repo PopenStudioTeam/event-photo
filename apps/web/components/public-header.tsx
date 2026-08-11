@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useCases } from "@/lib/use-cases-data";
 
 const navigation = [
   {
@@ -40,10 +41,25 @@ function isActivePath(pathname: string, href: string) {
 export function PublicHeader() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [useCasesOpen, setUseCasesOpen] = useState(false);
+  const [mobileUseCasesOpen, setMobileUseCasesOpen] = useState(false);
+  const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const closeMobileMenu = () => {
     setMobileOpen(false);
+    setMobileUseCasesOpen(false);
   };
+
+  const openUseCases = () => {
+    if (closeTimeout.current) clearTimeout(closeTimeout.current);
+    setUseCasesOpen(true);
+  };
+
+  const scheduleCloseUseCases = () => {
+    closeTimeout.current = setTimeout(() => setUseCasesOpen(false), 150);
+  };
+
+  const useCasesActive = isActivePath(pathname, "/for");
 
   return (
     <header className="relative z-50 border-b border-black/5 bg-white/70 backdrop-blur-xl">
@@ -74,6 +90,58 @@ export function PublicHeader() {
           aria-label="Public navigation"
           className="hidden items-center gap-8 md:flex"
         >
+          <div
+            className="relative"
+            onMouseEnter={openUseCases}
+            onMouseLeave={scheduleCloseUseCases}
+          >
+            <button
+              type="button"
+              onClick={() => setUseCasesOpen((open) => !open)}
+              aria-expanded={useCasesOpen}
+              className={cn(
+                "relative flex items-center gap-1.5 py-2 text-sm transition-colors",
+                useCasesActive
+                  ? "font-bold text-[#262125]"
+                  : "text-neutral-500 hover:text-[#262125]"
+              )}
+            >
+              Use cases
+              <span
+                className={cn(
+                  "text-[10px] transition-transform",
+                  useCasesOpen && "rotate-180"
+                )}
+              >
+                ▾
+              </span>
+              <span
+                className={cn(
+                  "absolute bottom-0 left-0 h-0.5 rounded-full bg-rose-400 transition-all duration-300",
+                  useCasesActive ? "w-full" : "w-0"
+                )}
+              />
+            </button>
+
+            {useCasesOpen && (
+              <div className="absolute left-1/2 top-full grid w-[26rem] -translate-x-1/2 grid-cols-2 gap-1 rounded-2xl border border-black/5 bg-white p-3 shadow-xl">
+                {useCases.map((useCase) => (
+                  <Link
+                    key={useCase.slug}
+                    href={`/for/${useCase.slug}`}
+                    onClick={() => setUseCasesOpen(false)}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-neutral-600 transition hover:bg-neutral-50 hover:text-[#262125]"
+                  >
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: useCase.accent }}
+                    />
+                    {useCase.navLabel}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
           {navigation.map((item) => {
             const active = isActivePath(pathname, item.href);
 
@@ -171,6 +239,46 @@ export function PublicHeader() {
               aria-label="Mobile public navigation"
               className="flex flex-col gap-1"
             >
+              <button
+                type="button"
+                onClick={() => setMobileUseCasesOpen((open) => !open)}
+                aria-expanded={mobileUseCasesOpen}
+                className={cn(
+                  "flex items-center justify-between rounded-2xl px-4 py-3 text-sm transition",
+                  useCasesActive
+                    ? "bg-rose-50 font-bold text-[#262125]"
+                    : "text-neutral-600 hover:bg-neutral-50 hover:text-[#262125]"
+                )}
+              >
+                <span>Use cases</span>
+                <span
+                  className={cn(
+                    "text-xs transition-transform",
+                    mobileUseCasesOpen && "rotate-180"
+                  )}
+                >
+                  ▾
+                </span>
+              </button>
+
+              {mobileUseCasesOpen && (
+                <div className="mb-1 grid grid-cols-2 gap-1 px-2">
+                  {useCases.map((useCase) => (
+                    <Link
+                      key={useCase.slug}
+                      href={`/for/${useCase.slug}`}
+                      onClick={closeMobileMenu}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50 hover:text-[#262125]"
+                    >
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: useCase.accent }}
+                      />
+                      {useCase.navLabel}
+                    </Link>
+                  ))}
+                </div>
+              )}
               {navigation.map((item) => {
                 const active = isActivePath(pathname, item.href);
 

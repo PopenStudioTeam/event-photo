@@ -8,6 +8,7 @@ import {
 import "./globals.css";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SupportWidget } from "@/components/support-widget";
 
 const fredoka = Fredoka({
   subsets: ["latin"],
@@ -56,6 +57,7 @@ export default function RootLayout({
             clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}
           >
             {children}
+            <SupportWidget />
           </GoogleOAuthProvider>
         </ThemeProvider>
       </body>

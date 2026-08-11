@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PublicHeader } from "@/components/public-header";
 import { SiteFooter } from "@/components/site-footer";
+import { useCases } from "@/lib/use-cases-data";
 
 const eventTypes = [
   "Weddings",
@@ -97,15 +98,6 @@ const allYouNeedFeatures = [
   { icon: "🎨", title: "Custom theme", text: "Match the cover and colors to your event." },
   { icon: "💬", title: "Captions & names", text: "Guests can sign and caption what they share." },
   { icon: "🔒", title: "Private & secured", text: "Password-protect the gallery when it matters." },
-];
-
-const useCases = [
-  { label: "Weddings", title: "Every angle of your day", color: "bg-[#ffd7df]" },
-  { label: "Parties", title: "The night from everyone", color: "bg-[#d8efff]" },
-  { label: "Birthdays", title: "More than one perspective", color: "bg-[#fff0bd]" },
-  { label: "Corporate", title: "Bring the room together", color: "bg-[#e3d9ff]" },
-  { label: "Conferences", title: "Every session, covered", color: "bg-[#d7f5e3]" },
-  { label: "Any event", title: "Whatever you're celebrating", color: "bg-[#ffe2c9]" },
 ];
 
 const faqs = [
@@ -536,19 +528,20 @@ export default function LandingPage() {
             </h2>
           </div>
 
+
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {useCases.map((useCase) => (
               <div
-                key={useCase.label}
-                className={`group relative min-h-[280px] overflow-hidden rounded-[2rem] ${useCase.color} p-6 transition duration-500 hover:-translate-y-2`}
+                key={useCase.slug}
+                className={`group relative min-h-[280px] overflow-hidden rounded-[2rem] ${useCase.accent} p-6 transition duration-500 hover:-translate-y-2`}
               >
                 <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-white/40 blur-2xl transition group-hover:scale-150" />
                 <div className="relative flex h-full flex-col justify-between">
                   <div className="text-xs font-bold uppercase tracking-[0.15em] opacity-50">
-                    {useCase.label}
+                    {useCase.navLabel}
                   </div>
                   <div>
-                    <div className="text-3xl leading-tight">{useCase.title}</div>
+                    <div className="text-3xl leading-tight">{useCase.navLabel}</div>
                     <a
                       href="#how-it-works"
                       className="mt-5 inline-flex items-center gap-1 text-sm font-medium opacity-70 transition group-hover:opacity-100"
@@ -592,8 +585,8 @@ export default function LandingPage() {
                 <div
                   key={name}
                   className={`rounded-[1.75rem] border p-5 ${index === 1
-                      ? "border-[#262125] bg-[#262125] text-white"
-                      : "bg-white"
+                    ? "border-[#262125] bg-[#262125] text-white"
+                    : "bg-white"
                     }`}
                 >
                   <div className="text-sm font-bold">{name}</div>
