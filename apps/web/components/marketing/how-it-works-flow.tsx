@@ -7,6 +7,8 @@ export type HowItWorksStep = {
   description: string;
   bullets?: string[];
   imageLabel: string;
+  imageType?: "image" | "video";
+  optionalLabel?: string;
   note?: { label: string; href: string };
   cta?: { label: string; href: string };
 };
@@ -47,8 +49,15 @@ export function HowItWorksFlow({
               }`}
             >
               <div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-primary-foreground">
-                  {index + 1}
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-primary-foreground">
+                    {index + 1}
+                  </div>
+                  {step.optionalLabel && (
+                    <span className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                      {step.optionalLabel}
+                    </span>
+                  )}
                 </div>
                 <h3 className="mt-5 text-2xl sm:text-3xl">{step.title}</h3>
                 <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground sm:text-base">
@@ -87,7 +96,11 @@ export function HowItWorksFlow({
                 )}
               </div>
 
-              <AssetPlaceholder label={step.imageLabel} className="min-h-[300px]" />
+              <AssetPlaceholder
+                type={step.imageType ?? "image"}
+                label={step.imageLabel}
+                className="min-h-[300px]"
+              />
             </div>
           );
         })}

@@ -6,6 +6,7 @@ import {
   MonitorPlay,
   Palette,
   QrCode,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import type { AllYouNeedItem } from "@/components/marketing/all-you-need-grid";
@@ -76,6 +77,15 @@ export const defaultFaqs: Faq[] = [
     answer:
       "Yes. Paid plans support password-protected galleries visible only to your guests.",
   },
+];
+
+export const organizationFeatures: AllYouNeedItem[] = [
+  { icon: QrCode, title: "No app required", text: "Attendees join by scanning a code or opening a link — nothing to install." },
+  { icon: MessageSquare, title: "Captions support", text: "Guests can add a caption to any photo or video they share." },
+  { icon: ShieldCheck, title: "Moderation tools", text: "Review uploads before they appear, so only the right content goes public." },
+  { icon: ImageIcon, title: "Digital album", text: "Everything lands in one shared gallery, ready to browse or export." },
+  { icon: Palette, title: "Branding & design", text: "Add your logo, colors, and sponsors to match your event." },
+  { icon: Lock, title: "Private & secured", text: "Password-protect the gallery to keep it visible to attendees only." },
 ];
 
 export const highlightIconRotation: LucideIcon[] = [

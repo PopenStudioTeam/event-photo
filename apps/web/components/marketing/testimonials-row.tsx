@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Star } from "lucide-react";
 import { AssetPlaceholder } from "./asset-placeholder";
 
@@ -12,22 +13,32 @@ export function TestimonialsRow({
   heading,
   subtext,
   testimonials,
+  readMore,
 }: {
   heading: string;
   subtext: string;
   testimonials: Testimonial[];
+  readMore?: { label: string; href: string };
 }) {
   return (
     <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
       <div className="mx-auto max-w-2xl text-center">
         <h2 className="text-3xl leading-tight sm:text-4xl">{heading}</h2>
-        <p className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <p className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
           <span className="flex text-primary">
             {Array.from({ length: 5 }).map((_, index) => (
               <Star key={index} className="h-4 w-4 fill-current" />
             ))}
           </span>
           {subtext}
+          {readMore && (
+            <Link
+              href={readMore.href}
+              className="font-medium text-primary hover:underline"
+            >
+              {readMore.label}
+            </Link>
+          )}
         </p>
       </div>
 
