@@ -4,33 +4,24 @@ import { PublicHeader } from "@/components/public-header";
 import { SiteFooter } from "@/components/site-footer";
 import type { UseCase } from "@/lib/use-cases-data";
 
-const miniSteps = [
-  {
-    title: "Create your event",
-    text: "Set up your gallery in under two minutes.",
-  },
-  {
-    title: "Share your QR code",
-    text: "Print it, send it, or display it on a screen.",
-  },
-  {
-    title: "Watch memories arrive",
-    text: "Every guest upload lands in your gallery instantly.",
-  },
-];
-
 export function UseCasePage({ useCase }: { useCase: UseCase }) {
+  const Icon = useCase.icon;
+
   return (
     <div className="min-h-screen overflow-hidden bg-background text-foreground">
       <PublicHeader />
 
       <main>
         <section className="mx-auto max-w-4xl px-4 pb-16 pt-16 text-center sm:px-6 sm:pt-24 lg:px-8">
-          <div className="inline-flex rounded-full bg-primary/15 px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-foreground">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+            <Icon className="h-8 w-8" strokeWidth={1.75} />
+          </div>
+
+          <div className="mx-auto mt-5 inline-flex rounded-full bg-primary/15 px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-foreground">
             {useCase.heroLabel}
           </div>
 
-          <h1 className="mt-7 text-5xl leading-[0.98] sm:text-6xl">
+          <h1 className="mt-6 text-5xl leading-[0.98] sm:text-6xl">
             {useCase.headline}
           </h1>
 
@@ -81,20 +72,43 @@ export function UseCasePage({ useCase }: { useCase: UseCase }) {
         </section>
 
         <section className="border-y border-border bg-background/70 px-4 py-20 sm:px-6 lg:px-8">
-          <div className="mx-auto grid max-w-5xl gap-8 sm:grid-cols-3">
-            {miniSteps.map((step, index) => (
-              <div key={step.title} className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-deep-navy text-sm font-bold text-brand-off-white">
-                  {index + 1}
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-foreground">{step.title}</div>
-                  <div className="mt-1 text-xs leading-5 text-muted-foreground">
-                    {step.text}
-                  </div>
-                </div>
+          <div className="mx-auto max-w-6xl">
+            <div className="mx-auto max-w-2xl text-center">
+              <div className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                How it works
               </div>
-            ))}
+              <h2 className="mt-4 text-3xl leading-tight sm:text-4xl">
+                Set up for {useCase.navLabel.toLowerCase()}, start to finish.
+              </h2>
+            </div>
+
+            <div className="relative mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+              <div
+                aria-hidden="true"
+                className="absolute left-0 right-0 top-8 hidden h-px bg-border lg:block"
+              />
+
+              {useCase.howItWorks.map((step, index) => {
+                const StepIcon = step.icon;
+
+                return (
+                  <div key={step.title} className="relative flex flex-col items-center text-center">
+                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-border bg-card text-primary shadow-sm">
+                      <StepIcon className="h-6 w-6" strokeWidth={1.75} />
+                      <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                        {index + 1}
+                      </span>
+                    </div>
+                    <h3 className="mt-5 text-sm font-bold text-foreground">
+                      {step.title}
+                    </h3>
+                    <p className="mt-2 max-w-[16rem] text-xs leading-5 text-muted-foreground">
+                      {step.text}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </section>
 
