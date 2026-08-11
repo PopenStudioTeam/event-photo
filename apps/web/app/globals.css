@@ -75,15 +75,15 @@
   --background: #F4EEFF;
   --foreground: #0F172A;
 
-  --card: #FFFFFF;
+  --card: #FBF8FF;
   --card-foreground: #0F172A;
 
-  --popover: #FFFFFF;
+  --popover: #FBF8FF;
   --popover-foreground: #0F172A;
 
   --primary: #6F00FF;
   --primary-hover: #5B23FF;
-  --primary-foreground: #F8FAFC;
+  --primary-foreground: #FBF8FF;
 
   --secondary: #EAE0FA;
   --secondary-foreground: #0F172A;
@@ -280,19 +280,19 @@
 }
 
 .guest-welcome-shell {
-  --background: #F1EEFB;
+  --background: #F4EEFF;
   --foreground: #0F172A;
-  --card: #FFFFFF;
+  --card: #FBF8FF;
   --card-foreground: #0F172A;
-  --primary: #6D4AAE;
-  --primary-foreground: #F8FAFC;
-  --secondary: #EDE7F7;
-  --muted: #EDE7F7;
-  --muted-foreground: #4B4460;
-  --border: #C9BBE0;
-  --input: #C0B0DB;
-  --ring: #6D4AAE;
-  --accent: #EDE7F7;
+  --primary: #6F00FF;
+  --primary-foreground: #FBF8FF;
+  --secondary: #EAE0FA;
+  --muted: #EAE0FA;
+  --muted-foreground: #4B3B66;
+  --border: #D3C2F0;
+  --input: #C7B0EA;
+  --ring: #6F00FF;
+  --accent: #EAE0FA;
   --accent-foreground: #0F172A;
   background-color: var(--background);
   color: var(--foreground);

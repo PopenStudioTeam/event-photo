@@ -151,8 +151,8 @@ export default function EventDashboardPage() {
 
     setCoverUploading(true);
     try {
-      const updated = (await uploadEventCover(event.slug, coverFile)) as EventRecord;
-      setEvent((prev) => (prev ? { ...prev, ...updated } : updated));
+      const updated = await uploadEventCover(event.slug, coverFile);
+      setEvent((prev) => (prev ? { ...prev, ...updated } : prev));
       setCoverFile(null);
       showSuccessToast("Cover uploaded", "Your event cover photo was updated.");
     } catch (err) {

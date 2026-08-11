@@ -45,7 +45,7 @@ export function GuideComments({ guideSlug }: GuideCommentsProps) {
           setComments(res.comments);
         }
       } catch (err) {
-        reportApiError(err);
+        reportApiError(err, "Failed to load comments");
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -91,7 +91,7 @@ export function GuideComments({ guideSlug }: GuideCommentsProps) {
       setBody("");
       setError(null);
     } catch (err) {
-      reportApiError(err);
+      reportApiError(err, "Failed to post comment");
       setError("Could not post your comment. Please try again.");
     } finally {
       setSubmitting(false);
