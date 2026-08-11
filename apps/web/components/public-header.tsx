@@ -13,16 +13,12 @@ const navigation = [
     href: "/",
   },
   {
-    label: "How it works",
-    href: "/how-it-works",
+    label: "Pricing",
+    href: "/pricing",
   },
   {
     label: "Stories",
     href: "/stories",
-  },
-  {
-    label: "Pricing",
-    href: "/pricing",
   },
   {
     label: "Guides",

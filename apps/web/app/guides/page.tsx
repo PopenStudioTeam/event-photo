@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { PublicHeader } from "@/components/public-header";
 import { SiteFooter } from "@/components/site-footer";
+import { GuidesGrid } from "@/components/guides-grid";
 import { guides } from "@/lib/guides-data";
 
 export const metadata: Metadata = {
@@ -36,32 +36,7 @@ export default function GuidesPage() {
         </section>
 
         <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {guides.map((guide) => (
-              <Link
-                key={guide.slug}
-                href={`/guides/${guide.slug}`}
-                className="group flex h-full flex-col justify-between rounded-[2rem] border border-border bg-card/75 p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-              >
-                <div>
-                  <span className="inline-flex rounded-full bg-primary/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground">
-                    {guide.category}
-                  </span>
-                  <h2 className="mt-5 text-xl leading-snug text-foreground">{guide.title}</h2>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                    {guide.excerpt}
-                  </p>
-                </div>
-
-                <div className="mt-6 flex items-center justify-between border-t border-border pt-4 text-xs text-muted-foreground">
-                  <span>{guide.readTime}</span>
-                  <span className="text-muted-foreground/50 transition group-hover:translate-x-1 group-hover:text-foreground">
-                    →
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <GuidesGrid guides={guides} />
         </section>
       </main>
 
