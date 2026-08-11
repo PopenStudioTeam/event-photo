@@ -248,7 +248,7 @@ export default function PricingPage() {
                         <span
                           className={
                             plan.featured
-                              ? "text-primary"
+                              ? "text-brand-champagne-gold"
                               : "text-emerald-600"
                           }
                         >
