@@ -206,7 +206,7 @@ export function PublicHeader() {
           <Link href="/login">
             <Button
               size="sm"
-              className="rounded-full bg-brand-deep-navy px-4 text-brand-off-white shadow-sm hover:opacity-90"
+              className="rounded-full bg-primary px-4 text-primary-foreground shadow-sm hover:bg-[var(--primary-hover)]"
             >
               Create event
               <span className="ml-1.5">↗</span>
@@ -371,7 +371,7 @@ export function PublicHeader() {
               <Link href="/login" onClick={closeMobileMenu}>
                 <Button
                   size="sm"
-                  className="w-full rounded-full bg-brand-deep-navy text-brand-off-white hover:opacity-90"
+                  className="w-full rounded-full bg-primary text-primary-foreground hover:bg-[var(--primary-hover)]"
                 >
                   Create event
                 </Button>

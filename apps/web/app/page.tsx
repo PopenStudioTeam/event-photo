@@ -330,7 +330,7 @@ export default function LandingPage() {
               <Link href="/dashboard" className="w-full sm:w-auto">
                 <Button
                   size="lg"
-                  className="w-full rounded-full bg-brand-deep-navy px-7 text-brand-off-white shadow-xl shadow-black/10 hover:opacity-90 sm:w-auto"
+                  className="w-full rounded-full bg-primary px-7 text-primary-foreground shadow-xl shadow-black/10 hover:bg-[var(--primary-hover)] sm:w-auto"
                 >
                   Create your event
                   <span className="ml-2">↗</span>

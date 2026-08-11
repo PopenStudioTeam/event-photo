@@ -75,7 +75,7 @@ export function SupportWidget() {
 
             <a
               href="mailto:support@eventphoto.app"
-              className="mt-4 flex items-center justify-center rounded-full bg-brand-deep-navy px-4 py-2.5 text-sm font-medium text-brand-off-white hover:opacity-90"
+              className="mt-4 flex items-center justify-center rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-[var(--primary-hover)]"
             >
               Email support
             </a>
@@ -87,7 +87,7 @@ export function SupportWidget() {
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-label={open ? "Close support" : "Open support"}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-deep-navy text-2xl text-brand-off-white shadow-xl transition hover:opacity-90"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl text-primary-foreground shadow-xl transition hover:bg-[var(--primary-hover)]"
       >
         {open ? "×" : "💬"}
       </button>
