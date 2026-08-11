@@ -43,7 +43,7 @@ export function GuidesGrid({ guides }: { guides: Guide[] }) {
           <Link
             key={guide.slug}
             href={`/guides/${guide.slug}`}
-            className="group flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-border bg-card shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+            className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
           >
             <AssetPlaceholder
               label={`Cover image for "${guide.title}"`}
