@@ -36,10 +36,10 @@ export function SupportWidget() {
   return (
     <div className="fixed bottom-5 right-5 z-50">
       {open && (
-        <div className="mb-3 w-[calc(100vw-2.5rem)] max-w-sm overflow-hidden rounded-[1.5rem] border border-black/10 bg-white shadow-2xl">
-          <div className="bg-[#262125] px-5 py-6 text-white">
+        <div className="mb-3 w-[calc(100vw-2.5rem)] max-w-sm overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-2xl">
+          <div className="bg-brand-deep-navy px-5 py-6 text-brand-off-white">
             <div className="text-lg font-bold">Hi there 👋</div>
-            <div className="text-sm text-white/60">How can we help?</div>
+            <div className="text-sm text-brand-off-white/60">How can we help?</div>
           </div>
 
           <div className="max-h-96 overflow-y-auto p-4">
@@ -48,26 +48,26 @@ export function SupportWidget() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search for help"
-              className="w-full rounded-full border border-black/10 px-4 py-2 text-sm outline-none focus:border-black/30"
+              className="w-full rounded-full border border-border bg-background px-4 py-2 text-sm text-foreground outline-none focus:border-primary"
             />
 
             <div className="mt-4 flex flex-col gap-1">
               {results.map((item) => (
                 <details
                   key={item.question}
-                  className="rounded-xl px-3 py-2 hover:bg-neutral-50"
+                  className="rounded-xl px-3 py-2 hover:bg-accent"
                 >
-                  <summary className="cursor-pointer list-none text-sm font-medium text-neutral-800">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
                     {item.question}
                   </summary>
-                  <p className="mt-2 text-xs leading-5 text-neutral-500">
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
                     {item.answer}
                   </p>
                 </details>
               ))}
 
               {results.length === 0 && (
-                <p className="px-3 py-2 text-sm text-neutral-500">
+                <p className="px-3 py-2 text-sm text-muted-foreground">
                   No matches — email us instead.
                 </p>
               )}
@@ -75,7 +75,7 @@ export function SupportWidget() {
 
             <a
               href="mailto:support@eventphoto.app"
-              className="mt-4 flex items-center justify-center rounded-full bg-[#262125] px-4 py-2.5 text-sm font-medium text-white hover:bg-black"
+              className="mt-4 flex items-center justify-center rounded-full bg-brand-deep-navy px-4 py-2.5 text-sm font-medium text-brand-off-white hover:opacity-90"
             >
               Email support
             </a>
@@ -87,7 +87,7 @@ export function SupportWidget() {
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-label={open ? "Close support" : "Open support"}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#262125] text-2xl text-white shadow-xl transition hover:bg-black"
+        className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-deep-navy text-2xl text-brand-off-white shadow-xl transition hover:opacity-90"
       >
         {open ? "×" : "💬"}
       </button>

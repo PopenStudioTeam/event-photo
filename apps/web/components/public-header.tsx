@@ -62,7 +62,7 @@ export function PublicHeader() {
   const useCasesActive = isActivePath(pathname, "/for");
 
   return (
-    <header className="relative z-50 border-b border-black/5 bg-white/70 backdrop-blur-xl">
+    <header className="relative z-50 border-b border-border bg-background/70 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link
@@ -71,15 +71,15 @@ export function PublicHeader() {
           className="group flex items-center gap-3"
           aria-label="Event Photo home"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#262125] text-xl text-white shadow-sm transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-deep-navy text-xl text-brand-off-white shadow-sm transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105">
             e
           </div>
 
           <div className="leading-tight">
-            <div className="text-base font-bold tracking-tight text-[#262125]">
+            <div className="text-base font-bold tracking-tight text-foreground">
               Event Photo
             </div>
-            <div className="text-[10px] text-neutral-500">
+            <div className="text-[10px] text-muted-foreground">
               Every moment, together
             </div>
           </div>
@@ -102,8 +102,8 @@ export function PublicHeader() {
               className={cn(
                 "relative flex items-center gap-1.5 py-2 text-sm transition-colors",
                 useCasesActive
-                  ? "font-bold text-[#262125]"
-                  : "text-neutral-500 hover:text-[#262125]"
+                  ? "font-bold text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               Use cases
@@ -117,20 +117,20 @@ export function PublicHeader() {
               </span>
               <span
                 className={cn(
-                  "absolute bottom-0 left-0 h-0.5 rounded-full bg-rose-400 transition-all duration-300",
+                  "absolute bottom-0 left-0 h-0.5 rounded-full bg-primary transition-all duration-300",
                   useCasesActive ? "w-full" : "w-0"
                 )}
               />
             </button>
 
             {useCasesOpen && (
-              <div className="absolute left-1/2 top-full grid w-[26rem] -translate-x-1/2 grid-cols-2 gap-1 rounded-2xl border border-black/5 bg-white p-3 shadow-xl">
+              <div className="absolute left-1/2 top-full grid w-[26rem] -translate-x-1/2 grid-cols-2 gap-1 rounded-2xl border border-border bg-popover p-3 shadow-xl">
                 {useCases.map((useCase) => (
                   <Link
                     key={useCase.slug}
                     href={`/for/${useCase.slug}`}
                     onClick={() => setUseCasesOpen(false)}
-                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-neutral-600 transition hover:bg-neutral-50 hover:text-[#262125]"
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition hover:bg-accent hover:text-foreground"
                   >
                     <span
                       className="h-2 w-2 shrink-0 rounded-full"
@@ -153,15 +153,15 @@ export function PublicHeader() {
                 className={cn(
                   "relative py-2 text-sm transition-colors",
                   active
-                    ? "font-bold text-[#262125]"
-                    : "text-neutral-500 hover:text-[#262125]"
+                    ? "font-bold text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {item.label}
 
                 <span
                   className={cn(
-                    "absolute bottom-0 left-0 h-0.5 rounded-full bg-rose-400 transition-all duration-300",
+                    "absolute bottom-0 left-0 h-0.5 rounded-full bg-primary transition-all duration-300",
                     active ? "w-full" : "w-0"
                   )}
                 />
@@ -176,7 +176,7 @@ export function PublicHeader() {
             <Button
               variant="ghost"
               size="sm"
-              className="rounded-full px-4 text-neutral-600 hover:bg-black/5 hover:text-[#262125]"
+              className="rounded-full px-4 text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               Log in
             </Button>
@@ -185,7 +185,7 @@ export function PublicHeader() {
           <Link href="/login">
             <Button
               size="sm"
-              className="rounded-full bg-[#262125] px-4 text-white shadow-sm hover:bg-black"
+              className="rounded-full bg-brand-deep-navy px-4 text-brand-off-white shadow-sm hover:opacity-90"
             >
               Create event
               <span className="ml-1.5">↗</span>
@@ -199,7 +199,7 @@ export function PublicHeader() {
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
           onClick={() => setMobileOpen((open) => !open)}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white/70 text-[#262125] transition hover:bg-white md:hidden"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/70 text-foreground transition hover:bg-accent md:hidden"
         >
           <span className="relative flex h-4 w-5 flex-col justify-between">
             <span
@@ -234,7 +234,7 @@ export function PublicHeader() {
         )}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className="border-t border-black/5 bg-white/90 px-4 pb-5 pt-3 shadow-lg backdrop-blur-xl sm:px-6">
+          <div className="border-t border-border bg-popover/95 px-4 pb-5 pt-3 shadow-lg backdrop-blur-xl sm:px-6">
             <nav
               aria-label="Mobile public navigation"
               className="flex flex-col gap-1"
@@ -246,8 +246,8 @@ export function PublicHeader() {
                 className={cn(
                   "flex items-center justify-between rounded-2xl px-4 py-3 text-sm transition",
                   useCasesActive
-                    ? "bg-rose-50 font-bold text-[#262125]"
-                    : "text-neutral-600 hover:bg-neutral-50 hover:text-[#262125]"
+                    ? "bg-primary/10 font-bold text-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 )}
               >
                 <span>Use cases</span>
@@ -268,7 +268,7 @@ export function PublicHeader() {
                       key={useCase.slug}
                       href={`/for/${useCase.slug}`}
                       onClick={closeMobileMenu}
-                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-50 hover:text-[#262125]"
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
                     >
                       <span
                         className="h-2 w-2 shrink-0 rounded-full"
@@ -291,15 +291,15 @@ export function PublicHeader() {
                     className={cn(
                       "flex items-center justify-between rounded-2xl px-4 py-3 text-sm transition",
                       active
-                        ? "bg-rose-50 font-bold text-[#262125]"
-                        : "text-neutral-600 hover:bg-neutral-50 hover:text-[#262125]"
+                        ? "bg-primary/10 font-bold text-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
                     )}
                   >
                     <span>{item.label}</span>
                     <span
                       className={cn(
                         "text-lg transition-transform",
-                        active ? "translate-x-0 text-rose-400" : "-translate-x-1 text-neutral-300"
+                        active ? "translate-x-0 text-primary" : "-translate-x-1 text-muted-foreground/50"
                       )}
                     >
                       →
@@ -314,7 +314,7 @@ export function PublicHeader() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full rounded-full border-black/10"
+                  className="w-full rounded-full border-border"
                 >
                   Log in
                 </Button>
@@ -323,7 +323,7 @@ export function PublicHeader() {
               <Link href="/login" onClick={closeMobileMenu}>
                 <Button
                   size="sm"
-                  className="w-full rounded-full bg-[#262125] text-white hover:bg-black"
+                  className="w-full rounded-full bg-brand-deep-navy text-brand-off-white hover:opacity-90"
                 >
                   Create event
                 </Button>

@@ -326,10 +326,10 @@ export default function HowItWorksPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[#fffdfb] text-[#262125]">
+    <div className="min-h-screen overflow-hidden bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="landing-drift absolute -left-48 -top-48 h-[34rem] w-[34rem] rounded-full bg-rose-200/40 blur-3xl" />
-        <div className="landing-drift absolute -right-48 top-40 h-[34rem] w-[34rem] rounded-full bg-sky-200/40 blur-3xl [animation-delay:2s]" />
+        <div className="landing-drift absolute -left-48 -top-48 h-[34rem] w-[34rem] rounded-full bg-primary/15 blur-3xl" />
+        <div className="landing-drift absolute -right-48 top-40 h-[34rem] w-[34rem] rounded-full bg-card/70 blur-3xl [animation-delay:2s]" />
       </div>
 
       <PublicHeader />
@@ -337,18 +337,18 @@ export default function HowItWorksPage() {
       <main>
         <section className="mx-auto max-w-5xl px-4 pb-20 pt-20 text-center sm:px-6 sm:pt-28 lg:px-8 lg:pb-28">
           <div className="landing-rise">
-            <div className="inline-flex rounded-full border border-black/10 bg-white/75 px-4 py-2 text-xs text-neutral-500 shadow-sm">
+            <div className="inline-flex rounded-full border border-border bg-card/75 px-4 py-2 text-xs text-muted-foreground shadow-sm">
               From the first upload to the final download
             </div>
 
             <h1 className="mx-auto mt-7 max-w-4xl text-5xl leading-[0.98] sm:text-6xl lg:text-8xl">
               The easiest way to collect
-              <span className="block text-[#b2a8ad]">
+              <span className="block text-muted-foreground">
                 every event memory.
               </span>
             </h1>
 
-            <p className="mx-auto mt-7 max-w-2xl text-base leading-7 text-neutral-600 sm:text-lg">
+            <p className="mx-auto mt-7 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
               Create a gallery, share one QR code, and let guests contribute
               photos and videos without downloading an app.
             </p>
@@ -357,7 +357,7 @@ export default function HowItWorksPage() {
               <Link href="/dashboard">
                 <Button
                   size="lg"
-                  className="w-full rounded-full bg-[#262125] px-7 text-white sm:w-auto"
+                  className="w-full rounded-full bg-brand-deep-navy px-7 text-brand-off-white hover:opacity-90 sm:w-auto"
                 >
                   Create your event ↗
                 </Button>
@@ -366,7 +366,7 @@ export default function HowItWorksPage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="w-full rounded-full border-black/10 bg-white/70 px-7 sm:w-auto"
+                  className="w-full rounded-full border-border bg-card/70 px-7 sm:w-auto"
                 >
                   View pricing
                 </Button>
@@ -375,7 +375,7 @@ export default function HowItWorksPage() {
           </div>
         </section>
 
-        <section className="border-y border-black/5 bg-white/65">
+        <section className="border-y border-border bg-background/65">
           <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:grid-cols-3 sm:px-6 lg:px-8">
             {[
               ["No app", "Guests upload directly from their browser."],
@@ -383,10 +383,10 @@ export default function HowItWorksPage() {
               ["Your gallery", "Keep all memories together in one place."],
             ].map(([title, text]) => (
               <div key={title} className="flex gap-3">
-                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-rose-400" />
+                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
                 <div>
-                  <div className="text-sm font-bold">{title}</div>
-                  <div className="mt-1 text-xs leading-5 text-neutral-500">
+                  <div className="text-sm font-bold text-foreground">{title}</div>
+                  <div className="mt-1 text-xs leading-5 text-muted-foreground">
                     {text}
                   </div>
                 </div>
@@ -397,7 +397,7 @@ export default function HowItWorksPage() {
 
         <section id="steps" className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
           <div className="mx-auto max-w-2xl text-center">
-            <div className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
+            <div className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
               The complete flow
             </div>
             <h2 className="mt-5 text-4xl sm:text-5xl">
@@ -418,10 +418,10 @@ export default function HowItWorksPage() {
                 >
                   <div className="landing-rise">
                     <div className="flex items-center gap-3">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff0bd] text-xs font-bold">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-xs font-bold text-foreground">
                         {step.number}
                       </span>
-                      <span className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-400">
+                      <span className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">
                         {step.eyebrow}
                       </span>
                     </div>
@@ -430,7 +430,7 @@ export default function HowItWorksPage() {
                       {step.title}
                     </h3>
 
-                    <p className="mt-5 max-w-lg text-sm leading-7 text-neutral-600 sm:text-base">
+                    <p className="mt-5 max-w-lg text-sm leading-7 text-muted-foreground sm:text-base">
                       {step.description}
                     </p>
 
@@ -438,7 +438,7 @@ export default function HowItWorksPage() {
                       {step.details.map((detail) => (
                         <li
                           key={detail}
-                          className="flex items-start gap-2 text-sm text-neutral-600"
+                          className="flex items-start gap-2 text-sm text-muted-foreground"
                         >
                           <span className="text-emerald-600">✓</span>
                           <span>{detail}</span>
@@ -448,7 +448,7 @@ export default function HowItWorksPage() {
                   </div>
 
                   <div
-                    className={`landing-rise landing-rise-delay-2 overflow-hidden rounded-[2.5rem] border border-black/5 shadow-xl ${
+                    className={`landing-rise landing-rise-delay-2 overflow-hidden rounded-[2.5rem] border border-border shadow-xl ${
                       reversed ? "lg:order-1" : ""
                     }`}
                   >
@@ -460,10 +460,10 @@ export default function HowItWorksPage() {
           </div>
         </section>
 
-        <section className="bg-[#262125] px-4 py-24 text-white sm:px-6 lg:px-8 lg:py-32">
+        <section className="bg-brand-deep-navy px-4 py-24 text-brand-off-white sm:px-6 lg:px-8 lg:py-32">
           <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
-              <div className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">
+              <div className="text-xs font-bold uppercase tracking-[0.2em] text-brand-off-white/40">
                 Built around real events
               </div>
               <h2 className="mt-5 max-w-lg text-4xl leading-tight sm:text-5xl">
@@ -480,10 +480,10 @@ export default function HowItWorksPage() {
               ].map(([title, text]) => (
                 <div
                   key={title}
-                  className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6"
+                  className="rounded-[2rem] border border-brand-off-white/10 bg-brand-off-white/[0.06] p-6"
                 >
                   <h3 className="text-xl">{title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-white/55">{text}</p>
+                  <p className="mt-3 text-sm leading-6 text-brand-off-white/55">{text}</p>
                 </div>
               ))}
             </div>
@@ -492,13 +492,13 @@ export default function HowItWorksPage() {
 
         <section className="mx-auto max-w-3xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
           <div className="text-center">
-            <div className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
+            <div className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
               Good to know
             </div>
             <h2 className="mt-5 text-4xl sm:text-5xl">Questions, answered.</h2>
           </div>
 
-          <div className="mt-10 divide-y divide-black/10 border-y border-black/10">
+          <div className="mt-10 divide-y divide-border border-y border-border">
             {faqs.map((faq, index) => {
               const open = openFaq === index;
 
@@ -509,16 +509,16 @@ export default function HowItWorksPage() {
                     onClick={() => setOpenFaq(open ? null : index)}
                     className="flex w-full items-center justify-between gap-5 py-5 text-left"
                   >
-                    <span className="text-sm font-bold sm:text-base">
+                    <span className="text-sm font-bold text-foreground sm:text-base">
                       {faq.question}
                     </span>
-                    <span className="text-xl text-neutral-400">
+                    <span className="text-xl text-muted-foreground">
                       {open ? "−" : "+"}
                     </span>
                   </button>
 
                   {open && (
-                    <div className="pb-5 pr-8 text-sm leading-6 text-neutral-500">
+                    <div className="pb-5 pr-8 text-sm leading-6 text-muted-foreground">
                       {faq.answer}
                     </div>
                   )}
@@ -529,17 +529,17 @@ export default function HowItWorksPage() {
         </section>
 
         <section className="px-4 pb-24 sm:px-6 lg:px-8 lg:pb-32">
-          <div className="mx-auto max-w-7xl rounded-[2.75rem] bg-[#262125] px-6 py-16 text-center text-white sm:px-10 sm:py-24">
+          <div className="mx-auto max-w-7xl rounded-[2.75rem] bg-brand-deep-navy px-6 py-16 text-center text-brand-off-white sm:px-10 sm:py-24">
             <h2 className="text-4xl sm:text-6xl">
               Ready to gather every perspective?
             </h2>
-            <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-white/55 sm:text-base">
+            <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-brand-off-white/55 sm:text-base">
               Create an event and give your guests one easy place to share.
             </p>
             <Link href="/dashboard" className="mt-8 inline-block">
               <Button
                 size="lg"
-                className="rounded-full bg-white px-7 text-[#262125] hover:bg-white/90"
+                className="rounded-full bg-primary px-7 text-primary-foreground hover:bg-[var(--primary-hover)]"
               >
                 Create your event ↗
               </Button>

@@ -39,19 +39,19 @@ export default async function GuidePage({ params }: GuidePageProps) {
   }
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[#fffdfb] text-[#262125]">
+    <div className="min-h-screen overflow-hidden bg-background text-foreground">
       <PublicHeader />
 
       <main>
         <section className="mx-auto max-w-3xl px-4 pb-16 pt-16 sm:px-6 sm:pt-24 lg:px-8">
           <Link
             href="/guides"
-            className="text-sm text-neutral-500 hover:text-[#262125]"
+            className="text-sm text-muted-foreground hover:text-foreground"
           >
             ← Back to guides
           </Link>
 
-          <div className="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
+          <div className="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
             {guide.category} · {guide.readTime}
           </div>
 
@@ -59,7 +59,7 @@ export default async function GuidePage({ params }: GuidePageProps) {
             {guide.title}
           </h1>
 
-          <div className="mt-8 space-y-5 text-sm leading-7 text-neutral-700 sm:text-base">
+          <div className="mt-8 space-y-5 text-sm leading-7 text-foreground/80 sm:text-base">
             {guide.body.map((paragraph, index) => (
               <p key={index}>{paragraph}</p>
             ))}
@@ -67,14 +67,14 @@ export default async function GuidePage({ params }: GuidePageProps) {
         </section>
 
         <section className="px-4 pb-24 sm:px-6 lg:px-8 lg:pb-32">
-          <div className="mx-auto max-w-3xl overflow-hidden rounded-[2.5rem] bg-[#262125] px-6 py-12 text-center text-white sm:px-10 sm:py-16">
+          <div className="mx-auto max-w-3xl overflow-hidden rounded-[2.5rem] bg-brand-deep-navy px-6 py-12 text-center text-brand-off-white sm:px-10 sm:py-16">
             <h2 className="text-3xl leading-tight sm:text-4xl">
               Ready to try it on your event?
             </h2>
             <Link href="/dashboard" className="mt-6 inline-block">
               <Button
                 size="lg"
-                className="rounded-full bg-white px-7 text-[#262125] hover:bg-white/90"
+                className="rounded-full bg-primary px-7 text-primary-foreground hover:bg-[var(--primary-hover)]"
               >
                 Create your event
                 <span className="ml-2">↗</span>

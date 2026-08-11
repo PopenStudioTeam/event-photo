@@ -73,19 +73,19 @@ const features = [
     number: "01",
     title: "One code for the whole day",
     text: "Put one QR code on your table cards, invitations, screens, or signs. Guests open the experience with their phone camera.",
-    accent: "bg-[#ffd7df]",
+    accent: "bg-primary/15",
   },
   {
     number: "02",
     title: "The gallery builds itself",
     text: "Photos and videos arrive directly from your guests. No chasing files in group chats and no complicated upload instructions.",
-    accent: "bg-[#d8efff]",
+    accent: "bg-card",
   },
   {
     number: "03",
     title: "Keep every perspective",
     text: "Review uploads, let guests like their favorite moments, and download the complete collection in original quality.",
-    accent: "bg-[#fff0bd]",
+    accent: "bg-secondary",
   },
 ];
 
@@ -131,22 +131,22 @@ const faqs = [
 function GalleryPreview() {
   return (
     <div className="landing-float relative mx-auto w-full max-w-[590px]">
-      <div className="absolute -inset-8 rounded-[4rem] bg-gradient-to-br from-rose-300/35 via-transparent to-sky-300/35 blur-3xl" />
+      <div className="absolute -inset-8 rounded-[4rem] bg-primary/10 blur-3xl" />
 
-      <div className="relative rotate-1 rounded-[2.5rem] border border-white/80 bg-white/75 p-3 shadow-[0_35px_100px_-35px_rgba(15,23,42,0.5)] backdrop-blur-xl sm:p-5">
-        <div className="overflow-hidden rounded-[2rem] bg-[#1b1a20] text-white">
-          <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 text-[11px] text-white/55">
+      <div className="relative rotate-1 rounded-[2.5rem] border border-border bg-card/75 p-3 shadow-[0_35px_100px_-35px_rgba(15,23,42,0.5)] backdrop-blur-xl sm:p-5">
+        <div className="overflow-hidden rounded-[2rem] bg-brand-deep-navy text-brand-off-white">
+          <div className="flex items-center justify-between border-b border-brand-off-white/10 px-5 py-4 text-[11px] text-brand-off-white/55">
             <span>eventphoto</span>
-            <span className="rounded-full bg-white/10 px-3 py-1">
+            <span className="rounded-full bg-brand-off-white/10 px-3 py-1">
               Private gallery
             </span>
           </div>
 
           <div className="relative p-4 sm:p-6">
-            <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-rose-400/30 blur-3xl" />
-            <div className="absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-sky-400/20 blur-3xl" />
+            <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-primary/25 blur-3xl" />
+            <div className="absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
 
-            <div className="relative overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-[#ffb5c4] via-[#ffc889] to-[#fff0b8] p-6 text-[#261b20] sm:p-8">
+            <div className="relative overflow-hidden rounded-[1.75rem] bg-primary p-6 text-primary-foreground sm:p-8">
               <div className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-55">
                 The shared album
               </div>
@@ -165,39 +165,31 @@ function GalleryPreview() {
                 </span>
 
                 <div className="flex -space-x-2">
-                  <span className="h-9 w-9 rounded-full border-2 border-[#ffc889] bg-rose-500" />
-                  <span className="h-9 w-9 rounded-full border-2 border-[#ffc889] bg-sky-400" />
-                  <span className="h-9 w-9 rounded-full border-2 border-[#ffc889] bg-violet-500" />
+                  <span className="h-9 w-9 rounded-full border-2 border-primary bg-brand-deep-navy" />
+                  <span className="h-9 w-9 rounded-full border-2 border-primary bg-brand-slate-navy" />
+                  <span className="h-9 w-9 rounded-full border-2 border-primary bg-brand-off-white" />
                 </div>
               </div>
             </div>
 
             <div className="relative mt-4 grid grid-cols-3 gap-2">
-              <div className="aspect-[0.85] rounded-2xl bg-gradient-to-br from-rose-400 to-orange-200 p-2">
-                <div className="flex h-full items-end rounded-xl bg-black/10 p-2 text-[9px] text-white">
-                  Guest upload
+              {[1, 2, 3].map((item) => (
+                <div key={item} className="aspect-[0.85] rounded-2xl bg-brand-slate-navy p-2">
+                  <div className="flex h-full items-end rounded-xl bg-black/20 p-2 text-[9px] text-brand-off-white">
+                    Guest upload
+                  </div>
                 </div>
-              </div>
-              <div className="aspect-[0.85] rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 p-2">
-                <div className="flex h-full items-end rounded-xl bg-black/10 p-2 text-[9px] text-white">
-                  Guest upload
-                </div>
-              </div>
-              <div className="aspect-[0.85] rounded-2xl bg-gradient-to-br from-amber-300 to-fuchsia-400 p-2">
-                <div className="flex h-full items-end rounded-xl bg-black/10 p-2 text-[9px] text-white">
-                  Guest upload
-                </div>
-              </div>
+              ))}
             </div>
 
-            <div className="relative mt-4 flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
+            <div className="relative mt-4 flex items-center justify-between rounded-2xl border border-brand-off-white/10 bg-brand-off-white/10 px-4 py-3 backdrop-blur">
               <div>
                 <div className="text-xs font-medium">Share your memories</div>
-                <div className="mt-1 text-[10px] text-white/50">
+                <div className="mt-1 text-[10px] text-brand-off-white/50">
                   No app. No account.
                 </div>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-lg text-black">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-lg text-primary-foreground">
                 ↗
               </div>
             </div>
@@ -205,16 +197,16 @@ function GalleryPreview() {
         </div>
       </div>
 
-      <div className="absolute -bottom-6 -left-2 rounded-2xl border bg-white px-4 py-3 shadow-xl sm:-left-8">
-        <div className="text-xs font-bold">No app required</div>
-        <div className="mt-1 text-[10px] text-neutral-500">
+      <div className="absolute -bottom-6 -left-2 rounded-2xl border border-border bg-card px-4 py-3 shadow-xl sm:-left-8">
+        <div className="text-xs font-bold text-foreground">No app required</div>
+        <div className="mt-1 text-[10px] text-muted-foreground">
           Guests upload from their browser
         </div>
       </div>
 
-      <div className="absolute -right-2 top-10 hidden rounded-2xl border bg-white px-4 py-3 shadow-xl sm:block sm:-right-8">
-        <div className="text-xs font-bold">Original quality</div>
-        <div className="mt-1 text-[10px] text-neutral-500">
+      <div className="absolute -right-2 top-10 hidden rounded-2xl border border-border bg-card px-4 py-3 shadow-xl sm:block sm:-right-8">
+        <div className="text-xs font-bold text-foreground">Original quality</div>
+        <div className="mt-1 text-[10px] text-muted-foreground">
           Keep what they captured
         </div>
       </div>
@@ -225,15 +217,15 @@ function GalleryPreview() {
 function HowItWorksVisual({ variant }: { variant: HowItWorksVisualVariant }) {
   if (variant === "create") {
     return (
-      <div className="mx-auto max-w-sm rounded-[2rem] border border-black/5 bg-white p-5 shadow-xl">
-        <div className="h-24 rounded-2xl bg-gradient-to-br from-[#ffb5c4] via-[#ffc889] to-[#fff0b8]" />
-        <div className="mt-4 h-3 w-2/3 rounded-full bg-neutral-800" />
-        <div className="mt-2 h-2 w-1/3 rounded-full bg-neutral-200" />
+      <div className="mx-auto max-w-sm rounded-[2rem] border border-border bg-card p-5 shadow-xl">
+        <div className="h-24 rounded-2xl bg-primary" />
+        <div className="mt-4 h-3 w-2/3 rounded-full bg-foreground" />
+        <div className="mt-2 h-2 w-1/3 rounded-full bg-muted" />
         <div className="mt-4 flex gap-2">
-          <span className="h-6 w-6 rounded-full bg-rose-400" />
-          <span className="h-6 w-6 rounded-full bg-sky-400" />
-          <span className="h-6 w-6 rounded-full bg-amber-300" />
-          <span className="h-6 w-6 rounded-full bg-violet-400" />
+          <span className="h-6 w-6 rounded-full bg-primary" />
+          <span className="h-6 w-6 rounded-full bg-brand-deep-navy" />
+          <span className="h-6 w-6 rounded-full bg-muted-foreground" />
+          <span className="h-6 w-6 rounded-full bg-accent" />
         </div>
       </div>
     );
@@ -241,23 +233,23 @@ function HowItWorksVisual({ variant }: { variant: HowItWorksVisualVariant }) {
 
   if (variant === "share") {
     return (
-      <div className="mx-auto flex max-w-sm items-center gap-4 rounded-[2rem] border border-black/5 bg-white p-6 shadow-xl">
-        <div className="grid h-24 w-24 shrink-0 grid-cols-5 gap-1 rounded-xl bg-neutral-900 p-2">
+      <div className="mx-auto flex max-w-sm items-center gap-4 rounded-[2rem] border border-border bg-card p-6 shadow-xl">
+        <div className="grid h-24 w-24 shrink-0 grid-cols-5 gap-1 rounded-xl bg-brand-deep-navy p-2">
           {Array.from({ length: 25 }).map((_, index) => (
             <span
               key={index}
               className={
-                (index * 7) % 3 === 0 ? "bg-white" : "bg-transparent"
+                (index * 7) % 3 === 0 ? "bg-brand-off-white" : "bg-transparent"
               }
             />
           ))}
         </div>
         <div>
-          <div className="text-sm font-bold">Scan to contribute</div>
-          <div className="mt-1 text-xs text-neutral-500">
+          <div className="text-sm font-bold text-foreground">Scan to contribute</div>
+          <div className="mt-1 text-xs text-muted-foreground">
             One code. Every perspective.
           </div>
-          <div className="mt-3 inline-flex rounded-full bg-neutral-100 px-3 py-1 text-[10px] text-neutral-500">
+          <div className="mt-3 inline-flex rounded-full bg-muted px-3 py-1 text-[10px] text-muted-foreground">
             eventphoto.app/e/rachel-john
           </div>
         </div>
@@ -268,17 +260,12 @@ function HowItWorksVisual({ variant }: { variant: HowItWorksVisualVariant }) {
   if (variant === "contribute") {
     return (
       <div className="mx-auto grid max-w-sm grid-cols-2 gap-2">
-        {[
-          "from-rose-400 to-orange-200",
-          "from-cyan-400 to-blue-500",
-          "from-amber-300 to-fuchsia-400",
-          "from-emerald-300 to-teal-500",
-        ].map((gradient) => (
+        {[0, 1, 2, 3].map((item) => (
           <div
-            key={gradient}
-            className={`aspect-square rounded-2xl bg-gradient-to-br p-2 shadow-lg ${gradient}`}
+            key={item}
+            className="aspect-square rounded-2xl bg-brand-slate-navy p-2 shadow-lg"
           >
-            <div className="flex h-full items-end rounded-xl bg-black/10 p-2 text-[9px] text-white">
+            <div className="flex h-full items-end rounded-xl bg-black/20 p-2 text-[9px] text-brand-off-white">
               Guest upload
             </div>
           </div>
@@ -288,22 +275,16 @@ function HowItWorksVisual({ variant }: { variant: HowItWorksVisualVariant }) {
   }
 
   return (
-    <div className="mx-auto max-w-sm rounded-[2rem] border border-black/5 bg-white p-5 shadow-xl">
+    <div className="mx-auto max-w-sm rounded-[2rem] border border-border bg-card p-5 shadow-xl">
       <div className="grid grid-cols-4 gap-1.5">
-        {[
-          "bg-rose-300",
-          "bg-sky-300",
-          "bg-amber-200",
-          "bg-violet-300",
-          "bg-emerald-200",
-          "bg-fuchsia-300",
-          "bg-cyan-200",
-          "bg-orange-200",
-        ].map((color, index) => (
-          <span key={index} className={`aspect-square rounded-lg ${color}`} />
+        {Array.from({ length: 8 }).map((_, index) => (
+          <span
+            key={index}
+            className={`aspect-square rounded-lg ${index % 2 === 0 ? "bg-primary/40" : "bg-muted"}`}
+          />
         ))}
       </div>
-      <div className="mt-4 flex items-center justify-between rounded-xl bg-neutral-900 px-4 py-3 text-white">
+      <div className="mt-4 flex items-center justify-between rounded-xl bg-brand-deep-navy px-4 py-3 text-brand-off-white">
         <span className="text-xs font-medium">Download all (128)</span>
         <span className="text-sm">⬇</span>
       </div>
@@ -321,11 +302,11 @@ export default function LandingPage() {
   const stats = { totalMedia: 12480, totalEvents: 640 };
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[#fffdfb] text-[#262125]">
+    <div className="min-h-screen overflow-hidden bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="landing-drift absolute -left-48 -top-48 h-[34rem] w-[34rem] rounded-full bg-rose-200/45 blur-3xl" />
-        <div className="landing-drift absolute -right-48 top-32 h-[34rem] w-[34rem] rounded-full bg-sky-200/45 blur-3xl [animation-delay:2s]" />
-        <div className="absolute bottom-0 left-[35%] h-[26rem] w-[26rem] rounded-full bg-yellow-100/60 blur-3xl" />
+        <div className="landing-drift absolute -left-48 -top-48 h-[34rem] w-[34rem] rounded-full bg-primary/20 blur-3xl" />
+        <div className="landing-drift absolute -right-48 top-32 h-[34rem] w-[34rem] rounded-full bg-card/60 blur-3xl [animation-delay:2s]" />
+        <div className="absolute bottom-0 left-[35%] h-[26rem] w-[26rem] rounded-full bg-accent/60 blur-3xl" />
       </div>
 
       <PublicHeader />
@@ -336,10 +317,10 @@ export default function LandingPage() {
 
             <h1 className="max-w-2xl text-5xl leading-[0.98] sm:text-6xl lg:text-[5.8rem]">
               Let everyone
-              <span className="block text-[#b2a8ad]">bring a memory.</span>
+              <span className="block text-muted-foreground">bring a memory.</span>
             </h1>
 
-            <p className="mt-7 max-w-xl text-base leading-7 text-neutral-600 sm:text-lg">
+            <p className="mt-7 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
               One QR code or link for every photo and video your guests
               capture. No app, no account, and no chasing people for files
               afterward.
@@ -349,7 +330,7 @@ export default function LandingPage() {
               <Link href="/dashboard" className="w-full sm:w-auto">
                 <Button
                   size="lg"
-                  className="w-full rounded-full bg-[#262125] px-7 text-white shadow-xl shadow-black/10 hover:bg-black sm:w-auto"
+                  className="w-full rounded-full bg-brand-deep-navy px-7 text-brand-off-white shadow-xl shadow-black/10 hover:opacity-90 sm:w-auto"
                 >
                   Create your event
                   <span className="ml-2">↗</span>
@@ -360,14 +341,14 @@ export default function LandingPage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="w-full rounded-full border-black/10 bg-white/65 px-7 sm:w-auto"
+                  className="w-full rounded-full border-border bg-card/65 px-7 sm:w-auto"
                 >
                   See how it works
                 </Button>
               </a>
             </div>
 
-            <div className="mt-9 flex flex-wrap gap-x-6 gap-y-2 text-xs text-neutral-500">
+            <div className="mt-9 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
               <span>✓ No guest app</span>
               <span>✓ Original-quality files</span>
               <span>✓ One-time event pricing</span>
@@ -379,21 +360,21 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-y border-black/5 bg-[#fff0bd]/60">
+        <section className="border-y border-border bg-card/60">
           <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 sm:py-12 md:grid-cols-3 lg:px-8">
             {processSteps.map((step, index) => (
               <div key={step.number} className="relative flex items-start gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#262125] text-sm font-bold text-white">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-deep-navy text-sm font-bold text-brand-off-white">
                   {step.number}
                 </div>
                 <div>
-                  <div className="text-sm font-bold">{step.title}</div>
-                  <div className="mt-1 text-xs leading-5 text-neutral-600">
+                  <div className="text-sm font-bold text-foreground">{step.title}</div>
+                  <div className="mt-1 text-xs leading-5 text-muted-foreground">
                     {step.text}
                   </div>
                 </div>
                 {index < processSteps.length - 1 && (
-                  <span className="absolute -right-4 top-5 hidden text-neutral-300 md:block">
+                  <span className="absolute -right-4 top-5 hidden text-muted-foreground/50 md:block">
                     ···
                   </span>
                 )}
@@ -402,12 +383,12 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="overflow-hidden border-b border-black/5 bg-white/70 py-5">
-          <div className="landing-marquee flex min-w-max gap-10 text-sm font-medium text-neutral-500">
+        <section className="overflow-hidden border-b border-border bg-background/70 py-5">
+          <div className="landing-marquee flex min-w-max gap-10 text-sm font-medium text-muted-foreground">
             {[...eventTypes, ...eventTypes].map((eventType, index) => (
               <span key={`${eventType}-${index}`} className="flex items-center gap-10">
                 {eventType}
-                <span className="text-rose-400">✦</span>
+                <span className="text-primary">✦</span>
               </span>
             ))}
           </div>
@@ -418,13 +399,13 @@ export default function LandingPage() {
           className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32"
         >
           <div className="mx-auto max-w-2xl text-center">
-            <div className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
+            <div className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
               How it works
             </div>
             <h2 className="mt-5 text-4xl leading-tight sm:text-5xl">
               The gallery your guests build for you.
             </h2>
-            <p className="mt-5 text-sm leading-7 text-neutral-600 sm:text-base">
+            <p className="mt-5 text-sm leading-7 text-muted-foreground sm:text-base">
               Your guests already have the best camera in their pocket. Give
               them one easy place to put what they captured.
             </p>
@@ -438,11 +419,11 @@ export default function LandingPage() {
                   }`}
               >
                 <div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff0bd] text-xs font-bold">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-xs font-bold text-foreground">
                     {step.number}
                   </div>
                   <h3 className="mt-5 text-2xl sm:text-3xl">{step.title}</h3>
-                  <p className="mt-3 max-w-md text-sm leading-7 text-neutral-500 sm:text-base">
+                  <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground sm:text-base">
                     {step.text}
                   </p>
                 </div>
@@ -455,12 +436,12 @@ export default function LandingPage() {
 
         <section
           id="features"
-          className="bg-[#262125] px-4 py-24 text-white sm:px-6 lg:px-8 lg:py-32"
+          className="bg-brand-deep-navy px-4 py-24 text-brand-off-white sm:px-6 lg:px-8 lg:py-32"
         >
           <div className="mx-auto max-w-7xl">
             <div className="grid gap-14 lg:grid-cols-[0.8fr_1.2fr]">
               <div>
-                <div className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">
+                <div className="text-xs font-bold uppercase tracking-[0.2em] text-brand-off-white/40">
                   Explore the experience
                 </div>
                 <h2 className="mt-5 max-w-lg text-4xl leading-tight sm:text-5xl">
@@ -472,7 +453,7 @@ export default function LandingPage() {
                 {features.map((feature) => (
                   <div
                     key={feature.number}
-                    className={`rounded-[2rem] p-6 text-[#262125] transition duration-300 hover:-translate-y-1 ${feature.accent}`}
+                    className={`rounded-[2rem] p-6 text-foreground transition duration-300 hover:-translate-y-1 ${feature.accent}`}
                   >
                     <div className="text-xs font-bold opacity-45">
                       {feature.number}
@@ -492,7 +473,7 @@ export default function LandingPage() {
 
         <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
           <div className="mx-auto max-w-2xl text-center">
-            <div className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
+            <div className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
               All in one place
             </div>
             <h2 className="mt-5 text-4xl leading-tight sm:text-5xl">
@@ -504,13 +485,13 @@ export default function LandingPage() {
             {allYouNeedFeatures.map((feature) => (
               <div
                 key={feature.title}
-                className="rounded-[1.75rem] border border-black/5 bg-white/75 p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                className="rounded-[1.75rem] border border-border bg-card/75 p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
               >
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff0bd] text-lg">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-lg">
                   {feature.icon}
                 </div>
-                <h3 className="mt-5 text-sm font-bold">{feature.title}</h3>
-                <p className="mt-2 text-xs leading-5 text-neutral-500">
+                <h3 className="mt-5 text-sm font-bold text-foreground">{feature.title}</h3>
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">
                   {feature.text}
                 </p>
               </div>
@@ -520,7 +501,7 @@ export default function LandingPage() {
 
         <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
           <div className="mx-auto max-w-2xl text-center">
-            <div className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
+            <div className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
               For any occasion
             </div>
             <h2 className="mt-5 text-4xl leading-tight sm:text-5xl">
@@ -533,22 +514,22 @@ export default function LandingPage() {
             {useCases.map((useCase) => (
               <div
                 key={useCase.slug}
-                className={`group relative min-h-[280px] overflow-hidden rounded-[2rem] ${useCase.accent} p-6 transition duration-500 hover:-translate-y-2`}
+                className="group relative min-h-[280px] overflow-hidden rounded-[2rem] border border-border bg-card p-6 transition duration-500 hover:-translate-y-2"
               >
-                <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-white/40 blur-2xl transition group-hover:scale-150" />
+                <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-primary/20 blur-2xl transition group-hover:scale-150" />
                 <div className="relative flex h-full flex-col justify-between">
-                  <div className="text-xs font-bold uppercase tracking-[0.15em] opacity-50">
+                  <div className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground">
                     {useCase.navLabel}
                   </div>
                   <div>
-                    <div className="text-3xl leading-tight">{useCase.navLabel}</div>
-                    <a
-                      href="#how-it-works"
-                      className="mt-5 inline-flex items-center gap-1 text-sm font-medium opacity-70 transition group-hover:opacity-100"
+                    <div className="text-3xl leading-tight text-foreground">{useCase.headline}</div>
+                    <Link
+                      href={`/for/${useCase.slug}`}
+                      className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-primary opacity-70 transition group-hover:opacity-100"
                     >
                       Learn more
                       <span className="transition group-hover:translate-x-1">→</span>
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -556,16 +537,16 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-y border-black/5 bg-white/70 px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
+        <section className="border-y border-border bg-background/70 px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
           <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
             <div>
-              <div className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
+              <div className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
                 Simple event pricing
               </div>
               <h2 className="mt-5 max-w-lg text-4xl leading-tight sm:text-5xl">
                 Pay once for your event.
               </h2>
-              <p className="mt-5 max-w-md text-sm leading-7 text-neutral-600 sm:text-base">
+              <p className="mt-5 max-w-md text-sm leading-7 text-muted-foreground sm:text-base">
                 Start free, then unlock moderation, customization, POV mode,
                 and scheduled reveals when you need them.
               </p>
@@ -585,14 +566,14 @@ export default function LandingPage() {
                 <div
                   key={name}
                   className={`rounded-[1.75rem] border p-5 ${index === 1
-                    ? "border-[#262125] bg-[#262125] text-white"
-                    : "bg-white"
+                    ? "border-brand-deep-navy bg-brand-deep-navy text-brand-off-white"
+                    : "border-border bg-card text-foreground"
                     }`}
                 >
                   <div className="text-sm font-bold">{name}</div>
                   <div className="mt-7 text-3xl">{price}</div>
                   <div
-                    className={`mt-2 text-xs ${index === 1 ? "text-white/55" : "text-neutral-500"
+                    className={`mt-2 text-xs ${index === 1 ? "text-brand-off-white/55" : "text-muted-foreground"
                       }`}
                   >
                     {description}
@@ -604,19 +585,19 @@ export default function LandingPage() {
         </section>
 
         <section className="px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
-          <div className="mx-auto max-w-5xl rounded-[2.75rem] bg-[#262125] px-6 py-16 text-center text-white sm:px-10 sm:py-20">
+          <div className="mx-auto max-w-5xl rounded-[2.75rem] bg-brand-deep-navy px-6 py-16 text-center text-brand-off-white sm:px-10 sm:py-20">
             <h2 className="text-3xl leading-tight sm:text-4xl">
               {formatCount(stats.totalMedia)} moments captured across{" "}
               {formatCount(stats.totalEvents)} events.
             </h2>
-            <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-white/55">
+            <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-brand-off-white/55">
               From intimate birthdays to weddings with hundreds of guests —
-              built for whatever you're celebrating.
+              built for whatever you&apos;re celebrating.
             </p>
             <Link href="/dashboard" className="mt-8 inline-block">
               <Button
                 size="lg"
-                className="rounded-full bg-white px-7 text-[#262125] hover:bg-white/90"
+                className="rounded-full bg-primary px-7 text-primary-foreground hover:bg-[var(--primary-hover)]"
               >
                 Create your event
                 <span className="ml-2">↗</span>
@@ -627,13 +608,13 @@ export default function LandingPage() {
 
         <section className="mx-auto max-w-3xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
           <div className="text-center">
-            <div className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
+            <div className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
               Good to know
             </div>
             <h2 className="mt-5 text-4xl sm:text-5xl">Questions, answered.</h2>
           </div>
 
-          <div className="mt-10 divide-y divide-black/10 border-y border-black/10">
+          <div className="mt-10 divide-y divide-border border-y border-border">
             {faqs.map((faq, index) => {
               const open = openFaq === index;
 
@@ -644,16 +625,16 @@ export default function LandingPage() {
                     onClick={() => setOpenFaq(open ? null : index)}
                     className="flex w-full items-center justify-between gap-5 py-5 text-left"
                   >
-                    <span className="text-sm font-bold sm:text-base">
+                    <span className="text-sm font-bold text-foreground sm:text-base">
                       {faq.question}
                     </span>
-                    <span className="text-xl text-neutral-400">
+                    <span className="text-xl text-muted-foreground">
                       {open ? "−" : "+"}
                     </span>
                   </button>
 
                   {open && (
-                    <div className="pb-5 pr-8 text-sm leading-6 text-neutral-500">
+                    <div className="pb-5 pr-8 text-sm leading-6 text-muted-foreground">
                       {faq.answer}
                     </div>
                   )}
@@ -664,18 +645,18 @@ export default function LandingPage() {
         </section>
 
         <section className="px-4 pb-24 sm:px-6 lg:px-8 lg:pb-32">
-          <div className="mx-auto max-w-7xl overflow-hidden rounded-[2.75rem] bg-[#262125] px-6 py-16 text-center text-white sm:px-10 sm:py-24">
+          <div className="mx-auto max-w-7xl overflow-hidden rounded-[2.75rem] bg-brand-deep-navy px-6 py-16 text-center text-brand-off-white sm:px-10 sm:py-24">
             <div className="landing-rise mx-auto max-w-2xl">
               <h2 className="text-4xl leading-tight sm:text-6xl">
                 Your event only happens once.
               </h2>
-              <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-white/55 sm:text-base">
+              <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-brand-off-white/55 sm:text-base">
                 Make it easy for everyone to add their part of the story.
               </p>
               <Link href="/dashboard" className="mt-8 inline-block">
                 <Button
                   size="lg"
-                  className="rounded-full bg-white px-7 text-[#262125] hover:bg-white/90"
+                  className="rounded-full bg-primary px-7 text-primary-foreground hover:bg-[var(--primary-hover)]"
                 >
                   Create your event
                   <span className="ml-2">↗</span>
