@@ -19,7 +19,7 @@ type HostStory = {
   eventType: string;
   location: string;
   quote: string;
-  photoLabel?: string;
+  photos?: string[];
 };
 
 const stories: HostStory[] = [
@@ -29,7 +29,10 @@ const stories: HostStory[] = [
     location: "Austin, TX",
     quote:
       "Our guests uploaded photos all night without anyone asking how it worked. We ended up with angles we never would have seen otherwise.",
-    photoLabel: "Photo: guest submitted, Priya's wedding",
+    photos: [
+      "Photo: guest submitted, Priya's wedding, ceremony",
+      "Photo: guest submitted, Priya's wedding, reception",
+    ],
   },
   {
     name: "Marcus",
@@ -44,7 +47,7 @@ const stories: HostStory[] = [
     location: "Miami, FL",
     quote:
       "Password protection made it easy to keep the gallery just for close friends and family.",
-    photoLabel: "Photo: guest submitted, Sofia's birthday",
+    photos: ["Photo: guest submitted, Sofia's birthday"],
   },
   {
     name: "Daniel",
@@ -52,6 +55,10 @@ const stories: HostStory[] = [
     location: "Portland, OR",
     quote:
       "Three generations uploaded from their phones with zero help from me. That alone was worth it.",
+    photos: [
+      "Photo: guest submitted, Daniel's family reunion, group shot",
+      "Photo: guest submitted, Daniel's family reunion, kids table",
+    ],
   },
   {
     name: "Aisha",
@@ -59,7 +66,7 @@ const stories: HostStory[] = [
     location: "Atlanta, GA",
     quote:
       "The slideshow mode ran on a TV at the party while uploads kept coming in live. Guests loved seeing themselves pop up.",
-    photoLabel: "Photo: guest submitted, Aisha's graduation",
+    photos: ["Photo: guest submitted, Aisha's graduation"],
   },
   {
     name: "Ben",
@@ -74,6 +81,7 @@ const stories: HostStory[] = [
     location: "Seattle, WA",
     quote:
       "Attendees kept the gallery going across all three days of the conference without any extra prompting from us.",
+    photos: ["Photo: guest submitted, Camille's conference"],
   },
   {
     name: "Wei",
@@ -81,7 +89,59 @@ const stories: HostStory[] = [
     location: "San Francisco, CA",
     quote:
       "Everyone just scanned the code off the table card — no one asked a single question about how it worked.",
-    photoLabel: "Photo: guest submitted, Wei's party",
+    photos: [
+      "Photo: guest submitted, Wei's party, dance floor",
+      "Photo: guest submitted, Wei's party, table cards",
+    ],
+  },
+  {
+    name: "Hannah",
+    eventType: "Wedding",
+    location: "Charleston, SC",
+    quote:
+      "We didn't need a second photographer. By the end of the night we had hundreds of candid shots from every table.",
+    photos: ["Photo: guest submitted, Hannah's wedding"],
+  },
+  {
+    name: "Tomás",
+    eventType: "Birthday",
+    location: "Phoenix, AZ",
+    quote:
+      "My grandparents figured it out just as fast as my nieces and nephews did. That's rare for anything tech-related.",
+  },
+  {
+    name: "Grace",
+    eventType: "Corporate event",
+    location: "Boston, MA",
+    quote:
+      "Moderation meant we could open uploads to the whole floor and still keep the final gallery on-brand.",
+    photos: [
+      "Photo: guest submitted, Grace's corporate event, team photo",
+      "Photo: guest submitted, Grace's corporate event, keynote",
+    ],
+  },
+  {
+    name: "Noah",
+    eventType: "Graduation",
+    location: "Minneapolis, MN",
+    quote:
+      "Friends who couldn't make it still felt like they were there once we sent out the gallery link.",
+    photos: ["Photo: guest submitted, Noah's graduation"],
+  },
+  {
+    name: "Isabelle",
+    eventType: "Party",
+    location: "New Orleans, LA",
+    quote:
+      "We ran it for a three-day event and the gallery just kept growing. Nobody had to be reminded to upload.",
+  },
+  {
+    name: "Ravi",
+    eventType: "Family reunion",
+    location: "Houston, TX",
+    quote:
+      "One link worked for relatives who barely use their phones and the ones glued to them. Everyone contributed.",
+    photos: ["Photo: guest submitted, Ravi's family reunion"],
   },
 ];
 
@@ -129,11 +189,16 @@ export default function StoriesPage() {
                   {story.quote}
                 </p>
 
-                {story.photoLabel && (
-                  <AssetPlaceholder
-                    label={story.photoLabel}
-                    className="mt-4 min-h-[160px] max-w-xs"
-                  />
+                {story.photos && story.photos.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {story.photos.map((photoLabel) => (
+                      <AssetPlaceholder
+                        key={photoLabel}
+                        label={photoLabel}
+                        className="h-32 w-32 min-h-0 shrink-0 gap-1 p-3 text-[10px]"
+                      />
+                    ))}
+                  </div>
                 )}
               </article>
             ))}
