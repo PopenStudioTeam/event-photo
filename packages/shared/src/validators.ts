@@ -120,3 +120,16 @@ export const createGuideCommentSchema = z.object({
   authorEmail: z.string().trim().email().max(160),
   body: z.string().trim().min(1).max(2000),
 });
+
+export const testimonialPhotoUploadSchema = z.object({
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+  fileSize: z.number().int().positive().max(8 * 1024 * 1024),
+});
+
+export const createTestimonialSchema = z.object({
+  authorName: z.string().trim().min(1).max(80),
+  authorEmail: z.string().trim().email().max(160).optional(),
+  rating: z.number().int().min(1).max(5),
+  quote: z.string().trim().min(1).max(2000),
+  photoKey: z.string().min(1).max(300).optional(),
+});

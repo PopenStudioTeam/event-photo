@@ -159,6 +159,7 @@ export const testimonials = pgTable("testimonials", {
   }),
 
   authorName: text("author_name").notNull(),
+  authorEmail: text("author_email"),
   authorRole: text("author_role"),
   category: testimonialCategoryEnum("category").default("other").notNull(),
   source: testimonialSourceEnum("source").default("guest").notNull(),
