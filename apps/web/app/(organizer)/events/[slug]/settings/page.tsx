@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent, type ChangeEvent } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -13,6 +13,7 @@ import { EVENT_CATEGORIES, type EventCategory } from "@/lib/event-categories";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { uploadEventCover } from "@/lib/upload-event-cover";
 import {
   ImageIcon,
   Monitor,
@@ -36,6 +37,7 @@ type EventRecord = {
   povRevealAt: string | null;
   coverLayout: "banner" | "card";
   coverOverlay: "none" | "gradient";
+  coverImageUrl: string | null;
   uploadsEnabled: boolean;
   plan: string;
 };
@@ -79,6 +81,8 @@ export default function EventSettingsPage() {
     useState<"none" | "gradient">("none");
   const [formUploadsEnabled, setFormUploadsEnabled] = useState(true);
   const [togglingUploads, setTogglingUploads] = useState(false);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -214,6 +218,26 @@ export default function EventSettingsPage() {
       reportApiError(err, "Failed to update uploads setting");
     } finally {
       setTogglingUploads(false);
+    }
+  };
+
+  const handleCoverFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setCoverFile(e.target.files?.[0] ?? null);
+  };
+
+  const handleCoverUpload = async () => {
+    if (!event || !coverFile || coverUploading) return;
+
+    setCoverUploading(true);
+    try {
+      const updated = (await uploadEventCover(event.slug, coverFile)) as EventRecord;
+      setEvent((prev) => (prev ? { ...prev, ...updated } : updated));
+      setCoverFile(null);
+      showSuccessToast("Cover uploaded", "Your event cover photo was updated.");
+    } catch (err) {
+      reportApiError(err, "Failed to upload cover image");
+    } finally {
+      setCoverUploading(false);
     }
   };
 
@@ -395,7 +419,45 @@ export default function EventSettingsPage() {
           <CardHeader>
             <CardTitle className="text-base">Appearance</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-5">
+            <div className="space-y-3 rounded-2xl border border-border/70 p-4">
+              <div className="space-y-1">
+                <div className="text-sm font-medium">Cover photo</div>
+                <p className="text-xs text-muted-foreground">
+                  Shown on the guest welcome screen and album header.
+                </p>
+              </div>
+              {event.coverImageUrl ? (
+                <img
+                  src={event.coverImageUrl}
+                  alt={event.name}
+                  className="aspect-[21/9] max-h-48 w-full rounded-xl object-cover"
+                />
+              ) : (
+                <div className="flex aspect-[21/9] max-h-48 items-center justify-center rounded-xl bg-muted text-sm text-muted-foreground">
+                  No cover photo yet
+                </div>
+              )}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverFileChange}
+                  className="w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-background file:px-3 file:py-1.5 file:text-xs sm:max-w-[220px]"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="shrink-0 rounded-xl"
+                  onClick={handleCoverUpload}
+                  disabled={!coverFile || coverUploading}
+                >
+                  {coverUploading ? "Uploading…" : "Upload cover"}
+                </Button>
+              </div>
+            </div>
+
             <form className="space-y-5" onSubmit={handleSaveAppearance}>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Primary color</label>

@@ -60,6 +60,8 @@ export function PublicHeader() {
   };
 
   const useCasesActive = isActivePath(pathname, "/for");
+  const [homeLink, ...otherLinks] = navigation;
+  const homeActive = isActivePath(pathname, homeLink.href);
 
   return (
     <header className="relative z-50 border-b border-border bg-background/70 backdrop-blur-xl">
@@ -90,6 +92,25 @@ export function PublicHeader() {
           aria-label="Public navigation"
           className="hidden items-center gap-8 md:flex"
         >
+          <Link
+            href={homeLink.href}
+            aria-current={homeActive ? "page" : undefined}
+            className={cn(
+              "relative py-2 text-sm transition-colors",
+              homeActive
+                ? "font-bold text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {homeLink.label}
+            <span
+              className={cn(
+                "absolute bottom-0 left-0 h-0.5 rounded-full bg-primary transition-all duration-300",
+                homeActive ? "w-full" : "w-0"
+              )}
+            />
+          </Link>
+
           <div
             className="relative"
             onMouseEnter={openUseCases}
@@ -142,7 +163,8 @@ export function PublicHeader() {
               </div>
             )}
           </div>
-          {navigation.map((item) => {
+
+          {otherLinks.map((item) => {
             const active = isActivePath(pathname, item.href);
 
             return (
@@ -158,7 +180,6 @@ export function PublicHeader() {
                 )}
               >
                 {item.label}
-
                 <span
                   className={cn(
                     "absolute bottom-0 left-0 h-0.5 rounded-full bg-primary transition-all duration-300",
@@ -239,6 +260,30 @@ export function PublicHeader() {
               aria-label="Mobile public navigation"
               className="flex flex-col gap-1"
             >
+              <Link
+                href={homeLink.href}
+                aria-current={homeActive ? "page" : undefined}
+                onClick={closeMobileMenu}
+                className={cn(
+                  "flex items-center justify-between rounded-2xl px-4 py-3 text-sm transition",
+                  homeActive
+                    ? "bg-primary/10 font-bold text-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+              >
+                <span>{homeLink.label}</span>
+                <span
+                  className={cn(
+                    "text-lg transition-transform",
+                    homeActive
+                      ? "translate-x-0 text-primary"
+                      : "-translate-x-1 text-muted-foreground/50"
+                  )}
+                >
+                  →
+                </span>
+              </Link>
+
               <button
                 type="button"
                 onClick={() => setMobileUseCasesOpen((open) => !open)}
@@ -279,7 +324,8 @@ export function PublicHeader() {
                   ))}
                 </div>
               )}
-              {navigation.map((item) => {
+
+              {otherLinks.map((item) => {
                 const active = isActivePath(pathname, item.href);
 
                 return (
@@ -299,7 +345,9 @@ export function PublicHeader() {
                     <span
                       className={cn(
                         "text-lg transition-transform",
-                        active ? "translate-x-0 text-primary" : "-translate-x-1 text-muted-foreground/50"
+                        active
+                          ? "translate-x-0 text-primary"
+                          : "-translate-x-1 text-muted-foreground/50"
                       )}
                     >
                       →

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch, reportApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,8 @@ type GuestMyUploadsDialogProps = {
   slug: string;
   guestId: string;
   refreshKey?: number;
+  light?: boolean;
+  heroLight?: boolean;
 };
 
 const statusLabel = {
@@ -42,6 +45,8 @@ export function GuestMyUploadsDialog({
   slug,
   guestId,
   refreshKey = 0,
+  light = false,
+  heroLight = false,
 }: GuestMyUploadsDialogProps) {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<GuestMediaItem[]>([]);
@@ -74,7 +79,14 @@ export function GuestMyUploadsDialog({
         type="button"
         variant="outline"
         size="sm"
-        className="border-neutral-600 bg-neutral-900 text-white hover:bg-neutral-800"
+        className={cn(
+          "rounded-full",
+          heroLight
+            ? "border-border bg-card text-foreground hover:bg-muted"
+            : light
+              ? "border-border bg-background text-foreground hover:bg-muted"
+              : "border-white/30 bg-white/10 text-white hover:bg-white/20"
+        )}
         onClick={() => setOpen(true)}
       >
         My uploads

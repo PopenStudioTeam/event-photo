@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Copy, ExternalLink, Download } from "lucide-react";
+import { Copy, ExternalLink, Download, LayoutTemplate } from "lucide-react";
 import { saveAs } from "file-saver";
 import {
   API_URL,
   apiFetch,
   apiFetchBlobWithProgress,
   reportApiError,
+  showSuccessToast,
 } from "@/lib/api";
 import { useBaseWebUrl } from "@/lib/use-base-web-url";
 import { getCategoryIntro } from "@/lib/event-categories";
@@ -19,9 +20,15 @@ import {
   shouldShowWelcomeFromOnboarding,
 } from "@/lib/auth-redirect";
 import { EventWelcomeDialog } from "@/components/event-welcome-dialog";
+import {
+  QrDownloadDialog,
+  type QrDownloadOptions,
+} from "@/components/qr-download-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { renderQrCard } from "@/lib/qr-card-renderer";
+import { uploadEventCover } from "@/lib/upload-event-cover";
 
 type EventRecord = {
   id: string;
@@ -29,6 +36,9 @@ type EventRecord = {
   slug: string;
   category: string;
   plan: string;
+  eventDate: string | null;
+  coverImageUrl: string | null;
+  coverOverlay: "none" | "gradient";
   mediaCount?: number;
 };
 
@@ -41,7 +51,10 @@ export default function EventDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [downloadingQr, setDownloadingQr] = useState(false);
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
 
   const baseWebUrl = useBaseWebUrl();
   const albumUrl = event ? `${baseWebUrl}/e/${event.slug}` : "";
@@ -91,9 +104,61 @@ export default function EventDashboardPage() {
       );
       saveAs(blob, `${event.slug}-qr.png`);
     } catch (err) {
-      console.error(err);
+      reportApiError(err, "Failed to download QR code");
     } finally {
       setDownloadingQr(false);
+    }
+  };
+
+  const handleDownloadQrTemplate = async ({ layout, greeting }: QrDownloadOptions) => {
+    if (!event) return;
+
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = `${API_URL}/qr/${event.slug}?origin=${encodeURIComponent(baseWebUrl)}`;
+
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("Failed to load QR image"));
+      });
+
+      const dataUrl = await renderQrCard({
+        layout,
+        eventName: event.name,
+        eventDate: event.eventDate,
+        greeting,
+        qrImage: img,
+      });
+
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `${event.slug}-qr-${layout}.png`;
+      link.click();
+    } catch (err) {
+      reportApiError(err, "Failed to download QR card");
+    } finally {
+      setQrDialogOpen(false);
+    }
+  };
+
+  const handleCoverFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setCoverFile(e.target.files?.[0] ?? null);
+  };
+
+  const handleCoverUpload = async () => {
+    if (!event || !coverFile || coverUploading) return;
+
+    setCoverUploading(true);
+    try {
+      const updated = (await uploadEventCover(event.slug, coverFile)) as EventRecord;
+      setEvent((prev) => (prev ? { ...prev, ...updated } : updated));
+      setCoverFile(null);
+      showSuccessToast("Cover uploaded", "Your event cover photo was updated.");
+    } catch (err) {
+      reportApiError(err, "Failed to upload cover image");
+    } finally {
+      setCoverUploading(false);
     }
   };
 
@@ -102,6 +167,11 @@ export default function EventDashboardPage() {
   }
 
   if (!event) return null;
+
+  const coverOverlayClass =
+    event.coverOverlay === "gradient"
+      ? "absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"
+      : "";
 
   return (
     <div className="space-y-6">
@@ -133,6 +203,49 @@ export default function EventDashboardPage() {
           {getCategoryIntro(event.category)}
         </p>
       </div>
+
+      <Card className="overflow-hidden rounded-2xl border-border/70 p-0">
+        <div className="relative w-full overflow-hidden bg-muted/40">
+          {event.coverImageUrl ? (
+            <div className="relative">
+              <img
+                src={event.coverImageUrl}
+                alt={event.name}
+                className="aspect-[21/9] max-h-56 w-full object-cover sm:max-h-64"
+              />
+              {event.coverOverlay === "gradient" && (
+                <div className={coverOverlayClass} />
+              )}
+            </div>
+          ) : (
+            <div className="flex aspect-[21/9] max-h-56 items-center justify-center text-sm text-muted-foreground sm:max-h-64">
+              No cover photo yet
+            </div>
+          )}
+        </div>
+        <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            Upload a cover photo for your guest album and welcome screen.
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleCoverFileChange}
+              className="w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-background file:px-3 file:py-1.5 file:text-xs sm:max-w-[220px]"
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              className="shrink-0 rounded-xl"
+              onClick={handleCoverUpload}
+              disabled={!coverFile || coverUploading}
+            >
+              {coverUploading ? "Uploading…" : "Upload cover"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="overflow-hidden rounded-2xl border-border/70 bg-gradient-to-br from-primary/5 via-background to-background">
@@ -185,19 +298,30 @@ export default function EventDashboardPage() {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={handleDownloadQr}
-                  disabled={downloadingQr}
-                >
-                  <Download className="mr-1.5 h-4 w-4" />
-                  {downloadingQr ? "Downloading…" : "Download QR Code"}
-                </Button>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl"
+                    onClick={handleDownloadQr}
+                    disabled={downloadingQr}
+                  >
+                    <Download className="mr-1.5 h-4 w-4" />
+                    {downloadingQr ? "Downloading…" : "Download QR"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl"
+                    onClick={() => setQrDialogOpen(true)}
+                  >
+                    <LayoutTemplate className="mr-1.5 h-4 w-4" />
+                    Choose template
+                  </Button>
+                </div>
                 <p className="max-w-xs text-xs text-muted-foreground">
-                  Print this QR code on table cards, signs, or screens so guests
-                  can scan and upload instantly.
+                  Download the QR code directly, or pick a printable card layout
+                  for table cards and signs.
                 </p>
               </div>
             </div>
@@ -269,6 +393,15 @@ export default function EventDashboardPage() {
           setWelcomeOpen(open);
           if (!open) markWelcomeSeen(slug);
         }}
+      />
+
+      <QrDownloadDialog
+        open={qrDialogOpen}
+        onOpenChange={setQrDialogOpen}
+        eventName={event.name}
+        eventDate={event.eventDate}
+        qrImageUrl={qrImageUrl}
+        onDownload={handleDownloadQrTemplate}
       />
     </div>
   );

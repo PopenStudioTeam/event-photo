@@ -204,3 +204,85 @@
 .organizer-shell [data-slot="button"]:not([data-variant="link"]) {
   @apply rounded-xl;
 }
+
+@keyframes landing-marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.landing-marquee {
+  animation: landing-marquee-scroll 32s linear infinite;
+  will-change: transform;
+}
+
+.landing-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-marquee {
+    animation: none;
+  }
+}
+
+@keyframes guest-entrance-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.guest-entrance-item {
+  animation: guest-entrance-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.guest-entrance-item-1 {
+  animation-delay: 0.08s;
+}
+
+.guest-entrance-item-2 {
+  animation-delay: 0.18s;
+}
+
+.guest-entrance-item-3 {
+  animation-delay: 0.28s;
+}
+
+.guest-entrance-item-4 {
+  animation-delay: 0.38s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guest-entrance-item {
+    animation: none;
+  }
+}
+
+.guest-welcome-shell {
+  --background: #F1EEFB;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --primary: #6D4AAE;
+  --primary-foreground: #F8FAFC;
+  --secondary: #EDE7F7;
+  --muted: #EDE7F7;
+  --muted-foreground: #4B4460;
+  --border: #C9BBE0;
+  --input: #C0B0DB;
+  --ring: #6D4AAE;
+  --accent: #EDE7F7;
+  --accent-foreground: #0F172A;
+  background-color: var(--background);
+  color: var(--foreground);
+}
