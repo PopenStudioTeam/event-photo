@@ -51,7 +51,7 @@ export function WallOfLove() {
   return (
     <>
       <section className="mx-auto flex max-w-3xl flex-col items-center gap-6 px-4 pb-14 pt-16 text-center sm:px-6 sm:pt-24 lg:px-8">
-        <h1 className="text-4xl leading-tight sm:text-5xl">Our Wall of Love</h1>
+        <h1 className="text-4xl leading-tight sm:text-5xl">Our Stories</h1>
         <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
           People from all over the world sprinkle some magic at their events
           using Event Photo 💗
