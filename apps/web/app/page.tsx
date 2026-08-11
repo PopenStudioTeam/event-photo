@@ -73,7 +73,7 @@ const features = [
     number: "01",
     title: "One code for the whole day",
     text: "Put one QR code on your table cards, invitations, screens, or signs. Guests open the experience with their phone camera.",
-    accent: "bg-primary/15",
+    accent: "bg-card",
   },
   {
     number: "02",
