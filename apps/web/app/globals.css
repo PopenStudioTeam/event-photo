@@ -56,6 +56,11 @@
   --color-brand-slate-gray: var(--brand-slate-gray);
   --color-brand-champagne-gold: var(--brand-champagne-gold);
   --color-brand-deep-gold: var(--brand-deep-gold);
+  --color-brand-royal-purple: var(--brand-royal-purple);
+  --color-brand-cornflower-violet: var(--brand-cornflower-violet);
+  --color-brand-ultraviolet: var(--brand-ultraviolet);
+  --color-brand-magenta-violet: var(--brand-magenta-violet);
+  --color-brand-electric-violet: var(--brand-electric-violet);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -67,7 +72,7 @@
 }
 
 :root {
-  --background: #F1EEFB;
+  --background: #F4EEFF;
   --foreground: #0F172A;
 
   --card: #FFFFFF;
@@ -76,24 +81,24 @@
   --popover: #FFFFFF;
   --popover-foreground: #0F172A;
 
-  --primary: #6D4AAE;
-  --primary-hover: #55397F;
+  --primary: #6F00FF;
+  --primary-hover: #5B23FF;
   --primary-foreground: #F8FAFC;
 
-  --secondary: #EDE7F7;
+  --secondary: #EAE0FA;
   --secondary-foreground: #0F172A;
 
-  --muted: #EDE7F7;
-  --muted-foreground: #4B4460;
+  --muted: #EAE0FA;
+  --muted-foreground: #4B3B66;
 
-  --accent: #EDE7F7;
+  --accent: #EAE0FA;
   --accent-foreground: #0F172A;
 
   --destructive: oklch(0.577 0.245 27.325);
 
-  --border: #C9BBE0;
-  --input: #C0B0DB;
-  --ring: #6D4AAE;
+  --border: #D3C2F0;
+  --input: #C7B0EA;
+  --ring: #6F00FF;
 
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -103,24 +108,30 @@
 
   --radius: 0.625rem;
 
-  --sidebar: #F1EEFB;
+  --sidebar: #F4EEFF;
   --sidebar-foreground: #0F172A;
-  --sidebar-primary: #6D4AAE;
+  --sidebar-primary: #6F00FF;
   --sidebar-primary-foreground: #F8FAFC;
-  --sidebar-accent: #EDE7F7;
+  --sidebar-accent: #EAE0FA;
   --sidebar-accent-foreground: #0F172A;
-  --sidebar-border: #C9BBE0;
-  --sidebar-ring: #6D4AAE;
+  --sidebar-border: #D3C2F0;
+  --sidebar-ring: #6F00FF;
 
   --brand-deep-navy: #0F172A;
   --brand-slate-navy: #1E293B;
   --brand-off-white: #F8FAFC;
   --brand-cool-gray: #94A3B8;
-  --brand-ivory-white: #F1EEFB;
+  --brand-ivory-white: #F4EEFF;
   --brand-pale-gray-blue: #CBD5E1;
   --brand-slate-gray: #64748B;
   --brand-champagne-gold: #D4AF37;
   --brand-deep-gold: #A67C27;
+
+  --brand-royal-purple: #723EC3;
+  --brand-cornflower-violet: #6367FF;
+  --brand-ultraviolet: #5B23FF;
+  --brand-magenta-violet: #8C00FF;
+  --brand-electric-violet: #6F00FF;
 }
 
 .dark {
