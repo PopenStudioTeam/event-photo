@@ -1,9 +1,9 @@
-import { UseCasePage } from "@/components/use-case-page";
+import { OrganizationUseCasePage } from "@/components/organization-use-case-page";
 import { useCases } from "@/lib/use-cases-data";
 
 export default function ConferencesPage() {
   return (
-    <UseCasePage
+    <OrganizationUseCasePage
       useCase={useCases.find((useCase) => useCase.slug === "conferences")!}
     />
   );
