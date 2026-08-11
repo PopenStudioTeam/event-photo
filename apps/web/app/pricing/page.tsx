@@ -1,14 +1,13 @@
-"use client";
-
 import Link from "next/link";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PublicHeader } from "@/components/public-header";
 import { SiteFooter } from "@/components/site-footer";
+import { FaqSplit } from "@/components/marketing/faq-split";
 
 type Plan = {
   name: string;
   price: string;
+  billingNote: string;
   description: string;
   featured?: boolean;
   features: string[];
@@ -18,6 +17,7 @@ const plans: Plan[] = [
   {
     name: "Free",
     price: "$0",
+    billingNote: "No card required",
     description: "A simple way to try shared event galleries.",
     features: [
       "Up to 100 media items",
@@ -30,8 +30,8 @@ const plans: Plan[] = [
   {
     name: "Premium",
     price: "$30",
+    billingNote: "One-time fee",
     description: "More control for weddings, parties, and important events.",
-    featured: true,
     features: [
       "Up to 1,000 media items",
       "Everything in Free",
@@ -45,7 +45,9 @@ const plans: Plan[] = [
   {
     name: "Pro",
     price: "$50",
+    billingNote: "One-time fee",
     description: "The complete experience for larger and more interactive events.",
+    featured: true,
     features: [
       "Up to 5,000 media items",
       "Everything in Premium",
@@ -56,20 +58,6 @@ const plans: Plan[] = [
       "Priority access to new features",
     ],
   },
-];
-
-const comparisonRows = [
-  ["Media items", "100", "1,000", "5,000"],
-  ["Guest uploads", "Yes", "Yes", "Yes"],
-  ["QR code and private link", "Yes", "Yes", "Yes"],
-  ["Guest likes", "Yes", "Yes", "Yes"],
-  ["Moderation", "—", "Yes", "Yes"],
-  ["Password protection", "—", "Yes", "Yes"],
-  ["Custom cover and theme", "Basic", "Yes", "Yes"],
-  ["ZIP download", "Limited", "Yes", "Yes"],
-  ["POV mode", "—", "—", "Yes"],
-  ["Per-guest upload limits", "—", "—", "Yes"],
-  ["Scheduled gallery reveal", "—", "—", "Yes"],
 ];
 
 const faqs = [
@@ -101,246 +89,88 @@ const faqs = [
 ];
 
 export default function PricingPage() {
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-
   return (
     <div className="min-h-screen overflow-hidden bg-background text-foreground">
-      <style jsx global>{`
-        @keyframes pricing-fade-up {
-          from {
-            opacity: 0;
-            transform: translateY(18px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .pricing-fade-up {
-          animation: pricing-fade-up 0.65s cubic-bezier(0.22, 1, 0.36, 1)
-            both;
-        }
-
-        .pricing-delay-1 {
-          animation-delay: 100ms;
-        }
-
-        .pricing-delay-2 {
-          animation-delay: 180ms;
-        }
-
-        .pricing-delay-3 {
-          animation-delay: 260ms;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .pricing-fade-up {
-            animation: none;
-          }
-        }
-      `}</style>
-
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-48 -top-48 h-[36rem] w-[36rem] rounded-full bg-primary/15 blur-3xl" />
-        <div className="absolute -right-48 top-24 h-[34rem] w-[34rem] rounded-full bg-card/70 blur-3xl" />
-      </div>
-
       <PublicHeader />
 
       <main>
-        <section className="px-4 pb-14 pt-16 text-center sm:px-6 sm:pt-24 lg:px-8">
-          <div className="pricing-fade-up mx-auto max-w-3xl">
-            <div className="inline-flex rounded-full border border-border bg-card/70 px-4 py-2 text-xs text-muted-foreground shadow-sm">
-              One event. One payment. No subscription.
-            </div>
+        <section className="px-4 pb-10 pt-16 text-center sm:px-6 sm:pt-24 lg:px-8">
+          <h1 className="text-5xl leading-tight sm:text-6xl">Pricing</h1>
+          <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
+            Choose the plan that fits best for your event.
+          </p>
 
-            <h1 className="mt-7 text-5xl font-semibold tracking-[-0.06em] sm:text-7xl">
-              Choose how you want to
-              <span className="block text-muted-foreground">remember it.</span>
-            </h1>
-
-            <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
-              Start free or unlock more control with a one-time Premium or Pro
-              event plan.
-            </p>
+          <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-4 text-sm text-foreground">
+            <span className="font-semibold">✅ Money-back guarantee.</span>{" "}
+            If you end up not using it for your event, for whatever reason,
+            you&apos;ll get your money back according to our fair refund
+            policy.
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
-          <div className="grid gap-4 lg:grid-cols-3">
-            {plans.map((plan, index) => (
+        <section className="mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8 lg:pb-32">
+          <div className="grid gap-6 lg:grid-cols-3">
+            {plans.map((plan) => (
               <div
                 key={plan.name}
-                className={`pricing-fade-up pricing-delay-${Math.min(
-                  index + 1,
-                  3
-                )} relative rounded-[2rem] border p-7 sm:p-8 ${
-                  plan.featured
-                    ? "border-brand-deep-navy bg-brand-deep-navy text-brand-off-white shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]"
-                    : "border-border bg-card/75 text-foreground shadow-sm"
-                }`}
+                className="relative rounded-[2rem] border border-border bg-card p-7 shadow-sm sm:p-8"
               >
                 {plan.featured && (
-                  <div className="absolute -top-3 left-7 rounded-full bg-primary px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-primary-foreground">
-                    Most popular
+                  <div className="absolute -top-3 right-7 rounded-full bg-primary px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-primary-foreground">
+                    🔥 Most popular
                   </div>
                 )}
 
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="text-xl font-semibold">{plan.name}</h2>
-                  <span
-                    className={`text-xs ${
-                      plan.featured ? "text-brand-off-white/50" : "text-muted-foreground"
-                    }`}
-                  >
-                    per event
-                  </span>
+                  <h2 className="text-xl font-semibold text-foreground">
+                    {plan.name}
+                  </h2>
                 </div>
 
-                <div className="mt-8 text-5xl font-semibold tracking-tight">
+                <div className="mt-6 text-5xl font-semibold tracking-tight text-foreground">
                   {plan.price}
                 </div>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  {plan.billingNote}
+                </div>
 
-                <p
-                  className={`mt-4 min-h-12 text-sm leading-6 ${
-                    plan.featured ? "text-brand-off-white/60" : "text-muted-foreground"
-                  }`}
-                >
+                <p className="mt-4 min-h-12 text-sm leading-6 text-muted-foreground">
                   {plan.description}
                 </p>
+
+                <ul className="mt-6 space-y-3 text-sm text-foreground/85">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex gap-2">
+                      <span className="text-emerald-600">✓</span>
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
 
                 <Link href="/dashboard" className="mt-8 block">
                   <Button
                     className={`w-full rounded-full ${
                       plan.featured
-                        ? "bg-brand-off-white text-brand-deep-navy hover:bg-brand-off-white/90"
+                        ? "bg-primary text-primary-foreground hover:bg-[var(--primary-hover)]"
                         : ""
                     }`}
-                    variant={plan.featured ? "secondary" : "default"}
+                    variant={plan.featured ? "default" : "outline"}
                   >
                     {plan.name === "Free"
                       ? "Start free"
                       : `Choose ${plan.name}`}
                   </Button>
                 </Link>
-
-                <div
-                  className={`mt-8 border-t pt-7 ${
-                    plan.featured ? "border-brand-off-white/10" : "border-border"
-                  }`}
-                >
-                  <div
-                    className={`mb-4 text-xs font-semibold uppercase tracking-[0.15em] ${
-                      plan.featured ? "text-brand-off-white/40" : "text-muted-foreground"
-                    }`}
-                  >
-                    Includes
-                  </div>
-
-                  <ul
-                    className={`space-y-3 text-sm ${
-                      plan.featured ? "text-brand-off-white/75" : "text-muted-foreground"
-                    }`}
-                  >
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex gap-2">
-                        <span
-                          className={
-                            plan.featured
-                              ? "text-brand-champagne-gold"
-                              : "text-emerald-600"
-                          }
-                        >
-                          ✓
-                        </span>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="border-y border-border bg-background/60 px-4 py-20 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="max-w-2xl">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                Compare plans
-              </div>
-              <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
-                Pick the right level of control.
-              </h2>
-            </div>
-
-            <div className="mt-10 overflow-x-auto rounded-[1.75rem] border border-border bg-card shadow-sm">
-              <table className="w-full min-w-[700px] border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted">
-                    <th className="px-5 py-4 font-medium text-foreground">Feature</th>
-                    <th className="px-5 py-4 font-medium text-foreground">Free</th>
-                    <th className="px-5 py-4 font-medium text-foreground">Premium</th>
-                    <th className="px-5 py-4 font-medium text-foreground">Pro</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {comparisonRows.map((row) => (
-                    <tr key={row[0]} className="border-b border-border last:border-0">
-                      <td className="px-5 py-4 font-medium text-foreground">
-                        {row[0]}
-                      </td>
-                      <td className="px-5 py-4 text-muted-foreground">{row[1]}</td>
-                      <td className="px-5 py-4 text-muted-foreground">{row[2]}</td>
-                      <td className="px-5 py-4 text-muted-foreground">{row[3]}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-4xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-          <div className="text-center">
-            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Frequently asked
-            </div>
-            <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
-              Before you choose.
-            </h2>
-          </div>
-
-          <div className="mt-10 divide-y divide-border border-y border-border">
-            {faqs.map((faq, index) => {
-              const isOpen = openFaq === index;
-
-              return (
-                <div key={faq.question}>
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(isOpen ? null : index)}
-                    className="flex w-full items-center justify-between gap-5 py-5 text-left"
-                  >
-                    <span className="text-sm font-medium text-foreground sm:text-base">
-                      {faq.question}
-                    </span>
-                    <span className="text-xl text-muted-foreground">
-                      {isOpen ? "−" : "+"}
-                    </span>
-                  </button>
-
-                  {isOpen && (
-                    <div className="pb-5 pr-8 text-sm leading-6 text-muted-foreground">
-                      {faq.answer}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        <FaqSplit
+          heading="Frequently asked questions"
+          note="Still have a question about pricing? Reach out through the chat bubble in the corner."
+          faqs={faqs}
+        />
 
         <section className="px-4 pb-20 sm:px-6 lg:px-8 lg:pb-28">
           <div className="mx-auto max-w-7xl rounded-[2.5rem] bg-brand-deep-navy px-6 py-14 text-center text-brand-off-white sm:px-10 sm:py-20">

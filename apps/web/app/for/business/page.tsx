@@ -1,10 +1,5 @@
-import { UseCasePage } from "@/components/use-case-page";
-import { useCases } from "@/lib/use-cases-data";
+import { BusinessPage as BusinessPageContent } from "@/components/business-page";
 
 export default function BusinessPage() {
-  return (
-    <UseCasePage
-      useCase={useCases.find((useCase) => useCase.slug === "business")!}
-    />
-  );
+  return <BusinessPageContent />;
 }
