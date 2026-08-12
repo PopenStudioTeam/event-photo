@@ -49,6 +49,9 @@ const footerGroups: FooterGroup[] = [
       { label: "Privacy Policy", href: "/privacy-policy" },
       { label: "Terms of Use", href: "/terms-of-use" },
       { label: "Data Processing Agreement", href: "/data-processing-agreement" },
+      { label: "Security", href: "/security" },
+      { label: "Fair Usage Policy", href: "/fair-usage-policy" },
+      { label: "Fair Refund Policy", href: "/fair-refund-policy" },
     ],
   },
 ];

@@ -158,9 +158,28 @@ Reuses the consumer use-case template (see that section above) with `[category]`
 
 ---
 
-## Privacy Policy, Terms of Use, Data Processing Agreement
+## Privacy Policy, Terms of Use, Data Processing Agreement, Security
 
-No image placeholders — these need real company/legal text, not imagery. See the "Template notice" banner on each page.
+No image placeholders — these need real company/legal/security text, not imagery. See the "Template notice" banner on each page. (Security also has no photo/video needs — it's text-only, same as the other three.)
+
+---
+
+## Fair Usage Policy (`/fair-usage-policy`)
+
+No full-size image placeholders — just text and a numbered list.
+
+| # | Label in code | Used for |
+|---|---|---|
+| — | **(plain circles, not yet placeholders)** 3 small team headshot photos | "Event Photo Team - [support email]" signature line at the bottom |
+
+---
+
+## Fair Refund Policy (`/fair-refund-policy`)
+
+| # | Label in code | Used for |
+|---|---|---|
+| 58 | 🖼️ "Graphic: money-back guarantee seal/badge" | The circular "100% money-back guarantee" badge graphic between the two paragraphs |
+| — | **(plain circles, not yet placeholders)** 3 small team headshot photos | "Event Photo Team - [support email]" signature line at the bottom (can reuse the same 3 photos as the Fair Usage Policy page) |
 
 ---
 
@@ -175,6 +194,7 @@ Every 🎬 row above is a "how-it-works step 3 / live slideshow" spot, and they 
 
 ## Rough totals
 
-- **Unique image/video placeholder spots in shared templates:** ~40 (many of these repeat once per category — weddings, parties, birthdays, conferences, corporate, etc. — so the real number of individual files is higher, see the per-section math above).
+- **Unique image/video placeholder spots in shared templates:** ~41 (many of these repeat once per category — weddings, parties, birthdays, conferences, corporate, etc. — so the real number of individual files is higher, see the per-section math above).
 - **Optional logo slots:** up to 18 (6 per trust-logo strip × 3 pages that have one).
-- **Small circular headshots (not full placeholders yet):** ~32 (4 per consumer use-case page × 5 pages, 6 on the Business page tabs, 3 on the Business closing banner, 1 on the wedding QR page's closing banner).
+- **Small circular headshots (not full placeholders yet):** ~38 (4 per consumer use-case page × 5 pages, 6 on the Business page tabs, 3 on the Business closing banner, 1 on the wedding QR page's closing banner, 3 each on the Fair Usage and Fair Refund signature blocks).
+- **Legal/text-only pages with no imagery needed:** Privacy Policy, Terms of Use, Data Processing Agreement, Security, Fair Usage Policy (aside from its signature photos).
