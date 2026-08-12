@@ -16,6 +16,7 @@ const footerGroups: FooterGroup[] = [
     links: [
       { label: "Home", href: "/" },
       { label: "Pricing", href: "/pricing" },
+      { label: "Help Center", href: "/help" },
     ],
   },
   {
@@ -24,6 +25,13 @@ const footerGroups: FooterGroup[] = [
       { label: "Host stories", href: "/stories" },
       { label: "Guides", href: "/guides" },
       { label: "Use cases", href: "/for" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { label: "Switch to Event Photo", href: "/switch" },
+      { label: "Digital wedding guestbook", href: "/digital-wedding-guestbook" },
     ],
   },
   {
@@ -39,7 +47,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-border bg-background/70 px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-1">
             <Link href="/" className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-deep-navy text-xl text-brand-off-white">

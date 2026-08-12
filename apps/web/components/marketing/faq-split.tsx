@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export type Faq = { question: string; answer: string };
 
@@ -43,21 +45,32 @@ export function FaqSplit({
                 <button
                   type="button"
                   onClick={() => setOpenIndex(open ? null : index)}
+                  aria-expanded={open}
                   className="flex w-full items-center justify-between gap-5 py-5 text-left"
                 >
                   <span className="text-sm font-bold text-foreground sm:text-base">
                     {faq.question}
                   </span>
-                  <span className="text-xl text-muted-foreground">
-                    {open ? "−" : "+"}
-                  </span>
+                  <Plus
+                    className={cn(
+                      "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 ease-in-out",
+                      open && "rotate-45"
+                    )}
+                  />
                 </button>
 
-                {open && (
-                  <div className="pb-5 pr-8 text-sm leading-6 text-muted-foreground">
-                    {faq.answer}
+                <div
+                  className={cn(
+                    "grid transition-[grid-template-rows] duration-300 ease-in-out",
+                    open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                  )}
+                >
+                  <div className="overflow-hidden">
+                    <div className="pb-5 pr-8 text-sm leading-6 text-muted-foreground">
+                      {faq.answer}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             );
           })}
