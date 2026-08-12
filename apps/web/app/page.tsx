@@ -5,6 +5,7 @@ import { PublicHeader } from "@/components/public-header";
 import { SiteFooter } from "@/components/site-footer";
 import { AssetPlaceholder } from "@/components/marketing/asset-placeholder";
 import { CountUp } from "@/components/marketing/count-up";
+import { ProcessStepsStrip } from "@/components/marketing/process-steps-strip";
 import { FeatureHighlight } from "@/components/marketing/feature-highlight";
 import { HowItWorksFlow } from "@/components/marketing/how-it-works-flow";
 import { AllYouNeedGrid } from "@/components/marketing/all-you-need-grid";
@@ -167,28 +168,7 @@ export default function LandingPage() {
           />
         </section>
 
-        <section className="border-y border-border bg-card/60">
-          <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 sm:py-12 md:grid-cols-3 lg:px-8">
-            {processSteps.map((step, index) => (
-              <div key={step.number} className="relative flex items-start gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                  {step.number}
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-foreground">{step.title}</div>
-                  <div className="mt-1 text-xs leading-5 text-muted-foreground">
-                    {step.text}
-                  </div>
-                </div>
-                {index < processSteps.length - 1 && (
-                  <span className="absolute -right-4 top-5 hidden text-muted-foreground/50 md:block">
-                    ···
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
+        <ProcessStepsStrip steps={processSteps} />
 
         <FeatureHighlight
           heading="Event photo sharing made easy"
