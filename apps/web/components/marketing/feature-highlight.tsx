@@ -1,4 +1,6 @@
+import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { AssetPlaceholder } from "./asset-placeholder";
 
 export type HighlightFeature = {
@@ -12,11 +14,13 @@ export function FeatureHighlight({
   subtext,
   features,
   mockupLabel,
+  cta,
 }: {
   heading: string;
   subtext: string;
   features: HighlightFeature[];
   mockupLabel: string;
+  cta?: { label: string; href: string };
 }) {
   return (
     <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
@@ -25,6 +29,13 @@ export function FeatureHighlight({
         <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
           {subtext}
         </p>
+        {cta && (
+          <Link href={cta.href} className="mt-6 inline-block">
+            <Button className="rounded-full bg-primary px-6 text-primary-foreground hover:bg-[var(--primary-hover)]">
+              {cta.label}
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="mt-14 grid items-center gap-10 lg:grid-cols-2 lg:gap-16">

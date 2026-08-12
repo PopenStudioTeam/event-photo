@@ -32,6 +32,8 @@ const footerGroups: FooterGroup[] = [
     links: [
       { label: "Switch to Event Photo", href: "/switch" },
       { label: "Digital wedding guestbook", href: "/digital-wedding-guestbook" },
+      { label: "QR code for wedding pictures", href: "/qr-code-for-wedding-pictures" },
+      { label: "QR code for photo sharing", href: "/qr-code-for-photo-sharing" },
     ],
   },
   {
@@ -41,13 +43,21 @@ const footerGroups: FooterGroup[] = [
       { label: "Dashboard", href: "/dashboard" },
     ],
   },
+  {
+    title: "Company",
+    links: [
+      { label: "Privacy Policy", href: "/privacy-policy" },
+      { label: "Terms of Use", href: "/terms-of-use" },
+      { label: "Data Processing Agreement", href: "/data-processing-agreement" },
+    ],
+  },
 ];
 
 export function SiteFooter() {
   return (
     <footer className="border-t border-border bg-background/70 px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-6">
           <div className="lg:col-span-1">
             <Link href="/" className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-deep-navy text-xl text-brand-off-white">
@@ -73,7 +83,7 @@ export function SiteFooter() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-muted-foreground hover:text-foreground"
+                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                       {link.label}
                     </Link>
