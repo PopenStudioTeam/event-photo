@@ -1,4 +1,4 @@
-import { getToken } from "./auth";
+import { getToken, logoutAndRedirectToLogin } from "./auth";
 import { showErrorAlert } from "./error-alert";
 
 export { showErrorAlert } from "./error-alert";
@@ -61,6 +61,30 @@ export function reportApiError(
   showErrorAlert(getUserFacingErrorMessage(error, fallback, options));
 }
 
+function isLoginAuthPath(path: string) {
+  return (
+    path.startsWith("/auth/login") ||
+    path.startsWith("/auth/register") ||
+    path.startsWith("/auth/google")
+  );
+}
+
+function isPublicApiPath(path: string) {
+  return (
+    path.startsWith("/e/") ||
+    path.startsWith("/public") ||
+    path.startsWith("/qr") ||
+    path.startsWith("/health") ||
+    path.startsWith("/webhooks")
+  );
+}
+
+function endSessionIfUnauthorized(path: string, error: ApiError) {
+  if (error.status !== 401) return;
+  if (isLoginAuthPath(path) || isPublicApiPath(path)) return;
+  logoutAndRedirectToLogin();
+}
+
 async function readApiErrorResponse(res: Response) {
   let message = `API error ${res.status}`;
 
@@ -106,7 +130,9 @@ export async function apiFetch<T = unknown>(path: string, options: RequestInit =
   });
 
   if (!res.ok) {
-    throw await readApiErrorResponse(res);
+    const error = await readApiErrorResponse(res);
+    endSessionIfUnauthorized(path, error);
+    throw error;
   }
 
   return res.json() as Promise<T>;
@@ -129,7 +155,9 @@ export async function apiFetchBlob(path: string, options: RequestInit = {}) {
   });
 
   if (!res.ok) {
-    throw await readApiErrorResponse(res);
+    const error = await readApiErrorResponse(res);
+    endSessionIfUnauthorized(path, error);
+    throw error;
   }
 
   return res.blob();
@@ -156,7 +184,9 @@ export async function apiFetchBlobWithProgress(
   });
 
   if (!res.ok) {
-    throw await readApiErrorResponse(res);
+    const error = await readApiErrorResponse(res);
+    endSessionIfUnauthorized(path, error);
+    throw error;
   }
 
   const contentLength = res.headers.get("Content-Length");

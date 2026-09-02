@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { apiFetch, reportApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 
@@ -130,8 +131,8 @@ export function EventSlideshowOverlay({
     current &&
     (current.type === "photo" || current.mimeType.startsWith("image/"));
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black text-white">
+  const overlay = (
+    <div className="fixed inset-0 z-[100] flex flex-col bg-black text-white">
       <header className="flex flex-wrap items-center justify-between gap-2 bg-black/60 px-3 py-2 text-xs sm:text-sm">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Button
@@ -229,4 +230,10 @@ export function EventSlideshowOverlay({
       </footer>
     </div>
   );
+
+  if (typeof document === "undefined") {
+    return overlay;
+  }
+
+  return createPortal(overlay, document.body);
 }

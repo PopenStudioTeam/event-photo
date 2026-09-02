@@ -9,6 +9,28 @@ export type OrganizerUser = {
   onboardingCompleted?: boolean;
 };
 
+function readJwtExpiry(token: string): number | null {
+  const payloadPart = token.split(".")[1];
+  if (!payloadPart) return null;
+
+  try {
+    const padded = payloadPart
+      .replace(/-/g, "+")
+      .replace(/_/g, "/")
+      .padEnd(payloadPart.length + ((4 - (payloadPart.length % 4)) % 4), "=");
+    const payload = JSON.parse(atob(padded)) as { exp?: unknown };
+    return typeof payload.exp === "number" ? payload.exp : null;
+  } catch {
+    return null;
+  }
+}
+
+function isJwtExpired(token: string): boolean {
+  const exp = readJwtExpiry(token);
+  if (exp == null) return false;
+  return exp <= Math.floor(Date.now() / 1000);
+}
+
 export function saveToken(token: string) {
   if (typeof window !== "undefined") {
     localStorage.setItem(TOKEN_KEY, token);
@@ -17,7 +39,16 @@ export function saveToken(token: string) {
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return null;
+
+  if (isJwtExpired(token)) {
+    logout();
+    return null;
+  }
+
+  return token;
 }
 
 export function clearToken() {
@@ -34,6 +65,7 @@ export function saveOrganizer(organizer: OrganizerUser) {
 
 export function getOrganizer(): OrganizerUser | null {
   if (typeof window === "undefined") return null;
+  if (!getToken()) return null;
 
   const raw = localStorage.getItem(USER_KEY);
   if (!raw) return null;
@@ -54,6 +86,15 @@ export function clearOrganizer() {
 export function logout() {
   clearToken();
   clearOrganizer();
+}
+
+const LOGIN_PATHS = new Set(["/login", "/auth/login", "/auth/register"]);
+
+export function logoutAndRedirectToLogin() {
+  logout();
+  if (typeof window === "undefined") return;
+  if (LOGIN_PATHS.has(window.location.pathname)) return;
+  window.location.replace("/login");
 }
 
 export function organizerInitials(email: string | undefined) {

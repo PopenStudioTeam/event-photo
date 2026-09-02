@@ -432,13 +432,13 @@ export default function EventMediaPage() {
       )}
 
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-        <DialogContent className="max-h-[90vh] max-w-3xl overflow-hidden rounded-2xl p-0">
+        <DialogContent className="flex max-h-[90vh] w-[min(96vw,900px)] max-w-[min(96vw,900px)] flex-col overflow-hidden rounded-2xl p-0 sm:max-w-[min(96vw,900px)]">
           <DialogHeader className="border-b px-4 py-3">
             <DialogTitle>
               {filteredMedia[lightboxIndex]?.guestName ?? "Media preview"}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex max-h-[70vh] items-center justify-center bg-muted/30 p-4">
+          <div className="flex min-h-[50vh] flex-1 items-center justify-center bg-muted/30 p-4">
             {filteredMedia[lightboxIndex] &&
               (filteredMedia[lightboxIndex].type === "photo" ||
               (filteredMedia[lightboxIndex].mimeType ?? "").startsWith("image/") ? (
@@ -455,9 +455,29 @@ export default function EventMediaPage() {
                 />
               ))}
           </div>
-          <DialogFooter className="border-t px-4 py-3">
-            <Button variant="outline" size="sm" onClick={() => setLightboxOpen(false)}>
-              Close
+          <DialogFooter className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={lightboxIndex <= 0}
+              onClick={() => setLightboxIndex((index) => index - 1)}
+            >
+              Previous
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {filteredMedia.length > 0
+                ? `${lightboxIndex + 1} / ${filteredMedia.length}`
+                : "0 / 0"}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={lightboxIndex >= filteredMedia.length - 1}
+              onClick={() => setLightboxIndex((index) => index + 1)}
+            >
+              Next
             </Button>
           </DialogFooter>
         </DialogContent>

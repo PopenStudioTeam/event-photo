@@ -4,8 +4,9 @@ import { ReactNode, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/sidebar/organizer-sidebar";
 import { TopBar } from "@/components/topbar/topbar";
-import { getToken } from "@/lib/auth";
+import { getToken, logoutAndRedirectToLogin } from "@/lib/auth";
 import { fetchAuthMe } from "@/lib/auth-redirect";
+import { ApiError } from "@/lib/api";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     const guard = async () => {
       if (!getToken()) {
-        router.replace("/login");
+        logoutAndRedirectToLogin();
         return;
       }
 
@@ -25,8 +26,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         if (me.needsOnboarding) {
           router.replace("/onboarding");
         }
-      } catch {
-        // Allow page to render; individual pages will surface errors.
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          logoutAndRedirectToLogin();
+        }
       }
     };
 
