@@ -33,9 +33,23 @@ type EventSummary = {
   createdAt?: string;
 };
 
+const CURRENT_SLUG_KEY = "eventphoto_current_slug";
+
 function extractEventSlug(pathname: string) {
   const match = pathname.match(/^\/events\/([^/]+)/);
-  return match?.[1] ?? null;
+  const slug = match?.[1] ?? null;
+  if (!slug || slug === "new") return null;
+  return slug;
+}
+
+function readSavedSlug() {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(CURRENT_SLUG_KEY);
+}
+
+function writeSavedSlug(slug: string) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(CURRENT_SLUG_KEY, slug);
 }
 
 function NavLink({
@@ -78,16 +92,33 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const eventSlug = extractEventSlug(pathname);
-  const inEventContext = Boolean(eventSlug && eventSlug !== "new");
+  const inEventContext = Boolean(eventSlug);
 
   const [events, setEvents] = useState<EventSummary[]>([]);
+  const [savedSlug, setSavedSlug] = useState<string | null>(null);
   const [newEventOpen, setNewEventOpen] = useState(false);
   const organizer = getOrganizer();
 
-  const currentEvent = useMemo(
-    () => events.find((e) => e.slug === eventSlug) ?? null,
-    [events, eventSlug]
-  );
+  useEffect(() => {
+    setSavedSlug(readSavedSlug());
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!eventSlug) return;
+    writeSavedSlug(eventSlug);
+    setSavedSlug(eventSlug);
+  }, [eventSlug]);
+
+  const activeSlug = eventSlug ?? savedSlug;
+
+  const currentEvent = useMemo(() => {
+    if (events.length === 0) return null;
+    return (
+      events.find((e) => e.slug === activeSlug) ??
+      events.find((e) => e.slug === savedSlug) ??
+      events[0]
+    );
+  }, [events, activeSlug, savedSlug]);
 
   useEffect(() => {
     const load = async () => {
@@ -100,6 +131,12 @@ export function Sidebar() {
     };
     load();
   }, [pathname]);
+
+  const openEvent = (slug: string) => {
+    writeSavedSlug(slug);
+    setSavedSlug(slug);
+    router.push(`/events/${slug}`);
+  };
 
   const eventNav = eventSlug
     ? [
@@ -116,6 +153,19 @@ export function Sidebar() {
   ];
 
   const navItems = inEventContext ? eventNav : listNav;
+  const mobileNav =
+    inEventContext || !currentEvent
+      ? navItems
+      : [
+          listNav[0],
+          listNav[1],
+          {
+            href: `/events/${currentEvent.slug}`,
+            label: "Event",
+            icon: Images,
+          },
+          listNav[2],
+        ];
 
   const sidebarInner = (
     <>
@@ -133,7 +183,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      {inEventContext && (
+      {currentEvent && (
         <div className="mb-4 shrink-0 space-y-2 px-1">
           <div className="flex items-center justify-between px-1">
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sidebar-foreground/60">
@@ -147,39 +197,45 @@ export function Sidebar() {
             </Link>
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex w-full items-center justify-between gap-2 rounded-xl border border-border/70 bg-background px-3 py-2.5 text-left text-sm font-medium hover:bg-muted/50">
-              <span className="truncate">
-                {currentEvent?.name ?? "Select event"}
-              </span>
-              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 rounded-xl">
-              {events.map((evt) => (
+          <div className="flex overflow-hidden rounded-xl border border-border/70 bg-background">
+            <Link
+              href={`/events/${currentEvent.slug}`}
+              onClick={() => writeSavedSlug(currentEvent.slug)}
+              className="min-w-0 flex-1 truncate px-3 py-2.5 text-left text-sm font-medium hover:bg-muted/50"
+            >
+              {currentEvent.name}
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="border-l border-border/70 px-2 text-muted-foreground hover:bg-muted/50">
+                <ChevronDown className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56 rounded-xl">
+                {events.map((evt) => (
+                  <DropdownMenuItem
+                    key={evt.id}
+                    className="cursor-pointer rounded-lg"
+                    onClick={() => openEvent(evt.slug)}
+                  >
+                    {evt.name}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  key={evt.id}
-                  className="cursor-pointer rounded-lg"
-                  onClick={() => router.push(`/events/${evt.slug}`)}
+                  className="cursor-pointer rounded-lg text-primary"
+                  onClick={() => setNewEventOpen(true)}
                 >
-                  {evt.name}
+                  <Plus className="h-4 w-4" />
+                  Create new event
                 </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="cursor-pointer rounded-lg text-primary"
-                onClick={() => setNewEventOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Create new event
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="cursor-pointer rounded-lg"
-                onClick={() => router.push("/events")}
-              >
-                View all my events
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem
+                  className="cursor-pointer rounded-lg"
+                  onClick={() => router.push("/events")}
+                >
+                  View all my events
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           <Link
             href="/settings"
@@ -222,8 +278,13 @@ export function Sidebar() {
       </aside>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 px-4 pb-4 pt-2 md:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-3 gap-1 rounded-2xl border border-sidebar-border bg-sidebar p-1.5 text-sidebar-foreground shadow-[0_10px_40px_-12px_rgba(15,23,42,0.25)]">
-          {navItems.map((item) => {
+        <div
+          className={cn(
+            "mx-auto grid max-w-md gap-1 rounded-2xl border border-sidebar-border bg-sidebar p-1.5 text-sidebar-foreground shadow-[0_10px_40px_-12px_rgba(15,23,42,0.25)]",
+            mobileNav.length > 3 ? "grid-cols-4" : "grid-cols-3"
+          )}
+        >
+          {mobileNav.map((item) => {
             const isEventHome = item.href.match(/^\/events\/[^/]+$/) !== null;
             const active = isEventHome
               ? pathname === item.href

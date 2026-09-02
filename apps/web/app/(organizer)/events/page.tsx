@@ -88,14 +88,23 @@ export default function EventsPage() {
             return (
               <div
                 key={evt.id}
-                className="flex flex-col rounded-2xl border border-border/70 bg-card p-5 shadow-sm"
+                className={`flex flex-col rounded-2xl border bg-card p-5 shadow-sm ${
+                  isCurrent ? "border-primary" : "border-border/70"
+                }`}
               >
                 <div className="mb-3 flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <h3 className="truncate font-semibold">{evt.name}</h3>
-                    <span className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-[11px] capitalize text-muted-foreground">
-                      {evt.plan} plan
-                    </span>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <span className="inline-block rounded-full bg-muted px-2 py-0.5 text-[11px] capitalize text-muted-foreground">
+                        {evt.plan} plan
+                      </span>
+                      {isCurrent && (
+                        <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                          Current
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger className="rounded-lg p-1 text-muted-foreground hover:bg-muted">
@@ -130,17 +139,13 @@ export default function EventsPage() {
                 </div>
 
                 <div className="mt-auto border-t pt-4">
-                  {isCurrent ? (
-                    <span className="text-sm font-medium text-primary">Current Event</span>
-                  ) : (
-                    <button
-                      type="button"
-                      className="text-sm font-medium text-primary hover:underline"
-                      onClick={() => handleOpenEvent(evt.slug)}
-                    >
-                      View Event →
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="text-sm font-medium text-primary hover:underline"
+                    onClick={() => handleOpenEvent(evt.slug)}
+                  >
+                    View Event →
+                  </button>
                 </div>
               </div>
             );
