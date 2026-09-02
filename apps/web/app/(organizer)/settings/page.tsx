@@ -48,6 +48,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [bypassKey, setBypassKey] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -74,16 +75,30 @@ export default function SettingsPage() {
     try {
       const result = await apiFetch(`/billing/events/${eventSlug}/checkout`, {
         method: "POST",
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({
+          plan,
+          ...(bypassKey.trim() ? { bypassKey: bypassKey.trim() } : {}),
+        }),
       });
 
-      const { checkoutUrl } = result as { checkoutUrl?: string };
+      const payload = result as {
+        checkoutUrl?: string;
+        bypassed?: boolean;
+      };
 
-      if (!checkoutUrl) {
+      if (payload.bypassed) {
+        const refreshed = await apiFetch("/events");
+        setEvents(refreshed as Event[]);
+        setMessage(`${plan} unlocked for this event with the payment key.`);
+        setCheckoutLoading(null);
+        return;
+      }
+
+      if (!payload.checkoutUrl) {
         throw new Error("Stripe Checkout URL was not returned.");
       }
 
-      window.location.href = checkoutUrl;
+      window.location.href = payload.checkoutUrl;
     } catch (err) {
       console.error(err);
       reportApiError(err, "Unable to start Stripe Checkout.");
@@ -102,10 +117,29 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       {message && (
-        <div className="rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-700">
+        <div className="rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
           {message}
         </div>
       )}
+
+      <div className="max-w-md space-y-1.5">
+        <label htmlFor="payment-bypass-key" className="text-sm font-medium">
+          Payment key
+        </label>
+        <input
+          id="payment-bypass-key"
+          type="password"
+          value={bypassKey}
+          onChange={(event) => setBypassKey(event.target.value)}
+          placeholder="Optional — skip Stripe if you have a key"
+          autoComplete="off"
+          className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+        />
+        <p className="text-xs text-muted-foreground">
+          Leave empty to pay with Stripe. A valid key unlocks Premium or Pro
+          without checkout.
+        </p>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         {(["premium", "pro"] as const).map((plan) => {

@@ -2,15 +2,26 @@ import { Hono } from "hono";
 import { jwt } from "hono/jwt";
 import { zValidator } from "@hono/zod-validator";
 import { and, eq } from "drizzle-orm";
+import { timingSafeEqual } from "node:crypto";
 
 import { db } from "@app/shared/db";
 import { events } from "@app/shared/schema";
 import { createCheckoutSchema } from "@app/shared/validators";
 
 import { stripe, getStripePriceId } from "../lib/stripe.js";
+import { EVENT_LIMITS } from "../lib/event-limits.js";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const WEB_APP_URL = process.env.WEB_APP_URL ?? "http://localhost:3000";
+const PAYMENT_BYPASS_KEY = process.env.PAYMENT_BYPASS_KEY?.trim() ?? "";
+
+function paymentBypassMatches(provided: string | undefined) {
+  if (!PAYMENT_BYPASS_KEY || !provided) return false;
+  const expected = Buffer.from(PAYMENT_BYPASS_KEY);
+  const received = Buffer.from(provided);
+  if (expected.length !== received.length) return false;
+  return timingSafeEqual(expected, received);
+}
 
 export const billingRoutes = new Hono()
   .post(
@@ -23,7 +34,7 @@ export const billingRoutes = new Hono()
       };
 
       const slug = c.req.param("slug");
-      const { plan } = c.req.valid("json");
+      const { plan, bypassKey } = c.req.valid("json");
 
       const [event] = await db
         .select()
@@ -47,6 +58,33 @@ export const billingRoutes = new Hono()
           },
           400
         );
+      }
+
+      if (bypassKey) {
+        if (!PAYMENT_BYPASS_KEY || !paymentBypassMatches(bypassKey)) {
+          return c.json({ error: "Invalid payment key" }, 403);
+        }
+
+        const [updated] = await db
+          .update(events)
+          .set({
+            plan,
+            paymentStatus: "paid",
+            maxMediaCount: EVENT_LIMITS[plan].maxMediaCount,
+            paidAt: new Date(),
+          })
+          .where(eq(events.id, event.id))
+          .returning({
+            slug: events.slug,
+            plan: events.plan,
+            paymentStatus: events.paymentStatus,
+            paidAt: events.paidAt,
+          });
+
+        return c.json({
+          bypassed: true,
+          event: updated,
+        });
       }
 
       const priceId = getStripePriceId(plan);

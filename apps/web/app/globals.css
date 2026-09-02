@@ -159,8 +159,8 @@
 
   --destructive: oklch(0.704 0.191 22.216);
 
-  --border: #6F00FF33;
-  --input: #6F00FF40;
+  --border: #94A3B833;
+  --input: #94A3B840;
   --ring: #6F00FF;
 
   --chart-1: oklch(0.87 0 0);
@@ -175,7 +175,7 @@
   --sidebar-primary-foreground: #FBF8FF;
   --sidebar-accent: #1E1433;
   --sidebar-accent-foreground: #F8FAFC;
-  --sidebar-border: #6F00FF33;
+  --sidebar-border: #94A3B833;
   --sidebar-ring: #6F00FF;
 }
 
