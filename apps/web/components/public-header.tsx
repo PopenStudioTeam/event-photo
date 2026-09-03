@@ -60,24 +60,24 @@ export function PublicHeader() {
   const homeActive = isActivePath(pathname, homeLink.href);
 
   return (
-    <header className="relative z-50 border-b border-border bg-background/70 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
         {/* Logo */}
         <Link
           href="/"
           onClick={closeMobileMenu}
-          className="group flex items-center gap-3"
+          className="group flex min-w-0 flex-1 items-center gap-2.5 md:flex-none"
           aria-label="Event Photo home"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-deep-navy text-xl text-brand-off-white shadow-sm transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-deep-navy text-xl text-brand-off-white shadow-sm transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105">
             e
           </div>
 
-          <div className="leading-tight">
-            <div className="text-base font-bold tracking-tight text-foreground">
+          <div className="min-w-0 leading-tight">
+            <div className="truncate text-base font-bold tracking-tight text-foreground">
               Event Photo
             </div>
-            <div className="text-[10px] text-muted-foreground">
+            <div className="hidden truncate text-[10px] text-muted-foreground sm:block">
               Every moment, together
             </div>
           </div>
@@ -86,7 +86,7 @@ export function PublicHeader() {
         {/* Desktop navigation */}
         <nav
           aria-label="Public navigation"
-          className="hidden items-center gap-8 md:flex"
+          className="ml-auto hidden items-center gap-8 md:flex"
         >
           <Link
             href={homeLink.href}
@@ -216,7 +216,7 @@ export function PublicHeader() {
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
           onClick={() => setMobileOpen((open) => !open)}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/70 text-foreground transition hover:bg-accent md:hidden"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-background text-foreground transition hover:bg-accent md:hidden"
         >
           <span className="relative flex h-4 w-5 flex-col justify-between">
             <span
@@ -241,20 +241,34 @@ export function PublicHeader() {
         </button>
       </div>
 
-      {/* Mobile navigation */}
       <div
         className={cn(
-          "grid transition-[grid-template-rows,opacity] duration-300 md:hidden",
-          mobileOpen
-            ? "grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0"
+          "absolute inset-x-0 top-full z-50 px-4 pb-4 md:hidden sm:px-6 lg:px-8",
+          !mobileOpen && "pointer-events-none"
         )}
+        aria-hidden={!mobileOpen}
       >
-        <div className="min-h-0 overflow-hidden">
-          <div className="border-t border-border bg-popover/95 px-4 pb-5 pt-3 shadow-lg backdrop-blur-xl sm:px-6">
+        <button
+          type="button"
+          aria-label="Close menu"
+          tabIndex={mobileOpen ? 0 : -1}
+          className={cn(
+            "fixed inset-0 z-40 bg-black/20 transition-opacity duration-200",
+            mobileOpen ? "opacity-100" : "opacity-0"
+          )}
+          onClick={closeMobileMenu}
+        />
+        <div
+          className={cn(
+            "relative z-50 mx-auto max-w-7xl origin-top rounded-2xl border border-border bg-popover p-3 shadow-xl transition-[opacity,transform] duration-200 ease-out",
+            mobileOpen
+              ? "translate-y-0 scale-100 opacity-100"
+              : "-translate-y-2 scale-95 opacity-0"
+          )}
+        >
             <nav
               aria-label="Mobile public navigation"
-              className="flex flex-col gap-1"
+              className="flex max-h-[min(70dvh,32rem)] flex-col gap-1 overflow-y-auto"
             >
               <Link
                 href={homeLink.href}
@@ -303,7 +317,7 @@ export function PublicHeader() {
               </button>
 
               {mobileUseCasesOpen && (
-                <div className="mb-1 grid grid-cols-2 gap-1 px-2">
+                <div className="mb-1 grid grid-cols-2 gap-1 px-2 duration-200 animate-in fade-in-0 slide-in-from-top-2">
                   {useCases.map((useCase) => (
                     <Link
                       key={useCase.slug}
@@ -373,7 +387,6 @@ export function PublicHeader() {
                 </Button>
               </Link>
             </div>
-          </div>
         </div>
       </div>
     </header>
