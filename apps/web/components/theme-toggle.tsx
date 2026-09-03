@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme-provider";
+import type { Theme } from "@/lib/theme";
 import { Button } from "./ui/button";
-
-type Theme = "light" | "dark" | "system";
 
 const themeLabels: Record<Theme, string> = {
   light: "Light",

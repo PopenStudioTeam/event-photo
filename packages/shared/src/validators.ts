@@ -18,7 +18,10 @@ export const listEventsQuerySchema = z.object({
 });
 
 export const coverUploadSchema = z.object({
-  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+  contentType: z.preprocess(
+    (value) => (value === "image/jpg" ? "image/jpeg" : value),
+    z.enum(["image/jpeg", "image/png", "image/webp"])
+  ),
   fileSize: z.number().int().positive().max(5 * 1024 * 1024),
 });
 

@@ -21,6 +21,7 @@ import {
   organizerInitials,
   type OrganizerUser,
 } from "@/lib/auth";
+import { organizerDisplayName } from "@/lib/event-categories";
 
 const PAGE_META: Record<string, { title: string; description: string }> = {
   "/dashboard": {
@@ -136,7 +137,9 @@ export function TopBar() {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col gap-0.5">
                     <span className="text-xs font-medium text-foreground">
-                      {organizer?.email ?? "Organizer account"}
+                      {organizer
+                        ? organizerDisplayName(organizer.email)
+                        : "Organizer account"}
                     </span>
                     <span className="text-[11px] text-muted-foreground">
                       Manage your profile and session

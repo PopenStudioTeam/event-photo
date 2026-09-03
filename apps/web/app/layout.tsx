@@ -7,6 +7,7 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { THEME_STORAGE_KEY } from "@/lib/theme";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SupportWidget } from "@/components/support-widget";
 
@@ -52,6 +53,11 @@ export default function RootLayout({
       className={`${fredoka.variable} ${nunitoSans.variable} ${playfairDisplay.variable} ${cormorantGaramond.variable}`}
     >
       <body className="min-h-full bg-background font-sans text-foreground antialiased">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("${THEME_STORAGE_KEY}")||"system";var d=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);}catch(e){}})();`,
+          }}
+        />
         <ThemeProvider>
           <GoogleOAuthProvider
             clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}

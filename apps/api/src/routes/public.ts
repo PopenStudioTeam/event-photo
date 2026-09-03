@@ -21,7 +21,7 @@ import {
   guideSlugParamSchema,
   testimonialPhotoUploadSchema,
 } from "@app/shared/validators";
-import { r2, R2_BUCKET } from "../lib/r2.js";
+import { r2, R2_BUCKET, getSignedUploadUrl } from "../lib/r2.js";
 
 function clientIp(c: Context) {
   const forwarded = c.req.header("x-forwarded-for");
@@ -134,7 +134,7 @@ export const publicRoutes = new Hono()
       ContentType: parsed.data.contentType,
       ContentLength: parsed.data.fileSize,
     });
-    const uploadUrl = await getSignedUrl(r2, command, { expiresIn: 300 });
+    const uploadUrl = await getSignedUploadUrl(command);
 
     return c.json({ uploadUrl, key });
   })

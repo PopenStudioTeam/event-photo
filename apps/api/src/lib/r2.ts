@@ -1,4 +1,5 @@
-import { S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export const r2 = new S3Client({
   region: "auto",
@@ -10,3 +11,20 @@ export const r2 = new S3Client({
 });
 
 export const R2_BUCKET = process.env.R2_BUCKET_NAME!;
+
+/** Presigned read/upload URLs valid for 24 hours. */
+export const SIGNED_URL_EXPIRES_IN = 60 * 60 * 24;
+
+export async function getSignedReadUrl(key: string | null | undefined) {
+  if (!key) return null;
+
+  return getSignedUrl(
+    r2,
+    new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }),
+    { expiresIn: SIGNED_URL_EXPIRES_IN }
+  );
+}
+
+export async function getSignedUploadUrl(command: PutObjectCommand) {
+  return getSignedUrl(r2, command, { expiresIn: SIGNED_URL_EXPIRES_IN });
+}

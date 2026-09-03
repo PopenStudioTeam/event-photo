@@ -16,7 +16,7 @@ import {
   likeMediaSchema,
 } from "@app/shared/validators";
 import { count, desc, eq, lt, and, sql, ne, or, ilike, inArray } from "drizzle-orm";
-import { R2_BUCKET, r2 } from "../lib/r2.js";
+import { R2_BUCKET, getSignedReadUrl, getSignedUploadUrl, r2 } from "../lib/r2.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
 import {
   DeleteObjectCommand,
@@ -190,13 +190,7 @@ export const eventRoutes = new Hono()
           .from(media)
           .where(eq(media.eventId, event.id));
 
-        const command = new GetObjectCommand({
-          Bucket: R2_BUCKET,
-          Key: event.coverImageKey ?? "",
-        });
-        const url = event.coverImageKey
-          ? await getSignedUrl(r2, command, { expiresIn: 300 })
-          : null;
+        const url = await getSignedReadUrl(event.coverImageKey);
 
         return {
           id: event.id,
@@ -253,7 +247,7 @@ export const eventRoutes = new Hono()
         ContentType: contentType,
         ContentLength: fileSize,
       });
-      const uploadUrl = await getSignedUrl(r2, command, { expiresIn: 300 });
+      const uploadUrl = await getSignedUploadUrl(command);
 
       return c.json({ uploadUrl, key });
     }
@@ -371,9 +365,11 @@ export const eventRoutes = new Hono()
 
       if (Object.keys(patch).length === 0) {
         const { protectedPasswordHash, ...safeEvent } = event;
+        const coverImageUrl = await getSignedReadUrl(event.coverImageKey);
         return c.json({
           ...safeEvent,
           hasPassword: Boolean(protectedPasswordHash),
+          coverImageUrl,
         });
       }
 
@@ -384,7 +380,12 @@ export const eventRoutes = new Hono()
         .returning();
 
       const { protectedPasswordHash, ...safeEvent } = updated;
-      return c.json({ ...safeEvent, hasPassword: Boolean(protectedPasswordHash) });
+      const coverImageUrl = await getSignedReadUrl(updated.coverImageKey);
+      return c.json({
+        ...safeEvent,
+        hasPassword: Boolean(protectedPasswordHash),
+        coverImageUrl,
+      });
     }
   )
   .delete("/:slug", jwt({ secret: JWT_SECRET, alg: "HS256" }), async (c) => {
@@ -689,14 +690,7 @@ export const publicEventRoutes = new Hono()
       return c.json({ error: "Event not found" }, 404);
     }
 
-    const command = new GetObjectCommand({
-      Bucket: R2_BUCKET,
-      Key: event.coverImageKey ?? "",
-    });
-
-    const url = event.coverImageKey
-      ? await getSignedUrl(r2, command, { expiresIn: 300 })
-      : null;
+    const url = await getSignedReadUrl(event.coverImageKey);
 
     return c.json({
       slug: event.slug,
@@ -1004,7 +998,7 @@ export const publicMediaUploadRoutes = new Hono()
       ContentLength: fileSize,
     });
 
-    const uploadUrl = await getSignedUrl(r2, command, { expiresIn: 300 });
+    const uploadUrl = await getSignedUploadUrl(command);
 
     return c.json({ uploadUrl, key, type });
   });

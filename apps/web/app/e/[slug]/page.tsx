@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, ChangeEvent, FormEvent } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import { useParams } from "next/navigation";
 import { apiFetch, ApiError, reportApiError, showErrorAlert } from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
@@ -22,6 +22,7 @@ import { EventSlideshowOverlay } from "@/components/event-slideshow-overlay";
 import { GuestMyUploadsDialog } from "@/components/guest-my-uploads";
 import { getGuestSession, saveGuestSession } from "@/lib/guest-session";
 import { cn } from "@/lib/utils";
+import { FileDropzone } from "@/components/file-dropzone";
 
 type PublicEvent = {
   slug: string;
@@ -226,8 +227,7 @@ export default function GuestEventPage() {
     setWelcomeDone(true);
   };
 
-  const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
+  const handleFilesSelected = (files: File[]) => {
     if (!files.length) return;
 
     const items: UploadItem[] = files.map((file) => ({
@@ -237,7 +237,7 @@ export default function GuestEventPage() {
       progress: 0,
     }));
 
-    setUploads(items);
+    setUploads((prev) => [...prev, ...items]);
     setUploadSuccess(null);
     setUploadPanelOpen(true);
   };
@@ -300,8 +300,8 @@ export default function GuestEventPage() {
     });
   };
 
-  const handleUpload = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleUpload = async (e?: FormEvent) => {
+    e?.preventDefault();
     if (!event || !event.uploadsEnabled || uploads.length === 0) return;
 
     setUploading(true);
@@ -879,19 +879,16 @@ export default function GuestEventPage() {
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium">
-                      Pick files (you can add more)
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*,video/*"
-                      multiple
-                      capture="environment"
-                      onChange={handleFilesChange}
-                      className="text-xs"
-                    />
-                  </div>
+                  <FileDropzone
+                    accept="image/*,video/*"
+                    multiple
+                    capture="environment"
+                    disabled={uploading}
+                    prompt="Drop your image here, or"
+                    browseLabel="browse"
+                    hint="Supports: JPG, JPEG2000, PNG"
+                    onFiles={handleFilesSelected}
+                  />
 
                   {uploads.length > 0 && (
                     <div className="space-y-3">
@@ -947,27 +944,9 @@ export default function GuestEventPage() {
                     </div>
                   )}
 
-                  <form onSubmit={handleUpload} className="space-y-3 text-sm">
-                    <div className="mt-2 flex items-center justify-between gap-3">
-                      <Button
-                        type="submit"
-                        size="sm"
-                        disabled={uploads.length === 0 || uploading}
-                        className="rounded-full px-6"
-                      >
-                        {uploading ? "Uploading…" : "Upload"}
-                      </Button>
-                      <span className="text-xs text-muted-foreground">
-                        {guestName}
-                      </span>
-                    </div>
-
-                    {uploadSuccess && (
-                      <div className="mt-2 text-xs text-green-600">
-                        {uploadSuccess}
-                      </div>
-                    )}
-                  </form>
+                  {uploadSuccess && (
+                    <div className="text-xs text-green-600">{uploadSuccess}</div>
+                  )}
                 </>
               ) : (
                 <div className="text-sm text-muted-foreground">
@@ -976,7 +955,18 @@ export default function GuestEventPage() {
               )}
             </div>
 
-            <DialogFooter className="border-t pt-3">
+            <DialogFooter className="flex-row justify-end border-t pt-3">
+              {event.uploadsEnabled ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={uploads.length === 0 || uploading}
+                  className="rounded-full px-6"
+                  onClick={() => handleUpload()}
+                >
+                  {uploading ? "Uploading…" : "Upload"}
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="outline"

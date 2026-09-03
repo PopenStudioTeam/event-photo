@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Copy, ExternalLink, Download, LayoutTemplate } from "lucide-react";
@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { renderQrCard } from "@/lib/qr-card-renderer";
-import { uploadEventCover } from "@/lib/upload-event-cover";
+import { CoverUploadField } from "@/components/cover-upload-field";
 
 type EventRecord = {
   id: string;
@@ -38,6 +38,7 @@ type EventRecord = {
   plan: string;
   eventDate: string | null;
   coverImageUrl: string | null;
+  coverLayout?: "banner" | "card";
   coverOverlay: "none" | "gradient";
   mediaCount?: number;
 };
@@ -53,8 +54,6 @@ export default function EventDashboardPage() {
   const [downloadingQr, setDownloadingQr] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [coverUploading, setCoverUploading] = useState(false);
 
   const baseWebUrl = useBaseWebUrl();
   const albumUrl = event ? `${baseWebUrl}/e/${event.slug}` : "";
@@ -142,32 +141,13 @@ export default function EventDashboardPage() {
     }
   };
 
-  const handleCoverFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setCoverFile(e.target.files?.[0] ?? null);
-  };
-
-  const handleCoverUpload = async () => {
-    if (!event || !coverFile || coverUploading) return;
-
-    setCoverUploading(true);
-    try {
-      const updated = await uploadEventCover(event.slug, coverFile);
-      setEvent((prev) => (prev ? { ...prev, ...updated } : prev));
-      setCoverFile(null);
-      showSuccessToast("Cover uploaded", "Your event cover photo was updated.");
-    } catch (err) {
-      reportApiError(err, "Failed to upload cover image");
-    } finally {
-      setCoverUploading(false);
-    }
-  };
-
   if (loading) {
     return <div className="text-sm text-muted-foreground">Loading dashboard…</div>;
   }
 
   if (!event) return null;
 
+  const coverIsFilled = event.coverLayout !== "card";
   const coverOverlayClass =
     event.coverOverlay === "gradient"
       ? "absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"
@@ -209,9 +189,13 @@ export default function EventDashboardPage() {
           {event.coverImageUrl ? (
             <div className="relative">
               <img
+                key={`${event.slug}-${event.coverLayout}-${event.coverImageUrl}`}
                 src={event.coverImageUrl}
                 alt={event.name}
-                className="aspect-[21/9] max-h-56 w-full object-cover sm:max-h-64"
+                className={cn(
+                  "aspect-[21/9] max-h-56 w-full sm:max-h-64",
+                  coverIsFilled ? "object-cover" : "object-contain bg-muted"
+                )}
               />
               {event.coverOverlay === "gradient" && (
                 <div className={coverOverlayClass} />
@@ -223,27 +207,16 @@ export default function EventDashboardPage() {
             </div>
           )}
         </div>
-        <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <CardContent className="space-y-4 py-4">
           <p className="text-sm text-muted-foreground">
             Upload a cover photo for your guest album and welcome screen.
           </p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleCoverFileChange}
-              className="w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-background file:px-3 file:py-1.5 file:text-xs sm:max-w-[220px]"
-            />
-            <Button
-              size="sm"
-              variant="secondary"
-              className="shrink-0 rounded-xl"
-              onClick={handleCoverUpload}
-              disabled={!coverFile || coverUploading}
-            >
-              {coverUploading ? "Uploading…" : "Upload cover"}
-            </Button>
-          </div>
+          <CoverUploadField
+            slug={event.slug}
+            onUploaded={(updated) =>
+              setEvent((prev) => (prev ? { ...prev, ...updated } : prev))
+            }
+          />
         </CardContent>
       </Card>
 

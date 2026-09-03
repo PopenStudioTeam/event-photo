@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { apiFetch, reportApiError } from "@/lib/api";
 import { getOrganizer } from "@/lib/auth";
+import { organizerDisplayName } from "@/lib/event-categories";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -97,7 +98,14 @@ export function Sidebar() {
   const [events, setEvents] = useState<EventSummary[]>([]);
   const [savedSlug, setSavedSlug] = useState<string | null>(null);
   const [newEventOpen, setNewEventOpen] = useState(false);
-  const organizer = getOrganizer();
+  const [accountLabel, setAccountLabel] = useState("Organizer");
+
+  useEffect(() => {
+    const organizer = getOrganizer();
+    if (organizer?.email) {
+      setAccountLabel(organizerDisplayName(organizer.email));
+    }
+  }, []);
 
   useEffect(() => {
     setSavedSlug(readSavedSlug());
@@ -263,7 +271,7 @@ export function Sidebar() {
       <div className="mt-4 shrink-0 rounded-2xl border border-dashed border-sidebar-border bg-sidebar-accent/50 p-4">
         <div className="text-xs font-medium text-sidebar-foreground">My Account</div>
         <div className="mt-1 truncate text-xs text-sidebar-foreground/60">
-          {organizer?.email ?? "Organizer"}
+          {accountLabel}
         </div>
       </div>
     </>
