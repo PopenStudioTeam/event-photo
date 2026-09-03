@@ -185,39 +185,35 @@ export default function EventDashboardPage() {
       </div>
 
       <Card className="overflow-hidden rounded-2xl border-border/70 p-0">
-        <div className="relative w-full overflow-hidden bg-muted/40">
-          {event.coverImageUrl ? (
-            <div className="relative">
-              <img
-                key={`${event.slug}-${event.coverLayout}-${event.coverImageUrl}`}
-                src={event.coverImageUrl}
-                alt={event.name}
-                className={cn(
-                  "aspect-[21/9] max-h-56 w-full sm:max-h-64",
-                  coverIsFilled ? "object-cover" : "object-contain bg-muted"
+        <CoverUploadField
+          slug={event.slug}
+          onUploaded={(updated) =>
+            setEvent((prev) => (prev ? { ...prev, ...updated } : prev))
+          }
+        >
+          <div className="relative w-full overflow-hidden bg-muted/40">
+            {event.coverImageUrl ? (
+              <div className="relative">
+                <img
+                  key={`${event.slug}-${event.coverLayout}-${event.coverImageUrl}`}
+                  src={event.coverImageUrl}
+                  alt={event.name}
+                  className={cn(
+                    "aspect-[21/9] max-h-56 w-full sm:max-h-64",
+                    coverIsFilled ? "object-cover" : "object-contain bg-muted"
+                  )}
+                />
+                {event.coverOverlay === "gradient" && (
+                  <div className={coverOverlayClass} />
                 )}
-              />
-              {event.coverOverlay === "gradient" && (
-                <div className={coverOverlayClass} />
-              )}
-            </div>
-          ) : (
-            <div className="flex aspect-[21/9] max-h-56 items-center justify-center text-sm text-muted-foreground sm:max-h-64">
-              No cover photo yet
-            </div>
-          )}
-        </div>
-        <CardContent className="space-y-4 py-4">
-          <p className="text-sm text-muted-foreground">
-            Upload a cover photo for your guest album and welcome screen.
-          </p>
-          <CoverUploadField
-            slug={event.slug}
-            onUploaded={(updated) =>
-              setEvent((prev) => (prev ? { ...prev, ...updated } : prev))
-            }
-          />
-        </CardContent>
+              </div>
+            ) : (
+              <div className="flex aspect-[21/9] max-h-56 items-center justify-center text-sm text-muted-foreground sm:max-h-64">
+                No cover photo yet
+              </div>
+            )}
+          </div>
+        </CoverUploadField>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">

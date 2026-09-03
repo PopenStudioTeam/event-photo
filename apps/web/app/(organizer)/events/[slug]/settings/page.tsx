@@ -405,29 +405,31 @@ export default function EventSettingsPage() {
                   Shown on the guest welcome screen and album header.
                 </p>
               </div>
-              {event.coverImageUrl ? (
-                <img
-                  key={`${event.slug}-${formCoverLayout}-${event.coverImageUrl}`}
-                  src={event.coverImageUrl}
-                  alt={event.name}
-                  className={cn(
-                    "aspect-[21/9] max-h-48 w-full rounded-xl",
-                    formCoverLayout === "card"
-                      ? "object-contain bg-muted"
-                      : "object-cover"
-                  )}
-                />
-              ) : (
-                <div className="flex aspect-[21/9] max-h-48 items-center justify-center rounded-xl bg-muted text-sm text-muted-foreground">
-                  No cover photo yet
-                </div>
-              )}
               <CoverUploadField
                 slug={event.slug}
+                className="overflow-hidden rounded-xl"
                 onUploaded={(updated) =>
                   setEvent((prev) => (prev ? { ...prev, ...updated } : prev))
                 }
-              />
+              >
+                {event.coverImageUrl ? (
+                  <img
+                    key={`${event.slug}-${formCoverLayout}-${event.coverImageUrl}`}
+                    src={event.coverImageUrl}
+                    alt={event.name}
+                    className={cn(
+                      "aspect-[21/9] max-h-48 w-full",
+                      formCoverLayout === "card"
+                        ? "object-contain bg-muted"
+                        : "object-cover"
+                    )}
+                  />
+                ) : (
+                  <div className="flex aspect-[21/9] max-h-48 items-center justify-center bg-muted text-sm text-muted-foreground">
+                    No cover photo yet
+                  </div>
+                )}
+              </CoverUploadField>
             </div>
 
             <form className="space-y-5" onSubmit={handleSaveAppearance}>
