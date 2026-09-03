@@ -54,6 +54,18 @@ function writeSavedSlug(slug: string) {
   localStorage.setItem(CURRENT_SLUG_KEY, slug);
 }
 
+function isNavActive(pathname: string, href: string) {
+  if (href === "/events") {
+    return pathname === "/events";
+  }
+
+  const isEventHome = /^\/events\/[^/]+$/.test(href);
+  if (isEventHome) {
+    return pathname === href;
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 function NavLink({
   href,
   label,
@@ -70,22 +82,15 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={cn(
-        "flex items-center transition-all duration-200",
+      data-active={active ? "true" : "false"}
+      className={
         compact
-          ? "flex-col gap-1 rounded-2xl px-3 py-2 text-[11px]"
-          : "gap-3 rounded-xl px-3 py-2.5 text-sm",
-        active
-          ? compact
-            ? "bg-primary/15 font-medium text-primary"
-            : "border-l-2 border-primary bg-primary/15 font-medium text-primary"
-          : compact
-            ? "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-      )}
+          ? "flex min-w-0 flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] text-sidebar-foreground/70 transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground data-[active=true]:bg-primary/15 data-[active=true]:font-medium data-[active=true]:text-primary"
+          : "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-sidebar-foreground/70 transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary data-[active=true]:bg-primary/15 data-[active=true]:font-medium data-[active=true]:text-primary"
+      }
     >
-      <Icon className={cn(compact ? "h-5 w-5" : "h-4 w-4 shrink-0")} />
-      <span className={cn(compact ? "leading-none" : "font-medium")}>{label}</span>
+      <Icon className={compact ? "h-5 w-5" : "h-4 w-4 shrink-0"} />
+      <span className={compact ? "max-w-full truncate leading-none" : "font-medium"}>{label}</span>
     </Link>
   );
 }
@@ -163,25 +168,19 @@ export function Sidebar() {
 
   const listNav = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
-    { href: "/events", label: "My Events", icon: CalendarDays },
+    { href: "/events", label: "Events", icon: CalendarDays },
     { href: "/calendar", label: "Calendar", icon: Calendar },
     { href: "/settings", label: "Settings", icon: Settings },
   ];
 
   const navItems = inEventContext ? eventNav : listNav;
-  const mobileNav =
-    inEventContext || !currentEvent
-      ? navItems
-      : [
-          listNav[0],
-          listNav[1],
-          {
-            href: `/events/${currentEvent.slug}`,
-            label: "Event",
-            icon: Images,
-          },
-          listNav[3],
-        ];
+  const mobileNav = eventSlug
+    ? [
+        { href: `/events/${eventSlug}`, label: "Home", icon: Home },
+        { href: `/events/${eventSlug}/media`, label: "Photos", icon: Images },
+        { href: `/events/${eventSlug}/settings`, label: "Settings", icon: Settings },
+      ]
+    : listNav;
 
   const sidebarInner = (
     <>
@@ -264,16 +263,9 @@ export function Sidebar() {
       )}
 
       <nav className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-1">
-        {navItems.map((item) => {
-          const isHome = item.href.match(/^\/events\/[^/]+$/) !== null;
-          const active = isHome
-            ? pathname === item.href
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
-
-          return (
-            <NavLink key={item.href} {...item} active={active} />
-          );
-        })}
+        {navItems.map((item) => (
+          <NavLink key={item.href} {...item} active={isNavActive(pathname, item.href)} />
+        ))}
       </nav>
 
       <div className="mt-4 shrink-0 rounded-2xl border border-dashed border-sidebar-border bg-sidebar-accent/50 p-4">
@@ -293,23 +285,21 @@ export function Sidebar() {
         </div>
       </aside>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 px-4 pb-4 pt-2 md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
         <div
           className={cn(
-            "mx-auto grid max-w-md gap-1 rounded-2xl border border-sidebar-border bg-sidebar p-1.5 text-sidebar-foreground shadow-[0_10px_40px_-12px_rgba(15,23,42,0.25)]",
+            "mx-auto grid max-w-md gap-0.5 rounded-2xl border border-sidebar-border bg-sidebar/95 p-1 text-sidebar-foreground shadow-[0_10px_40px_-12px_rgba(15,23,42,0.25)] backdrop-blur-md",
             mobileNav.length > 3 ? "grid-cols-4" : "grid-cols-3"
           )}
         >
-          {mobileNav.map((item) => {
-            const isEventHome = item.href.match(/^\/events\/[^/]+$/) !== null;
-            const active = isEventHome
-              ? pathname === item.href
-              : pathname === item.href || pathname.startsWith(`${item.href}/`);
-
-            return (
-              <NavLink key={item.href} {...item} compact active={active} />
-            );
-          })}
+          {mobileNav.map((item) => (
+            <NavLink
+              key={item.href}
+              {...item}
+              compact
+              active={isNavActive(pathname, item.href)}
+            />
+          ))}
         </div>
       </nav>
 

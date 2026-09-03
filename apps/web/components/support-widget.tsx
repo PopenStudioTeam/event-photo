@@ -35,7 +35,7 @@ export function SupportWidget() {
   );
 
   return (
-    <div className="fixed bottom-5 right-5 z-50">
+    <div className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-3 z-50 md:bottom-5 md:right-5">
       <div
         className={cn(
           "absolute right-0 bottom-16 w-[calc(100vw-2.5rem)] max-w-sm origin-bottom-right overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-2xl transition-[opacity,transform] duration-300 ease-out",
@@ -97,7 +97,7 @@ export function SupportWidget() {
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-label={open ? "Close support" : "Open support"}
-        className="relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl text-primary-foreground shadow-xl transition hover:bg-[var(--primary-hover)]"
+        className="relative flex h-11 w-11 items-center justify-center rounded-full bg-primary text-xl text-primary-foreground shadow-xl transition hover:bg-[var(--primary-hover)] md:h-14 md:w-14 md:text-2xl"
       >
         <span
           className={cn(

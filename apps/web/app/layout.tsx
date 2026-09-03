@@ -49,6 +49,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
       className={`${fredoka.variable} ${nunitoSans.variable} ${playfairDisplay.variable} ${cormorantGaramond.variable}`}
     >

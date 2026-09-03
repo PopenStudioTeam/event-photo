@@ -31,7 +31,7 @@ export function ThemeToggle() {
         type="button"
         variant="outline"
         size="sm"
-        className="h-9 gap-2"
+        className="h-9 w-9 shrink-0 gap-0 px-0 sm:h-9 sm:w-auto sm:gap-2 sm:px-2.5"
         disabled
         aria-label="Change theme"
       >
@@ -58,7 +58,7 @@ export function ThemeToggle() {
       type="button"
       variant="outline"
       size="sm"
-      className="h-9 gap-2"
+      className="h-9 w-9 shrink-0 gap-0 px-0 sm:h-9 sm:w-auto sm:gap-2 sm:px-2.5"
       onClick={() => setTheme(nextTheme)}
       aria-label={`Switch theme. Current theme: ${themeLabels[currentTheme]}`}
       title={`Current theme: ${themeLabels[currentTheme]}`}

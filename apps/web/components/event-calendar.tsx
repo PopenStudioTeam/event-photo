@@ -30,6 +30,7 @@ export type CalendarEvent = {
 };
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAYS_SHORT = ["M", "T", "W", "T", "F", "S", "S"];
 
 const CATEGORY_COLORS: Record<string, string> = {
   wedding: "bg-violet-500/15 text-violet-700 ring-violet-500/20 dark:text-violet-300",
@@ -154,13 +155,13 @@ export function EventCalendar({
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
-      <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <section className="rounded-2xl border border-border/70 bg-card p-3 shadow-sm sm:p-5">
+        <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             {monthEvents.length} {monthEvents.length === 1 ? "event" : "events"} this month
           </p>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2 sm:justify-end">
             <Button
               variant="outline"
               size="sm"
@@ -172,6 +173,7 @@ export function EventCalendar({
             >
               Today
             </Button>
+            <div className="flex items-center gap-1">
             <Button
               variant="outline"
               size="icon-sm"
@@ -180,7 +182,7 @@ export function EventCalendar({
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="min-w-38 text-center text-sm font-medium capitalize">
+            <div className="min-w-28 text-center text-sm font-medium capitalize sm:min-w-38">
               {monthLabel}
             </div>
             <Button
@@ -191,16 +193,18 @@ export function EventCalendar({
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl border border-border/70 bg-border/70">
-          {WEEKDAYS.map((day) => (
+          {WEEKDAYS.map((day, index) => (
             <div
-              key={day}
-              className="bg-muted/60 px-1 py-1 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+              key={`${day}-${index}`}
+              className="bg-muted/60 px-0.5 py-1 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:px-1"
             >
-              {day}
+              <span className="sm:hidden">{WEEKDAYS_SHORT[index]}</span>
+              <span className="hidden sm:inline">{day}</span>
             </div>
           ))}
 
@@ -225,12 +229,12 @@ export function EventCalendar({
                 type="button"
                 onClick={selectDay}
                 className={cn(
-                  "flex min-h-22 flex-col items-stretch gap-0.5 bg-card p-1 text-left transition-colors hover:bg-muted/50 sm:min-h-24",
+                  "flex min-h-11 flex-col items-stretch gap-0.5 bg-card p-0.5 text-left transition-colors hover:bg-muted/50 sm:min-h-24 sm:p-1",
                   !inMonth && "bg-muted/30",
                   isSelected && "bg-primary/10 hover:bg-primary/15"
                 )}
               >
-                <span className="flex items-center justify-between gap-1">
+                <span className="flex items-center justify-between gap-0.5">
                   <span
                     className={cn(
                       "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-medium",
@@ -243,13 +247,25 @@ export function EventCalendar({
                     {date.getDate()}
                   </span>
                   {dayEvents.length > 0 && (
-                    <span className="rounded-full bg-primary/15 px-1.5 text-[10px] font-semibold tabular-nums text-primary">
+                    <span className="hidden rounded-full bg-primary/15 px-1.5 text-[10px] font-semibold tabular-nums text-primary sm:inline">
                       {dayEvents.length}
                     </span>
                   )}
                 </span>
 
-                <span className="min-w-0 space-y-0.5">
+                <span className="flex justify-center gap-0.5 sm:hidden">
+                  {dayEvents.slice(0, 3).map((event) => (
+                    <span
+                      key={event.id}
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full",
+                        CATEGORY_DOTS[event.category] ?? CATEGORY_DOTS.other
+                      )}
+                    />
+                  ))}
+                </span>
+
+                <span className="hidden min-w-0 space-y-0.5 sm:block">
                   {visible.map((event) => (
                     <span
                       key={event.id}

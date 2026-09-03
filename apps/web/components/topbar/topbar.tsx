@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { User, SignOut } from "@phosphor-icons/react";
+import { CaretDown, User, SignOut } from "@phosphor-icons/react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ThemeToggle } from "../theme-toggle";
@@ -23,6 +23,30 @@ import {
   type OrganizerUser,
 } from "@/lib/auth";
 import { organizerDisplayName } from "@/lib/event-categories";
+import { apiFetch, reportApiError } from "@/lib/api";
+import { cn } from "@/lib/utils";
+
+type EventSummary = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+const CURRENT_SLUG_KEY = "eventphoto_current_slug";
+
+function extractEventSlug(pathname: string) {
+  const match = pathname.match(/^\/events\/([^/]+)/);
+  const slug = match?.[1] ?? null;
+  if (!slug || slug === "new") return null;
+  return slug;
+}
+
+function eventSubpath(pathname: string, slug: string) {
+  const rest = pathname.slice(`/events/${slug}`.length);
+  if (rest === "/media" || rest.startsWith("/media/")) return "/media";
+  if (rest === "/settings" || rest.startsWith("/settings/")) return "/settings";
+  return "";
+}
 
 const PAGE_META: Record<string, { title: string; description: string }> = {
   "/dashboard": {
@@ -93,8 +117,11 @@ export function TopBar() {
   const router = useRouter();
   const pathname = usePathname();
   const [organizer, setOrganizer] = useState<OrganizerUser | null>(null);
+  const [events, setEvents] = useState<EventSummary[]>([]);
 
   const pageMeta = useMemo(() => getPageMeta(pathname), [pathname]);
+  const eventSlug = extractEventSlug(pathname);
+  const currentEvent = events.find((event) => event.slug === eventSlug) ?? null;
 
   useEffect(() => {
     const applyOrganizer = () => setOrganizer(getOrganizer());
@@ -103,13 +130,37 @@ export function TopBar() {
     return () => window.removeEventListener(ORGANIZER_UPDATED_EVENT, applyOrganizer);
   }, []);
 
+  useEffect(() => {
+    if (!eventSlug) {
+      setEvents([]);
+      return;
+    }
+
+    const load = async () => {
+      try {
+        const data = (await apiFetch("/events")) as EventSummary[];
+        setEvents(data);
+      } catch (err) {
+        reportApiError(err, "Failed to load events");
+      }
+    };
+
+    load();
+  }, [eventSlug]);
+
+  const openEvent = (slug: string) => {
+    if (!eventSlug) return;
+    localStorage.setItem(CURRENT_SLUG_KEY, slug);
+    router.push(`/events/${slug}${eventSubpath(pathname, eventSlug)}`);
+  };
+
   const handleLogout = () => {
     logout();
     router.replace("/login");
   };
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border/60 bg-background/85 px-4 py-4 backdrop-blur-md sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-20 border-b border-border/60 bg-background/85 px-3 py-3 backdrop-blur-md sm:px-6 sm:py-4 lg:px-8">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
@@ -118,12 +169,46 @@ export function TopBar() {
           <h1 className="truncate font-heading text-lg font-semibold tracking-tight sm:text-xl">
             {pageMeta.title}
           </h1>
+          {eventSlug && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={cn(
+                  "mt-1 flex max-w-full items-center gap-1 rounded-lg py-0.5 text-left text-xs font-medium text-primary outline-none md:hidden",
+                  "hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                )}
+                aria-label="Switch event"
+              >
+                <span className="truncate">
+                  {currentEvent?.name ?? "Select event"}
+                </span>
+                <CaretDown className="size-3.5 shrink-0" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56 rounded-xl md:hidden">
+                {events.map((event) => (
+                  <DropdownMenuItem
+                    key={event.id}
+                    className="cursor-pointer rounded-lg"
+                    onClick={() => openEvent(event.slug)}
+                  >
+                    <span className="truncate">{event.name}</span>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer rounded-lg"
+                  onClick={() => router.push("/events")}
+                >
+                  View all events
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <p className="mt-0.5 hidden truncate text-sm text-muted-foreground sm:block">
             {pageMeta.description}
           </p>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger
