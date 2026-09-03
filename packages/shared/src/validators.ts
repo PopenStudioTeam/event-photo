@@ -11,6 +11,10 @@ export const googleAuthSchema = z.object({
 
 export const loginSchema = registerSchema;
 
+export const updateOrganizerSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+});
+
 export const listEventsQuerySchema = z.object({
   q: z.string().trim().max(120).optional(),
   uploads: z.enum(["all", "enabled", "disabled"]).optional(),

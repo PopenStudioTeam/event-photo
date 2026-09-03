@@ -6,8 +6,11 @@ const USER_KEY = "eventphoto_user";
 export type OrganizerUser = {
   id: string;
   email: string;
+  name?: string | null;
   onboardingCompleted?: boolean;
 };
+
+export const ORGANIZER_UPDATED_EVENT = "eventphoto-organizer-updated";
 
 function readJwtExpiry(token: string): number | null {
   const payloadPart = token.split(".")[1];
@@ -60,6 +63,7 @@ export function clearToken() {
 export function saveOrganizer(organizer: OrganizerUser) {
   if (typeof window !== "undefined") {
     localStorage.setItem(USER_KEY, JSON.stringify(organizer));
+    window.dispatchEvent(new Event(ORGANIZER_UPDATED_EVENT));
   }
 }
 
@@ -97,9 +101,17 @@ export function logoutAndRedirectToLogin() {
   window.location.replace("/login");
 }
 
-export function organizerInitials(email: string | undefined) {
-  if (!email) return "?";
-  const local = email.split("@")[0] ?? "";
+export function organizerInitials(email: string | undefined, name?: string | null) {
+  const source = name?.trim() || email;
+  if (!source) return "?";
+  if (name?.trim()) {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.trim().slice(0, 2).toUpperCase();
+  }
+  const local = email?.split("@")[0] ?? "";
   const parts = local.split(/[._-]+/).filter(Boolean);
   if (parts.length >= 2) {
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();

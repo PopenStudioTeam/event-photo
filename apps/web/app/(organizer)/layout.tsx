@@ -4,7 +4,7 @@ import { ReactNode, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/sidebar/organizer-sidebar";
 import { TopBar } from "@/components/topbar/topbar";
-import { getToken, logoutAndRedirectToLogin } from "@/lib/auth";
+import { getToken, logoutAndRedirectToLogin, saveOrganizer } from "@/lib/auth";
 import { fetchAuthMe } from "@/lib/auth-redirect";
 import { ApiError } from "@/lib/api";
 
@@ -23,6 +23,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
       try {
         const me = await fetchAuthMe();
+        saveOrganizer(me.organizer);
         if (me.needsOnboarding) {
           router.replace("/onboarding");
         }

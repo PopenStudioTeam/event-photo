@@ -36,7 +36,12 @@ export function getCategoryIntro(category: EventCategory | string | null | undef
   }
 }
 
-export function organizerDisplayName(email: string | undefined) {
+export function organizerDisplayName(
+  email: string | undefined,
+  name?: string | null
+) {
+  const trimmed = name?.trim();
+  if (trimmed) return trimmed;
   if (!email) return "Organizer";
   const local = email.split("@")[0] ?? "";
   const parts = local.split(/[._-]+/).filter(Boolean);

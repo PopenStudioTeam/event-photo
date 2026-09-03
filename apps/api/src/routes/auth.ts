@@ -4,7 +4,7 @@ import { sign, jwt } from "hono/jwt";
 import { eq, count } from "drizzle-orm";
 import { db } from "@app/shared/db";
 import { organizers, events } from "@app/shared/schema";
-import { registerSchema, loginSchema } from "@app/shared/validators";
+import { registerSchema, loginSchema, updateOrganizerSchema } from "@app/shared/validators";
 import { hashPassword, verifyPassword } from "../lib/password.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "";
@@ -12,11 +12,13 @@ const JWT_SECRET = process.env.JWT_SECRET || "";
 function organizerPayload(organizer: {
   id: string;
   email: string;
+  name?: string | null;
   onboardingCompleted: boolean;
 }) {
   return {
     id: organizer.id,
     email: organizer.email,
+    name: organizer.name ?? null,
     onboardingCompleted: organizer.onboardingCompleted,
   };
 }
@@ -36,6 +38,7 @@ export const authRoutes = new Hono()
       .returning({
         id: organizers.id,
         email: organizers.email,
+        name: organizers.name,
         onboardingCompleted: organizers.onboardingCompleted,
       });
 
@@ -86,6 +89,7 @@ export const authRoutes = new Hono()
       .select({
         id: organizers.id,
         email: organizers.email,
+        name: organizers.name,
         onboardingCompleted: organizers.onboardingCompleted,
       })
       .from(organizers)
@@ -107,6 +111,32 @@ export const authRoutes = new Hono()
         !organizer.onboardingCompleted && (eventCountRow?.count ?? 0) === 0,
     });
   })
+  .patch(
+    "/me",
+    jwt({ secret: JWT_SECRET, alg: "HS256" }),
+    zValidator("json", updateOrganizerSchema),
+    async (c) => {
+      const { sub: organizerId } = c.get("jwtPayload") as { sub: string };
+      const { name } = c.req.valid("json");
+
+      const [organizer] = await db
+        .update(organizers)
+        .set({ name })
+        .where(eq(organizers.id, organizerId))
+        .returning({
+          id: organizers.id,
+          email: organizers.email,
+          name: organizers.name,
+          onboardingCompleted: organizers.onboardingCompleted,
+        });
+
+      if (!organizer) {
+        return c.json({ error: "Organizer not found" }, 404);
+      }
+
+      return c.json({ organizer: organizerPayload(organizer) });
+    }
+  )
   .post("/complete-onboarding", jwt({ secret: JWT_SECRET, alg: "HS256" }), async (c) => {
     const { sub: organizerId } = c.get("jwtPayload") as { sub: string };
 
@@ -117,6 +147,7 @@ export const authRoutes = new Hono()
       .returning({
         id: organizers.id,
         email: organizers.email,
+        name: organizers.name,
         onboardingCompleted: organizers.onboardingCompleted,
       });
 

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiFetch, reportApiError } from "@/lib/api";
-import { getOrganizer } from "@/lib/auth";
+import { getOrganizer, ORGANIZER_UPDATED_EVENT } from "@/lib/auth";
 import { organizerDisplayName } from "@/lib/event-categories";
 import {
   DropdownMenu,
@@ -102,10 +102,16 @@ export function Sidebar() {
   const [accountLabel, setAccountLabel] = useState("Organizer");
 
   useEffect(() => {
-    const organizer = getOrganizer();
-    if (organizer?.email) {
-      setAccountLabel(organizerDisplayName(organizer.email));
-    }
+    const applyOrganizer = () => {
+      const organizer = getOrganizer();
+      if (organizer?.email || organizer?.name) {
+        setAccountLabel(organizerDisplayName(organizer.email, organizer.name));
+      }
+    };
+
+    applyOrganizer();
+    window.addEventListener(ORGANIZER_UPDATED_EVENT, applyOrganizer);
+    return () => window.removeEventListener(ORGANIZER_UPDATED_EVENT, applyOrganizer);
   }, []);
 
   useEffect(() => {

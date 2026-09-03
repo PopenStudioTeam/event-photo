@@ -50,6 +50,7 @@ export const testimonialSourceEnum = pgEnum("testimonial_source", [
 export const organizers = pgTable("organizers", {
   id: uuid("id").defaultRandom().primaryKey(),
   email: text("email").notNull().unique(),
+  name: text("name"),
   passwordHash: text("password_hash"),
   googleId: text("google_id").unique(),
   onboardingCompleted: boolean("onboarding_completed").default(false).notNull(),

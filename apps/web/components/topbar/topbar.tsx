@@ -19,6 +19,7 @@ import {
   getOrganizer,
   logout,
   organizerInitials,
+  ORGANIZER_UPDATED_EVENT,
   type OrganizerUser,
 } from "@/lib/auth";
 import { organizerDisplayName } from "@/lib/event-categories";
@@ -42,7 +43,7 @@ const PAGE_META: Record<string, { title: string; description: string }> = {
   },
   "/profile": {
     title: "Profile",
-    description: "Your organizer account details",
+    description: "Account, subscriptions, and your events",
   },
 };
 
@@ -96,7 +97,10 @@ export function TopBar() {
   const pageMeta = useMemo(() => getPageMeta(pathname), [pathname]);
 
   useEffect(() => {
-    setOrganizer(getOrganizer());
+    const applyOrganizer = () => setOrganizer(getOrganizer());
+    applyOrganizer();
+    window.addEventListener(ORGANIZER_UPDATED_EVENT, applyOrganizer);
+    return () => window.removeEventListener(ORGANIZER_UPDATED_EVENT, applyOrganizer);
   }, []);
 
   const handleLogout = () => {
@@ -128,7 +132,7 @@ export function TopBar() {
             >
               <Avatar className="h-9 w-9 shrink-0 cursor-pointer border border-border/60 shadow-sm sm:h-10 sm:w-10">
                 <AvatarFallback className="bg-muted text-xs font-semibold">
-                  {organizerInitials(organizer?.email)}
+                  {organizerInitials(organizer?.email, organizer?.name)}
                 </AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
@@ -142,7 +146,7 @@ export function TopBar() {
                   <div className="flex flex-col gap-0.5">
                     <span className="text-xs font-medium text-foreground">
                       {organizer
-                        ? organizerDisplayName(organizer.email)
+                        ? organizerDisplayName(organizer.email, organizer.name)
                         : "Organizer account"}
                     </span>
                     <span className="text-[11px] text-muted-foreground">

@@ -41,13 +41,20 @@ export const googleAuthRoutes = new Hono().post(
     if (!organizer) {
       [organizer] = await db
         .insert(organizers)
-        .values({ email: payload.email, googleId: payload.sub })
+        .values({
+          email: payload.email,
+          googleId: payload.sub,
+          name: payload.name ?? null,
+        })
         .returning();
     } else if (!organizer.googleId) {
       // Existing email/password account — link Google to it
       [organizer] = await db
         .update(organizers)
-        .set({ googleId: payload.sub })
+        .set({
+          googleId: payload.sub,
+          ...(!organizer.name && payload.name ? { name: payload.name } : {}),
+        })
         .where(eq(organizers.id, organizer.id))
         .returning();
     }
@@ -69,6 +76,7 @@ export const googleAuthRoutes = new Hono().post(
       organizer: {
         id: organizer.id,
         email: organizer.email,
+        name: organizer.name ?? null,
         onboardingCompleted: organizer.onboardingCompleted,
       },
       needsOnboarding: isNewAccount,
