@@ -27,6 +27,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "lucide-react";
 
 type EventAnalytics = {
   id: string;
@@ -201,6 +202,15 @@ export default function DashboardPage() {
           disabled={refreshing}
         >
           {refreshing ? "Refreshing…" : "Refresh"}
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.push("/calendar")}
+        >
+          <Calendar />
+          Calendar
         </Button>
 
         <Button size="sm" onClick={() => router.push("/events")}>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
+  Calendar,
   CalendarDays,
   ChevronDown,
   Home,
@@ -157,6 +158,7 @@ export function Sidebar() {
   const listNav = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
     { href: "/events", label: "My Events", icon: CalendarDays },
+    { href: "/calendar", label: "Calendar", icon: Calendar },
     { href: "/settings", label: "Settings", icon: Settings },
   ];
 
@@ -172,7 +174,7 @@ export function Sidebar() {
             label: "Event",
             icon: Images,
           },
-          listNav[2],
+          listNav[3],
         ];
 
   const sidebarInner = (

@@ -32,6 +32,10 @@ const PAGE_META: Record<string, { title: string; description: string }> = {
     title: "Events",
     description: "Create events, share links, and manage guest uploads",
   },
+  "/calendar": {
+    title: "Calendar",
+    description: "Month view of your events",
+  },
   "/settings": {
     title: "Settings",
     description: "Billing, plans, and event upgrades",
