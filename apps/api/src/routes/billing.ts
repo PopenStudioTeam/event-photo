@@ -14,7 +14,7 @@ import {
   resolveWhopCheckoutUrl,
   WhopApiError,
 } from "../lib/whop.js";
-import { EVENT_LIMITS } from "../lib/event-limits.js";
+import { canPurchasePlan, EVENT_LIMITS } from "../lib/event-limits.js";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const WEB_APP_URL = process.env.WEB_APP_URL ?? "https://127.0.0.1:3443";
@@ -55,10 +55,13 @@ export const billingRoutes = new Hono()
         return c.json({ error: "Event not found" }, 404);
       }
 
-      if (event.paymentStatus === "paid") {
+      if (!bypassKey && !canPurchasePlan(event, plan)) {
         return c.json(
           {
-            error: "This event has already been paid for",
+            error:
+              event.plan === plan
+                ? "This event is already on this plan"
+                : "This event is already paid. Choose Premium or Pro before checkout — Whop charges each plan in full, so we do not offer upgrades.",
             plan: event.plan,
           },
           400
@@ -92,18 +95,17 @@ export const billingRoutes = new Hono()
         });
       }
 
-      const planId = getWhopPlanId(plan);
       const accountId = process.env.WHOP_ACCOUNT_ID?.trim();
 
       let checkout;
 
       try {
         checkout = await createWhopCheckout({
-          planId,
+          planId: getWhopPlanId(plan),
           accountId: accountId || undefined,
-          redirectUrl: `${WEB_APP_URL}/settings?payment=success&event=${encodeURIComponent(
+          redirectUrl: `${WEB_APP_URL}/events/${encodeURIComponent(
             event.slug
-          )}`,
+          )}/settings?tab=plan&payment=success`,
           metadata: {
             eventId: event.id,
             eventSlug: event.slug,
@@ -144,7 +146,9 @@ export const billingRoutes = new Hono()
       await db
         .update(events)
         .set({
-          paymentStatus: "pending",
+          ...(event.paymentStatus === "paid"
+            ? {}
+            : { paymentStatus: "pending" as const }),
           whopCheckoutConfigurationId: checkout.id,
         })
         .where(eq(events.id, event.id));

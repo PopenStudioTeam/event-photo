@@ -1,56 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { apiFetch, reportApiError } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-
-type Plan = "free" | "premium" | "pro";
-type PaymentStatus = "free" | "pending" | "paid" | "failed" | "refunded";
+import { eventPlanSettingsPath, type EventPlan, type PaymentStatus } from "@/lib/plans";
 
 type Event = {
   id: string;
   slug: string;
   name: string;
-  plan: Plan;
+  plan: EventPlan;
   paymentStatus: PaymentStatus;
-  paidAt: string | null;
 };
-
-const planDetails = {
-  premium: {
-    name: "Premium",
-    price: "$30",
-    description: "For events that need more uploads, moderation, and customization.",
-    features: [
-      "Up to 1,000 media items",
-      "Content moderation",
-      "Password-protected gallery",
-      "Custom cover and colors",
-    ],
-  },
-  pro: {
-    name: "Pro",
-    price: "$50",
-    description: "For larger events with POV and reveal features.",
-    features: [
-      "Up to 5,000 media items",
-      "Everything in Premium",
-      "POV disposable-camera mode",
-      "Per-guest limits",
-      "Scheduled gallery reveal",
-    ],
-  },
-} as const;
 
 export default function SettingsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [bypassKey, setBypassKey] = useState("");
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     const load = async () => {
@@ -58,7 +24,6 @@ export default function SettingsPage() {
         const result = await apiFetch("/events");
         setEvents(result as Event[]);
       } catch (err) {
-        console.error(err);
         reportApiError(err, "Failed to load billing settings.");
       } finally {
         setLoading(false);
@@ -67,64 +32,6 @@ export default function SettingsPage() {
 
     load();
   }, []);
-
-  useEffect(() => {
-    const payment = searchParams.get("payment");
-    const eventSlug = searchParams.get("event");
-
-    if (payment === "success") {
-      setMessage(
-        eventSlug
-          ? `Payment submitted for ${eventSlug}. Paid features activate after Whop confirms the payment.`
-          : "Payment submitted. Paid features activate after Whop confirms the payment."
-      );
-      return;
-    }
-
-    if (payment === "cancelled") {
-      setMessage("Checkout was cancelled. No charge was made.");
-    }
-  }, [searchParams]);
-
-  const startCheckout = async (
-    eventSlug: string,
-    plan: "premium" | "pro"
-  ) => {
-    setCheckoutLoading(`${eventSlug}:${plan}`);
-
-    try {
-      const result = await apiFetch(`/billing/events/${eventSlug}/checkout`, {
-        method: "POST",
-        body: JSON.stringify({
-          plan,
-          ...(bypassKey.trim() ? { bypassKey: bypassKey.trim() } : {}),
-        }),
-      });
-
-      const payload = result as {
-        checkoutUrl?: string;
-        bypassed?: boolean;
-      };
-
-      if (payload.bypassed) {
-        const refreshed = await apiFetch("/events");
-        setEvents(refreshed as Event[]);
-        setMessage(`${plan} unlocked for this event with the payment key.`);
-        setCheckoutLoading(null);
-        return;
-      }
-
-      if (!payload.checkoutUrl) {
-        throw new Error("Whop Checkout URL was not returned.");
-      }
-
-      window.location.href = payload.checkoutUrl;
-    } catch (err) {
-      console.error(err);
-      reportApiError(err, "Unable to start Whop Checkout.");
-      setCheckoutLoading(null);
-    }
-  };
 
   if (loading) {
     return (
@@ -136,105 +43,44 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      {message && (
-        <div className="rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
-          {message}
-        </div>
-      )}
-
-      <div className="max-w-md space-y-1.5">
-        <label htmlFor="payment-bypass-key" className="text-sm font-medium">
-          Payment key
-        </label>
-        <input
-          id="payment-bypass-key"
-          type="password"
-          value={bypassKey}
-          onChange={(event) => setBypassKey(event.target.value)}
-          placeholder="Optional — skip Whop if you have a key"
-          autoComplete="off"
-          className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-        />
-        <p className="text-xs text-muted-foreground">
-          Leave empty to pay with Whop. A valid key unlocks Premium or Pro
-          without checkout.
-        </p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        {(["premium", "pro"] as const).map((plan) => {
-          const details = planDetails[plan];
-
-          return (
-            <Card key={plan}>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>{details.name}</span>
-                  <span>{details.price}</span>
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  {details.description}
-                </p>
-
-                <ul className="space-y-1 text-sm">
-                  {details.features.map((feature) => (
-                    <li key={feature}>✓ {feature}</li>
-                  ))}
-                </ul>
-
-                {events.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    Create an event before purchasing a plan.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium">
-                      Choose an event to upgrade
-                    </p>
-
-                    {events.map((event) => {
-                      const isPaid = event.paymentStatus === "paid";
-                      const loadingKey = `${event.slug}:${plan}`;
-
-                      return (
-                        <div
-                          key={event.id}
-                          className="flex flex-col gap-2 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between"
-                        >
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-medium">
-                              {event.name}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              Current plan: {event.plan} ·{" "}
-                              {event.paymentStatus}
-                            </div>
-                          </div>
-
-                          <Button
-                            size="sm"
-                            disabled={isPaid || checkoutLoading !== null}
-                            onClick={() => startCheckout(event.slug, plan)}
-                          >
-                            {isPaid
-                              ? "Paid"
-                              : checkoutLoading === loadingKey
-                                ? "Opening…"
-                                : `Buy ${details.name}`}
-                          </Button>
-                        </div>
-                      );
-                    })}
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <CardTitle className="text-base">Event plans</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            Each event has its own plan. Open an event to choose Free, Premium,
+            or Pro.
+          </p>
+          {events.length === 0 ? (
+            <p>Create an event before choosing a plan.</p>
+          ) : (
+            <div className="space-y-2">
+              {events.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex flex-col gap-2 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-foreground">
+                      {event.name}
+                    </div>
+                    <div className="text-xs capitalize">
+                      Current plan: {event.plan} · {event.paymentStatus}
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                  <Link
+                    href={eventPlanSettingsPath(event.slug)}
+                    className="inline-flex h-8 items-center justify-center rounded-md border bg-background px-3 text-sm font-medium text-foreground hover:bg-muted"
+                  >
+                    Choose plan
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -131,7 +131,11 @@ export const whopWebhookRoutes = new Hono().post("/whop", async (c) => {
           await db
             .update(events)
             .set({
+              plan: "free",
               paymentStatus: "refunded",
+              maxMediaCount: EVENT_LIMITS.free.maxMediaCount,
+              paidAt: null,
+              whopPaymentId: null,
             })
             .where(eq(events.whopPaymentId, paymentId));
         }

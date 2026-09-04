@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { events } from "@app/shared/schema";
 import {
+  canPurchasePlan,
   canUseFeature,
   EVENT_LIMITS,
   getInitialMediaStatus,
@@ -17,6 +18,23 @@ function event(overrides: Partial<EventRow> = {}): EventRow {
     ...overrides,
   } as EventRow;
 }
+
+describe("canPurchasePlan", () => {
+  it("allows a paid plan when the event is unpaid", () => {
+    expect(canPurchasePlan(event({ plan: "free", paymentStatus: "free" }), "premium")).toBe(
+      true
+    );
+  });
+
+  it("blocks another purchase after the event is paid", () => {
+    expect(
+      canPurchasePlan(event({ plan: "premium", paymentStatus: "paid" }), "pro")
+    ).toBe(false);
+    expect(
+      canPurchasePlan(event({ plan: "premium", paymentStatus: "paid" }), "premium")
+    ).toBe(false);
+  });
+});
 
 describe("hasPaidPlan", () => {
   it("is true only for paid premium or pro events", () => {

@@ -31,6 +31,10 @@ export const EVENT_LIMITS = {
 
 export type EventPlan = keyof typeof EVENT_LIMITS;
 
+export function canPurchasePlan(event: EventRow, _plan: "premium" | "pro") {
+  return event.paymentStatus !== "paid";
+}
+
 export function getEventPlan(event: EventRow) {
   return EVENT_LIMITS[event.plan as EventPlan];
 }

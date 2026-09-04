@@ -25,15 +25,20 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "node:crypto";
-import { canUseFeature, getInitialMediaStatus, getMaxMediaCount } from "../lib/event-limits.js";
+import {
+  canUseFeature,
+  EVENT_LIMITS,
+  getInitialMediaStatus,
+  getMaxMediaCount,
+} from "../lib/event-limits.js";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 type EventRow = typeof events.$inferSelect;
 
-const DEFAULT_EVENT = {
-  plan: "pro",
-  paymentStatus: "paid",
+const NEW_EVENT = {
+  plan: "free",
+  paymentStatus: "free",
 } as EventRow;
 
 const PLAN_FEATURE_ERRORS = {
@@ -92,19 +97,19 @@ export const eventRoutes = new Hono()
         );
       }
 
-      if (body.protected && !canUseFeature(DEFAULT_EVENT, "passwordProtection")) {
+      if (body.protected && !canUseFeature(NEW_EVENT, "passwordProtection")) {
         return c.json({ error: PLAN_FEATURE_ERRORS.passwordProtection }, 403);
       }
 
-      if (wantsCustomization(body) && !canUseFeature(DEFAULT_EVENT, "customization")) {
+      if (wantsCustomization(body) && !canUseFeature(NEW_EVENT, "customization")) {
         return c.json({ error: PLAN_FEATURE_ERRORS.customization }, 403);
       }
 
-      if (body.povEnabled && !canUseFeature(DEFAULT_EVENT, "pov")) {
+      if (body.povEnabled && !canUseFeature(NEW_EVENT, "pov")) {
         return c.json({ error: PLAN_FEATURE_ERRORS.pov }, 403);
       }
 
-      if (body.povRevealAt && !canUseFeature(DEFAULT_EVENT, "revealDate")) {
+      if (body.povRevealAt && !canUseFeature(NEW_EVENT, "revealDate")) {
         return c.json({ error: PLAN_FEATURE_ERRORS.revealDate }, 403);
       }
 
@@ -140,10 +145,10 @@ export const eventRoutes = new Hono()
           coverLayout: body.coverLayout ?? "banner",
           coverOverlay: body.coverOverlay ?? "none",
         
-          plan: "pro",
-          paymentStatus: "paid",
-          paidAt: new Date(),
-          maxMediaCount: getMaxMediaCount(DEFAULT_EVENT),
+          plan: "free",
+          paymentStatus: "free",
+          paidAt: null,
+          maxMediaCount: EVENT_LIMITS.free.maxMediaCount,
         })
         .returning();
 

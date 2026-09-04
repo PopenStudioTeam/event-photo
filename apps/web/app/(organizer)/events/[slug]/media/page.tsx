@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
@@ -298,7 +298,7 @@ export default function EventMediaPage() {
               </span>
             </div>
             <Link
-              href="/settings"
+              href={`/events/${event.slug}/settings?tab=plan`}
               className="text-sm font-medium text-primary hover:underline"
             >
               Get More

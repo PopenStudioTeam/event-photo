@@ -14,11 +14,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { CoverUploadField } from "@/components/cover-upload-field";
+import { EventPlanPicker } from "@/components/event-plan-picker";
+import { type EventPlan, type PaymentStatus } from "@/lib/plans";
 import {
   ImageIcon,
   Monitor,
   Shield,
   SlidersHorizontal,
+  Sparkles,
   Users,
 } from "lucide-react";
 
@@ -39,11 +42,13 @@ type EventRecord = {
   coverOverlay: "none" | "gradient";
   coverImageUrl: string | null;
   uploadsEnabled: boolean;
-  plan: string;
+  plan: EventPlan;
+  paymentStatus: PaymentStatus;
 };
 
 const TABS = [
   { id: "general", label: "General", icon: SlidersHorizontal },
+  { id: "plan", label: "Plan", icon: Sparkles },
   { id: "appearance", label: "Appearance", icon: ImageIcon },
   { id: "photo-wall", label: "Photo Wall", icon: Monitor },
   { id: "moderation", label: "Moderation", icon: Shield },
@@ -81,6 +86,25 @@ export default function EventSettingsPage() {
     useState<"none" | "gradient">("none");
   const [formUploadsEnabled, setFormUploadsEnabled] = useState(true);
   const [togglingUploads, setTogglingUploads] = useState(false);
+  const [planMessage, setPlanMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const nextTab = searchParams.get("tab") as TabId | null;
+    if (nextTab && TABS.some((item) => item.id === nextTab)) {
+      setTab(nextTab);
+    }
+
+    const payment = searchParams.get("payment");
+    if (payment === "success") {
+      setPlanMessage(
+        "Payment submitted. Paid features activate after Whop confirms the payment."
+      );
+      return;
+    }
+    if (payment === "cancelled") {
+      setPlanMessage("Checkout was cancelled. No charge was made.");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const load = async () => {
@@ -241,7 +265,10 @@ export default function EventSettingsPage() {
           <button
             key={id}
             type="button"
-            onClick={() => setTab(id)}
+            onClick={() => {
+              setTab(id);
+              router.replace(`/events/${slug}/settings?tab=${id}`, { scroll: false });
+            }}
             className={cn(
               "inline-flex items-center gap-2 rounded-t-lg px-3 py-2 text-sm font-medium transition-colors",
               tab === id
@@ -378,7 +405,7 @@ export default function EventSettingsPage() {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Custom slugs are available on Pro.{" "}
-                  <Link href="/settings" className="text-primary hover:underline">
+                  <Link href={`/events/${slug}/settings?tab=plan`} className="text-primary hover:underline">
                     Upgrade
                   </Link>
                 </p>
@@ -390,6 +417,44 @@ export default function EventSettingsPage() {
             </form>
           </CardContent>
         </Card>
+      )}
+
+      {tab === "plan" && (
+        <div className="space-y-4">
+          {planMessage && (
+            <div className="rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+              {planMessage}
+            </div>
+          )}
+          <Card className="rounded-2xl">
+            <CardHeader>
+              <CardTitle className="text-base">Choose a plan</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
+              <p>
+                Plans are per event. Choose Premium ($30) or Pro ($50) once.
+                After payment that plan stays — there is no in-app upgrade,
+                because Whop would charge the new plan in full.
+              </p>
+              <p>
+                To switch plans, request a refund (chat or the fair refund
+                policy). When Whop refunds, this event returns to Free and you
+                can choose again.
+              </p>
+              <p className="capitalize">
+                Current plan: {event.plan} · {event.paymentStatus}
+              </p>
+            </CardContent>
+          </Card>
+          <EventPlanPicker
+            event={{
+              slug: event.slug,
+              name: event.name,
+              plan: event.plan,
+              paymentStatus: event.paymentStatus,
+            }}
+          />
+        </div>
       )}
 
       {tab === "appearance" && (
