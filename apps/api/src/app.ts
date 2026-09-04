@@ -11,7 +11,7 @@ import { qrRoutes } from "./routes/qr.js";
 import { googleAuthRoutes } from "./routes/google-auth.js";
 import { rateLimiter } from "hono-rate-limiter";
 import { billingRoutes } from "./routes/billing.js";
-import { stripeWebhookRoutes } from "./routes/stripe-webhook.js";
+import { whopWebhookRoutes } from "./routes/whop-webhook.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
 import { publicRoutes } from "./routes/public.js";
 
@@ -41,7 +41,7 @@ app.route("/auth", googleAuthRoutes);
 app.route("/events", eventRoutes);
 app.route("/qr", qrRoutes);
 app.route("/billing", billingRoutes);
-app.route("/webhooks", stripeWebhookRoutes);
+app.route("/webhooks", whopWebhookRoutes);
 app.route("/dashboard", dashboardRoutes);
 app.route("/public", publicRoutes);
 

@@ -99,8 +99,10 @@ export const events = pgTable("events", {
     .default("free")
     .notNull(),
 
-  stripeCheckoutSessionId: text("stripe_checkout_session_id").unique(),
-  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  whopCheckoutConfigurationId: text(
+    "whop_checkout_configuration_id"
+  ).unique(),
+  whopPaymentId: text("whop_payment_id"),
   paidAt: timestamp("paid_at", { withTimezone: true }),
 
   createdAt: timestamp("created_at", {

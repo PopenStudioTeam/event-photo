@@ -8,7 +8,11 @@ import { db } from "@app/shared/db";
 import { events } from "@app/shared/schema";
 import { createCheckoutSchema } from "@app/shared/validators";
 
-import { stripe, getStripePriceId } from "../lib/stripe.js";
+import {
+  whop,
+  getWhopPlanId,
+  resolveWhopCheckoutUrl,
+} from "../lib/whop.js";
 import { EVENT_LIMITS } from "../lib/event-limits.js";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -87,20 +91,15 @@ export const billingRoutes = new Hono()
         });
       }
 
-      const priceId = getStripePriceId(plan);
+      const planId = getWhopPlanId(plan);
 
-      const session = await stripe.checkout.sessions.create({
+      const checkout = await whop.checkoutConfigurations.create({
+        ...(process.env.WHOP_ACCOUNT_ID
+          ? { account_id: process.env.WHOP_ACCOUNT_ID }
+          : {}),
+        plan_id: planId,
         mode: "payment",
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
-        success_url: `${WEB_APP_URL}/settings?payment=success&event=${encodeURIComponent(
-          event.slug
-        )}`,
-        cancel_url: `${WEB_APP_URL}/settings?payment=cancelled&event=${encodeURIComponent(
+        redirect_url: `${WEB_APP_URL}/settings?payment=success&event=${encodeURIComponent(
           event.slug
         )}`,
         metadata: {
@@ -109,27 +108,25 @@ export const billingRoutes = new Hono()
           organizerId,
           plan,
         },
-        payment_intent_data: {
-          metadata: {
-            eventId: event.id,
-            eventSlug: event.slug,
-            organizerId,
-            plan,
-          },
-        },
       });
+
+      const checkoutUrl = resolveWhopCheckoutUrl(checkout.purchase_url);
+
+      if (!checkoutUrl) {
+        return c.json({ error: "Whop checkout URL was not returned" }, 500);
+      }
 
       await db
         .update(events)
         .set({
           paymentStatus: "pending",
-          stripeCheckoutSessionId: session.id,
+          whopCheckoutConfigurationId: checkout.id,
         })
         .where(eq(events.id, event.id));
 
       return c.json({
-        checkoutUrl: session.url,
-        sessionId: session.id,
+        checkoutUrl,
+        sessionId: checkout.id,
       });
     }
   )
@@ -163,7 +160,7 @@ export const billingRoutes = new Hono()
         plan: event.plan,
         paymentStatus: event.paymentStatus,
         paidAt: event.paidAt,
-        stripeCheckoutSessionId: event.stripeCheckoutSessionId,
+        whopCheckoutConfigurationId: event.whopCheckoutConfigurationId,
       });
     }
   );

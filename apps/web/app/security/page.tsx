@@ -45,7 +45,7 @@ export default function SecurityPage() {
         {
           heading: "Payments",
           paragraphs: [
-            "Payments are processed by Stripe, our third-party payment provider. We do not store full billing details on our servers. Stripe is PCI-DSS compliant — you can read more in [Stripe's security documentation].",
+            "Payments are processed by Whop, our third-party payment provider. We do not store full billing details on our servers. You can read more in [Whop's security documentation].",
           ],
         },
         {

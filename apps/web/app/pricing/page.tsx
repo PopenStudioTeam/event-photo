@@ -84,7 +84,7 @@ const faqs = [
   {
     question: "When do paid features become active?",
     answer:
-      "Paid features become active after Stripe confirms the payment through the secure payment webhook.",
+      "Paid features become active after Whop confirms the payment through the secure payment webhook.",
   },
 ];
 

@@ -62,7 +62,7 @@ export default function PrivacyPolicyPage() {
           ],
           bullets: [
             "Cloudflare R2 — used for storing uploaded photos and videos.",
-            "Stripe — used for processing payments for paid plans.",
+            "Whop — used for processing payments for paid plans.",
             "Google — used to offer sign-in with a Google account.",
             "[Your Database Host] — used for storing event and account records.",
             "[Any additional vendor, e.g. email delivery, analytics, or support chat provider]",

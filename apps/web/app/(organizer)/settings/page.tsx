@@ -95,13 +95,13 @@ export default function SettingsPage() {
       }
 
       if (!payload.checkoutUrl) {
-        throw new Error("Stripe Checkout URL was not returned.");
+        throw new Error("Whop Checkout URL was not returned.");
       }
 
       window.location.href = payload.checkoutUrl;
     } catch (err) {
       console.error(err);
-      reportApiError(err, "Unable to start Stripe Checkout.");
+      reportApiError(err, "Unable to start Whop Checkout.");
       setCheckoutLoading(null);
     }
   };
@@ -131,12 +131,12 @@ export default function SettingsPage() {
           type="password"
           value={bypassKey}
           onChange={(event) => setBypassKey(event.target.value)}
-          placeholder="Optional — skip Stripe if you have a key"
+          placeholder="Optional — skip Whop if you have a key"
           autoComplete="off"
           className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
         />
         <p className="text-xs text-muted-foreground">
-          Leave empty to pay with Stripe. A valid key unlocks Premium or Pro
+          Leave empty to pay with Whop. A valid key unlocks Premium or Pro
           without checkout.
         </p>
       </div>

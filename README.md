@@ -49,7 +49,7 @@ All variables are listed in [`.env.example`](.env.example). Minimum required for
 | `NEXT_PUBLIC_API_URL` | Web | API base URL |
 | `NEXT_PUBLIC_BASE_WEB_URL` | Web | Public event links and QR codes |
 
-Optional: `GOOGLE_CLIENT_ID` / `NEXT_PUBLIC_GOOGLE_CLIENT_ID` for Google login; Stripe keys for paid plans.
+Optional: `GOOGLE_CLIENT_ID` / `NEXT_PUBLIC_GOOGLE_CLIENT_ID` for Google login; Whop keys for paid plans.
 
 ## Main user flow
 
@@ -88,9 +88,9 @@ pnpm --filter @app/web start
 
 Point `CORS_ORIGIN` on the API to your web app origin. Set `BASE_WEB_URL` and `WEB_APP_URL` to the public web URL so QR codes and billing redirects are correct.
 
-### Stripe webhooks (optional)
+### Whop webhooks (optional)
 
-If using paid plans, configure a Stripe webhook to `https://your-api-host/webhooks/stripe` and set `STRIPE_WEBHOOK_SECRET`.
+If using paid plans, configure a Whop webhook to `https://your-api-host/webhooks/whop` and set `WHOP_WEBHOOK_SECRET`. Subscribe to `payment.succeeded`, `payment.failed`, `payment.canceled`, and `refund.created`.
 
 ## Project structure
 
