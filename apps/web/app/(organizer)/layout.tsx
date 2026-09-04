@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/sidebar/organizer-sidebar";
 import { TopBar } from "@/components/topbar/topbar";
@@ -11,31 +11,69 @@ import { ApiError } from "@/lib/api";
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const [allowed, setAllowed] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     const guard = async () => {
+      setAllowed(false);
+      setSessionError(null);
+
       if (!getToken()) {
         logoutAndRedirectToLogin();
         return;
       }
 
-      if (pathname === "/onboarding") return;
+      if (pathname === "/onboarding") {
+        if (!cancelled) setAllowed(true);
+        return;
+      }
 
       try {
         const me = await fetchAuthMe();
+        if (cancelled) return;
         saveOrganizer(me.organizer);
         if (me.needsOnboarding) {
           router.replace("/onboarding");
+          return;
         }
+        setAllowed(true);
       } catch (err) {
+        if (cancelled) return;
         if (err instanceof ApiError && err.status === 401) {
           logoutAndRedirectToLogin();
+          return;
         }
+        setSessionError(
+          "Could not verify your session. Check that the API is running, then refresh."
+        );
       }
     };
 
-    guard();
+    void guard();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router, pathname]);
+
+  if (sessionError) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center px-4 text-sm text-muted-foreground">
+        {sessionError}
+      </div>
+    );
+  }
+
+  if (!allowed) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center px-4 text-sm text-muted-foreground">
+        Checking your session…
+      </div>
+    );
+  }
 
   return (
     <div className="organizer-shell min-h-dvh bg-[radial-gradient(ellipse_at_top,_#E4D4FF_0%,_var(--background)_55%)] dark:bg-[radial-gradient(ellipse_at_top,_#3B1D6E_0%,_var(--background)_55%)]">

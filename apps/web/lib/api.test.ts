@@ -59,7 +59,7 @@ describe("apiFetch", () => {
 
     await expect(apiFetch("/events")).resolves.toEqual({ items: [] });
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://127.0.0.1:4000/events",
+      "/backend/events",
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: "Bearer abc",
@@ -78,7 +78,7 @@ describe("apiFetch", () => {
 
     await apiFetch("/e/wedding/media");
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://127.0.0.1:4000/e/wedding/media",
+      "/backend/e/wedding/media",
       expect.objectContaining({
         headers: expect.objectContaining({
           "X-Gallery-Token": "unlock-1",

@@ -17,7 +17,7 @@ import {
 import { EVENT_LIMITS } from "../lib/event-limits.js";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
-const WEB_APP_URL = process.env.WEB_APP_URL ?? "https://127.0.0.1:3000";
+const WEB_APP_URL = process.env.WEB_APP_URL ?? "https://127.0.0.1:3443";
 const PAYMENT_BYPASS_KEY = process.env.PAYMENT_BYPASS_KEY?.trim() ?? "";
 
 function paymentBypassMatches(provided: string | undefined) {

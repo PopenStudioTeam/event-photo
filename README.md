@@ -33,8 +33,8 @@ pnpm db:push
 4. Start the API and web app (two terminals):
 
 ```bash
-pnpm dev:api   # https://127.0.0.1:4000
-pnpm dev:web   # https://127.0.0.1:3000
+pnpm dev:api   # http://127.0.0.1:4000
+pnpm dev:web   # http://localhost:3000 (Whop return: https://127.0.0.1:3443)
 ```
 
 ## Environment variables

@@ -28,7 +28,7 @@ function resolveWebBaseUrl(c: {
     }
   }
 
-  return process.env.BASE_WEB_URL ?? "https://127.0.0.1:3000";
+  return process.env.BASE_WEB_URL ?? "http://localhost:3000";
 }
 
 function qrFilename(slug: string, name: string) {

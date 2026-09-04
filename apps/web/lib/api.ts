@@ -4,7 +4,7 @@ import { showErrorAlert } from "./error-alert";
 export { showErrorAlert } from "./error-alert";
 export { showSuccessToast } from "./success-toast";
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://127.0.0.1:4000";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/backend";
 
 export class ApiError extends Error {
   readonly status: number;
