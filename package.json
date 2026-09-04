@@ -8,6 +8,8 @@
     "dev:api": "pnpm --filter @app/api dev",
     "build": "pnpm -r build",
     "db:push": "pnpm --filter @app/shared db:push",
+    "test": "pnpm test:api && pnpm test:web",
+    "test:api": "pnpm --filter @app/api test",
     "test:web": "pnpm --filter @app/web test"
   }
 }

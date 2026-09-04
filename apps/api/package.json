@@ -8,7 +8,9 @@
     "dev": "pnpm -C ../../packages/shared run build && tsx watch --env-file=.env src/dev.ts",
     "build": "pnpm -C ../../packages/shared run build",
     "build:tsc": "pnpm run build && tsc -p tsconfig.json",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@app/shared": "workspace:*",
@@ -29,6 +31,7 @@
     "@types/qrcode": "^1.5.5",
     "qrcode": "^1.5.4",
     "tsx": "^4.23.5",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.11"
   }
 }

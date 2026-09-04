@@ -33,6 +33,14 @@ describe("organizerInitials", () => {
   it("uses the first two characters of a single part", () => {
     expect(organizerInitials("host@example.com")).toBe("HO");
   });
+
+  it("prefers a two-word display name", () => {
+    expect(organizerInitials("jane.doe@example.com", "Ada Lovelace")).toBe("AL");
+  });
+
+  it("uses the first two characters of a single-word name", () => {
+    expect(organizerInitials("host@example.com", "Ada")).toBe("AD");
+  });
 });
 
 describe("token storage", () => {

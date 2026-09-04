@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, apiFetch, getUserFacingErrorMessage } from "./api";
+import {
+  ApiError,
+  apiFetch,
+  apiFetchBlob,
+  apiFetchBlobWithProgress,
+  getUserFacingErrorMessage,
+  reportApiError,
+} from "./api";
 import { saveToken } from "./auth";
+import { setErrorAlertListener } from "./error-alert";
 
 describe("getUserFacingErrorMessage", () => {
   it("returns the fallback for non-API errors", () => {
@@ -102,5 +110,136 @@ describe("apiFetch", () => {
       status: 400,
       message: "Name is required",
     });
+  });
+
+  it("ends the session on 401 for protected paths", async () => {
+    saveToken("abc");
+    const replace = vi.fn();
+    vi.stubGlobal("location", { pathname: "/dashboard", replace });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: "Unauthorized" }),
+      })
+    );
+
+    await expect(apiFetch("/events")).rejects.toMatchObject({ status: 401 });
+    expect(localStorage.getItem("eventphoto_token")).toBeNull();
+    expect(replace).toHaveBeenCalledWith("/login");
+  });
+
+  it("keeps the session on 401 for public event paths", async () => {
+    saveToken("abc");
+    const replace = vi.fn();
+    vi.stubGlobal("location", { pathname: "/e/wedding", replace });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: "Unauthorized" }),
+      })
+    );
+
+    await expect(apiFetch("/e/wedding/media")).rejects.toMatchObject({
+      status: 401,
+    });
+    expect(localStorage.getItem("eventphoto_token")).toBe("abc");
+    expect(replace).not.toHaveBeenCalled();
+  });
+});
+
+describe("reportApiError", () => {
+  afterEach(() => {
+    setErrorAlertListener(null);
+  });
+
+  it("shows the user-facing message", () => {
+    const listener = vi.fn();
+    setErrorAlertListener(listener);
+    reportApiError(new ApiError(400, "Name is required"), "Failed");
+    expect(listener).toHaveBeenCalledWith("Name is required");
+  });
+});
+
+describe("apiFetchBlob", () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.unstubAllGlobals();
+  });
+
+  it("returns the response blob", async () => {
+    saveToken("abc");
+    const blob = new Blob(["png"], { type: "image/png" });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: async () => blob,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(apiFetchBlob("/qr/wedding")).resolves.toBe(blob);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/backend/qr/wedding",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer abc",
+        }),
+      })
+    );
+  });
+});
+
+describe("apiFetchBlobWithProgress", () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.unstubAllGlobals();
+  });
+
+  it("reports 0 then 100 when the body length is unknown", async () => {
+    const blob = new Blob(["data"]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: { get: () => null },
+        body: null,
+        blob: async () => blob,
+      })
+    );
+
+    const onProgress = vi.fn();
+    await expect(apiFetchBlobWithProgress("/events/a/zip", {}, onProgress)).resolves.toBe(
+      blob
+    );
+    expect(onProgress).toHaveBeenNthCalledWith(1, 0);
+    expect(onProgress).toHaveBeenLastCalledWith(100);
+  });
+
+  it("reports progress while reading the body", async () => {
+    const chunk = new Uint8Array([1, 2, 3, 4]);
+    const reader = {
+      read: vi
+        .fn()
+        .mockResolvedValueOnce({ done: false, value: chunk })
+        .mockResolvedValueOnce({ done: true, value: undefined }),
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: {
+          get: (name: string) =>
+            name === "Content-Length" ? String(chunk.length) : "application/zip",
+        },
+        body: { getReader: () => reader },
+      })
+    );
+
+    const onProgress = vi.fn();
+    const result = await apiFetchBlobWithProgress("/events/a/zip", {}, onProgress);
+    expect(result).toBeInstanceOf(Blob);
+    expect(onProgress).toHaveBeenCalledWith(100);
   });
 });
