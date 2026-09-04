@@ -31,9 +31,19 @@ const uploadRateLimiter = rateLimiter({
   skip: (c) => c.req.method !== "POST",
 });
 
+function corsOrigin() {
+  const raw = process.env.CORS_ORIGIN?.trim() ?? "*";
+  if (raw === "*") return "*";
+  const origins = raw
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  return origins.length <= 1 ? origins[0] ?? "*" : origins;
+}
+
 const app = new Hono();
 
-app.use("*", cors({ origin: process.env.CORS_ORIGIN ?? "*" }));
+app.use("*", cors({ origin: corsOrigin() }));
 
 app.get("/health", (c) => c.json({ ok: true }));
 app.route("/auth", authRoutes);

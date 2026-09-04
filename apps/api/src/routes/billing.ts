@@ -9,14 +9,15 @@ import { events } from "@app/shared/schema";
 import { createCheckoutSchema } from "@app/shared/validators";
 
 import {
-  whop,
+  createWhopCheckout,
   getWhopPlanId,
   resolveWhopCheckoutUrl,
+  WhopApiError,
 } from "../lib/whop.js";
 import { EVENT_LIMITS } from "../lib/event-limits.js";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
-const WEB_APP_URL = process.env.WEB_APP_URL ?? "http://localhost:3000";
+const WEB_APP_URL = process.env.WEB_APP_URL ?? "https://127.0.0.1:3000";
 const PAYMENT_BYPASS_KEY = process.env.PAYMENT_BYPASS_KEY?.trim() ?? "";
 
 function paymentBypassMatches(provided: string | undefined) {
@@ -92,28 +93,52 @@ export const billingRoutes = new Hono()
       }
 
       const planId = getWhopPlanId(plan);
+      const accountId = process.env.WHOP_ACCOUNT_ID?.trim();
 
-      const checkout = await whop.checkoutConfigurations.create({
-        ...(process.env.WHOP_ACCOUNT_ID
-          ? { account_id: process.env.WHOP_ACCOUNT_ID }
-          : {}),
-        plan_id: planId,
-        mode: "payment",
-        redirect_url: `${WEB_APP_URL}/settings?payment=success&event=${encodeURIComponent(
-          event.slug
-        )}`,
-        metadata: {
-          eventId: event.id,
-          eventSlug: event.slug,
-          organizerId,
-          plan,
-        },
-      });
+      let checkout;
+
+      try {
+        checkout = await createWhopCheckout({
+          planId,
+          accountId: accountId || undefined,
+          redirectUrl: `${WEB_APP_URL}/settings?payment=success&event=${encodeURIComponent(
+            event.slug
+          )}`,
+          metadata: {
+            eventId: event.id,
+            eventSlug: event.slug,
+            organizerId,
+            plan,
+          },
+        });
+      } catch (error) {
+        const status = error instanceof WhopApiError ? error.status : undefined;
+
+        console.error("Whop checkout failed", error);
+
+        if (status === 401) {
+          return c.json(
+            {
+              error:
+                "Whop rejected the API key. In the Whop dashboard go to Developer → API keys, create an Account API key (not an App key), set WHOP_API_KEY, and restart the API.",
+            },
+            400
+          );
+        }
+
+        return c.json(
+          {
+            error:
+              "Whop checkout could not be created. Check WHOP_API_KEY, WHOP_ACCOUNT_ID, and the plan IDs.",
+          },
+          400
+        );
+      }
 
       const checkoutUrl = resolveWhopCheckoutUrl(checkout.purchase_url);
 
       if (!checkoutUrl) {
-        return c.json({ error: "Whop checkout URL was not returned" }, 500);
+        return c.json({ error: "Whop checkout URL was not returned" }, 400);
       }
 
       await db

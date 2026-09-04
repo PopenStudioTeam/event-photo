@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { apiFetch, reportApiError } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ export default function SettingsPage() {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [bypassKey, setBypassKey] = useState("");
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const load = async () => {
@@ -65,6 +67,24 @@ export default function SettingsPage() {
 
     load();
   }, []);
+
+  useEffect(() => {
+    const payment = searchParams.get("payment");
+    const eventSlug = searchParams.get("event");
+
+    if (payment === "success") {
+      setMessage(
+        eventSlug
+          ? `Payment submitted for ${eventSlug}. Paid features activate after Whop confirms the payment.`
+          : "Payment submitted. Paid features activate after Whop confirms the payment."
+      );
+      return;
+    }
+
+    if (payment === "cancelled") {
+      setMessage("Checkout was cancelled. No charge was made.");
+    }
+  }, [searchParams]);
 
   const startCheckout = async (
     eventSlug: string,

@@ -33,8 +33,8 @@ pnpm db:push
 4. Start the API and web app (two terminals):
 
 ```bash
-pnpm dev:api   # http://localhost:4000
-pnpm dev:web   # http://localhost:3000
+pnpm dev:api   # https://127.0.0.1:4000
+pnpm dev:web   # https://127.0.0.1:3000
 ```
 
 ## Environment variables
@@ -90,7 +90,7 @@ Point `CORS_ORIGIN` on the API to your web app origin. Set `BASE_WEB_URL` and `W
 
 ### Whop webhooks (optional)
 
-If using paid plans, configure a Whop webhook to `https://your-api-host/webhooks/whop` and set `WHOP_WEBHOOK_SECRET`. Subscribe to `payment.succeeded`, `payment.failed`, `payment.canceled`, and `refund.created`.
+If using paid plans, configure a Whop webhook to `https://your-api-host/webhooks/whop` and set `WHOP_WEBHOOK_SECRET`. Subscribe to `payment.succeeded`, `payment.failed`, `payment.canceled`, and `refund.created`. For sandbox, set `WHOP_SANDBOX=true` and create the key/webhook at [sandbox.whop.com](https://sandbox.whop.com).
 
 ## Project structure
 
