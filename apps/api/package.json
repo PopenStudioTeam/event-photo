@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "pnpm -C ../../packages/shared run build && tsx watch --env-file=.env src/dev.ts",
     "build": "pnpm -C ../../packages/shared run build",
-    "build:tsc": "pnpm run build && tsc -p tsconfig.json",
+    "build:tsc": "pnpm run build && tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "test": "vitest run",
     "test:watch": "vitest"
