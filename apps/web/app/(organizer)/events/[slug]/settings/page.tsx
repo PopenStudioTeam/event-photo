@@ -161,6 +161,48 @@ export default function EventSettingsPage() {
   }, [searchParams, slug]);
 
   useEffect(() => {
+    if (!event || !slug) return;
+    const payment = searchParams.get("payment");
+    if (payment === "success") return;
+    if (event.paymentStatus !== "pending") return;
+
+    let cancelled = false;
+
+    const closeAbandonedCheckout = async () => {
+      try {
+        const updated = (await apiFetch(
+          `/billing/events/${slug}/checkout/abandon`,
+          { method: "POST" }
+        )) as { paymentStatus: PaymentStatus; plan: EventPlan };
+
+        if (cancelled) return;
+
+        setEvent((prev) =>
+          prev
+            ? {
+                ...prev,
+                plan: updated.plan,
+                paymentStatus: updated.paymentStatus,
+              }
+            : prev
+        );
+        setPlanMessage(
+          payment === "cancelled"
+            ? "Checkout was cancelled. No charge was made."
+            : "Checkout was closed. You can choose a plan again."
+        );
+      } catch {
+        // Plan picker still works if Whop close fails.
+      }
+    };
+
+    void closeAbandonedCheckout();
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id, event?.paymentStatus, slug, searchParams]);
+
+  useEffect(() => {
     const load = async () => {
       try {
         const events = (await apiFetch("/events")) as EventRecord[];
@@ -519,6 +561,11 @@ export default function EventSettingsPage() {
                 To switch plans, request a refund (chat or the fair refund
                 policy). When Whop refunds, this event returns to Free and you
                 can choose again.
+              </p>
+              <p>
+                If you leave Whop without paying, that checkout is closed so
+                the old payment link cannot be used. You can choose a plan
+                again from this page.
               </p>
               <p className="capitalize">
                 Current plan: {event.plan} · {event.paymentStatus}

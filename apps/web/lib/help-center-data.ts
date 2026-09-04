@@ -115,7 +115,7 @@ export const helpCategories: HelpCategory[] = [
             subtitle: "Getting the full collection off the platform.",
             date: "2026-04-03",
             body: [
-              "Yes. From your event dashboard you can download the entire gallery as a ZIP file in original quality, at any time.",
+              "ZIP download of the full gallery is included on Premium and Pro. Free events can still download photos and videos one at a time from Photos & Videos.",
             ],
           },
           {

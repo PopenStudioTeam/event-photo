@@ -41,6 +41,7 @@ type PublicEvent = {
   coverLayout: "banner" | "card";
   coverOverlay: "none" | "gradient";
   moderationEnabled?: boolean;
+  likesEnabled?: boolean;
 };
 
 type MediaItem = {
@@ -304,6 +305,11 @@ export default function GuestEventPage() {
     e?.preventDefault();
     if (!event || !event.uploadsEnabled || uploads.length === 0) return;
 
+    if (event.povEnabled && event.povMaxPerGuest > 0 && !guestId) {
+      showErrorAlert("Guest identity is required before uploading in POV mode.");
+      return;
+    }
+
     setUploading(true);
     setUploadSuccess(null);
 
@@ -358,7 +364,7 @@ export default function GuestEventPage() {
   };
 
   const handleLike = async (item: MediaItem) => {
-    if (!guestId || item.liked) return;
+    if (!event?.likesEnabled || !guestId || item.liked) return;
 
     try {
       const res = await apiFetch(`/e/${slug}/media/${item.id}/like`, {
@@ -782,6 +788,7 @@ export default function GuestEventPage() {
                         isLightAlbum ? "border-border bg-card" : "border-white/10"
                       )}
                     >
+                      {event.likesEnabled ? (
                       <Button
                         type="button"
                         variant="ghost"
@@ -810,6 +817,9 @@ export default function GuestEventPage() {
                           {item.likesCount}
                         </span>
                       </Button>
+                      ) : (
+                        <span />
+                      )}
                       {item.guestName && (
                         <span
                           className={cn(
@@ -1030,10 +1040,15 @@ export default function GuestEventPage() {
               Previous
             </Button>
 
+            {event.likesEnabled && (
             <Button
               type="button"
               size="sm"
-              disabled={!currentLightboxItem || !guestId || currentLightboxItem.liked}
+              disabled={
+                !currentLightboxItem ||
+                !guestId ||
+                currentLightboxItem.liked
+              }
               onClick={() =>
                 currentLightboxItem && handleLike(currentLightboxItem)
               }
@@ -1045,6 +1060,7 @@ export default function GuestEventPage() {
               />
               Like ({currentLightboxItem?.likesCount ?? 0})
             </Button>
+            )}
 
             <div className="text-xs text-muted-foreground">
               {media.length > 0 ? `${lightboxIndex + 1} / ${media.length}` : "0 / 0"}

@@ -59,6 +59,7 @@ export function EventPlanPicker({ event }: EventPlanPickerProps) {
     const checkout = searchParams.get("checkout");
     if (autoCheckoutStarted.current) return;
     if (event.paymentStatus === "paid") return;
+    if (searchParams.get("payment") === "cancelled") return;
     if (checkout !== "premium" && checkout !== "pro") return;
     autoCheckoutStarted.current = true;
     void startCheckout(checkout);

@@ -65,6 +65,8 @@ describe("canUseFeature", () => {
   it("allows premium features after payment", () => {
     const paidPremium = event({ plan: "premium", paymentStatus: "paid" });
     expect(canUseFeature(paidPremium, "moderation")).toBe(true);
+    expect(canUseFeature(paidPremium, "zipDownload")).toBe(true);
+    expect(canUseFeature(paidPremium, "guestLikes")).toBe(true);
     expect(canUseFeature(paidPremium, "pov")).toBe(false);
   });
 

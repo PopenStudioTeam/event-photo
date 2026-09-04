@@ -15,7 +15,7 @@ import type { Faq } from "@/components/marketing/faq-split";
 
 export const allYouNeedFeatures: AllYouNeedItem[] = [
   { icon: ImageIcon, title: "Digital album", text: "One shared gallery for every photo and video." },
-  { icon: Download, title: "One-click download", text: "Grab the full collection in original quality." },
+  { icon: Download, title: "One-click download", text: "Premium and Pro can grab the full gallery as a ZIP. Free can download items one at a time." },
   { icon: QrCode, title: "No app required", text: "Guests upload straight from their phone browser." },
   { icon: QrCode, title: "QR code templates", text: "Print-ready templates for cards, signs, and screens." },
   { icon: MonitorPlay, title: "Live photo wall", text: "Show uploads on a screen as they arrive." },
@@ -55,7 +55,7 @@ export const defaultFaqs: Faq[] = [
   {
     question: "Can I download all guests' photos & videos?",
     answer:
-      "Yes. You can download the full collection in original quality at any time.",
+      "Premium and Pro can download the full gallery as a ZIP. On Free you can still download photos and videos one at a time.",
   },
   {
     question: "Is it better than other photo-sharing apps?",

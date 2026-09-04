@@ -94,6 +94,23 @@ describe("createWhopCheckout", () => {
     );
   });
 
+  it("deletes a checkout configuration", async () => {
+    vi.resetModules();
+    process.env.WHOP_API_KEY = "whop_key";
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { deleteWhopCheckout } = await import("./whop.js");
+    await expect(deleteWhopCheckout("chk_1")).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.whop.com/api/v1/checkout_configurations/chk_1",
+      expect.objectContaining({ method: "DELETE" })
+    );
+  });
+
   it("throws WhopApiError when Whop rejects the request", async () => {
     vi.resetModules();
     process.env.WHOP_API_KEY = "whop_key";

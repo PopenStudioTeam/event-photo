@@ -44,6 +44,8 @@ const NEW_EVENT = {
 const PLAN_FEATURE_ERRORS = {
   passwordProtection: "Password protection requires a Premium or Pro plan",
   customization: "Theme customization requires a Premium or Pro plan",
+  zipDownload: "ZIP download requires a Premium or Pro plan",
+  guestLikes: "Guest likes require a Premium or Pro plan",
   pov: "POV mode requires a Pro plan",
   revealDate: "Gallery reveal date requires a Pro plan",
   moderation: "Media moderation requires a Premium or Pro plan",
@@ -701,12 +703,13 @@ export const publicEventRoutes = new Hono()
       protected: event.protected,
       primaryColor: event.primaryColor,
       backgroundVariant: event.backgroundVariant,
-      povEnabled: event.povEnabled,
+      povEnabled: canUseFeature(event, "pov") && event.povEnabled,
       povMaxPerGuest: event.povMaxPerGuest,
       povRevealAt: event.povRevealAt,
       coverLayout: event.coverLayout,
       coverOverlay: event.coverOverlay,
       moderationEnabled: canUseFeature(event, "moderation"),
+      likesEnabled: canUseFeature(event, "guestLikes"),
     });
   })
   .post("/:slug/media", zValidator("json", createMediaSchema), async (c) => {
@@ -732,23 +735,27 @@ export const publicEventRoutes = new Hono()
       return c.json({ error: "Uploads are closed for this event" }, 400);
     }
 
-    // POV per-guest limit
-    if (event.povEnabled && event.povMaxPerGuest > 0) {
-      const povFilter = guestId
-        ? eq(media.guestId, guestId)
-        : guestName
-          ? eq(media.guestName, guestName)
-          : null;
+    // POV per-guest limit — guestId is required so the cap cannot be skipped
+    const povActive =
+      canUseFeature(event, "pov") &&
+      event.povEnabled &&
+      event.povMaxPerGuest > 0;
 
-      if (povFilter) {
-        const [guestCountRow] = await db
-          .select({ count: count() })
-          .from(media)
-          .where(and(eq(media.eventId, event.id), povFilter));
+    if (povActive) {
+      if (!guestId) {
+        return c.json(
+          { error: "Guest identity is required for POV uploads" },
+          400
+        );
+      }
 
-        if (guestCountRow.count >= event.povMaxPerGuest) {
-          return c.json({ error: "You have used all your shots for this event" }, 400);
-        }
+      const [guestCountRow] = await db
+        .select({ count: count() })
+        .from(media)
+        .where(and(eq(media.eventId, event.id), eq(media.guestId, guestId)));
+
+      if (guestCountRow.count >= event.povMaxPerGuest) {
+        return c.json({ error: "You have used all your shots for this event" }, 400);
       }
     }
 
@@ -913,6 +920,10 @@ export const publicEventRoutes = new Hono()
 
     if (!(await hasGalleryAccess(c, event))) {
       return c.json({ error: "Gallery is protected" }, 403);
+    }
+
+    if (!canUseFeature(event, "guestLikes")) {
+      return c.json({ error: PLAN_FEATURE_ERRORS.guestLikes }, 403);
     }
 
     const [item] = await db

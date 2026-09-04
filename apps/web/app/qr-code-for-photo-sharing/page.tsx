@@ -187,7 +187,7 @@ export default function QrCodeForPhotoSharingPage() {
         {
           question: "Can I download all guests' photos & videos?",
           answer:
-            "Yes, at any time, in original quality, as a single download.",
+            "Premium and Pro can download the full gallery as a ZIP. Free can still download items one at a time.",
         },
         {
           question: "Is it better than other photo sharing apps?",

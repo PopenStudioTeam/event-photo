@@ -8,6 +8,8 @@ export const EVENT_LIMITS = {
     moderation: false,
     passwordProtection: false,
     customization: false,
+    zipDownload: false,
+    guestLikes: false,
     pov: false,
     revealDate: false,
   },
@@ -16,6 +18,8 @@ export const EVENT_LIMITS = {
     moderation: true,
     passwordProtection: true,
     customization: true,
+    zipDownload: true,
+    guestLikes: true,
     pov: false,
     revealDate: false,
   },
@@ -24,6 +28,8 @@ export const EVENT_LIMITS = {
     moderation: true,
     passwordProtection: true,
     customization: true,
+    zipDownload: true,
+    guestLikes: true,
     pov: true,
     revealDate: true,
   },
@@ -52,6 +58,8 @@ export function canUseFeature(
     | "moderation"
     | "passwordProtection"
     | "customization"
+    | "zipDownload"
+    | "guestLikes"
     | "pov"
     | "revealDate"
 ) {

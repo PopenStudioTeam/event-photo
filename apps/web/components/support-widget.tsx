@@ -22,7 +22,7 @@ const quickAnswers = [
   {
     question: "Can I download everything my guests upload?",
     answer:
-      "Yes, you can download the full collection in original quality at any time.",
+      "Premium and Pro can download everything as a ZIP. On Free you can still download items one at a time.",
   },
 ];
 

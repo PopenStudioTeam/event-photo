@@ -168,7 +168,7 @@ export default function QrCodeForWeddingPicturesPage() {
         {
           question: "Can I download all guests' photos & videos?",
           answer:
-            "Yes, at any time, in original quality, as a single download.",
+            "Premium and Pro can download the full gallery as a ZIP. Free can still download items one at a time.",
         },
         {
           question: "My wedding is more than one day — can I still use it?",

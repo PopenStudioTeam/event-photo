@@ -9,6 +9,7 @@ import { createCheckoutSchema } from "@app/shared/validators";
 
 import {
   createWhopCheckout,
+  deleteWhopCheckout,
   getWhopPlanId,
   resolveWhopCheckoutUrl,
   WhopApiError,
@@ -18,7 +19,80 @@ import { canPurchasePlan } from "../lib/event-limits.js";
 const JWT_SECRET = process.env.JWT_SECRET!;
 const WEB_APP_URL = process.env.WEB_APP_URL ?? "https://127.0.0.1:3443";
 
+type EventRow = typeof events.$inferSelect;
+
+async function closeOpenCheckout(event: EventRow) {
+  if (event.paymentStatus === "paid") {
+    return event;
+  }
+
+  if (event.whopCheckoutConfigurationId) {
+    try {
+      await deleteWhopCheckout(event.whopCheckoutConfigurationId);
+    } catch (error) {
+      console.error("Failed to close Whop checkout", error);
+    }
+  }
+
+  if (
+    event.paymentStatus !== "pending" &&
+    event.paymentStatus !== "failed" &&
+    !event.whopCheckoutConfigurationId
+  ) {
+    return event;
+  }
+
+  const nextStatus =
+    event.paymentStatus === "refunded" ? "refunded" : "free";
+
+  const [updated] = await db
+    .update(events)
+    .set({
+      paymentStatus: nextStatus,
+      whopCheckoutConfigurationId: null,
+    })
+    .where(
+      and(eq(events.id, event.id), eq(events.paymentStatus, event.paymentStatus))
+    )
+    .returning();
+
+  return updated ?? event;
+}
+
 export const billingRoutes = new Hono()
+  .post(
+    "/events/:slug/checkout/abandon",
+    jwt({ secret: JWT_SECRET, alg: "HS256" }),
+    async (c) => {
+      const { sub: organizerId } = c.get("jwtPayload") as {
+        sub: string;
+      };
+
+      const slug = c.req.param("slug");
+
+      const [event] = await db
+        .select()
+        .from(events)
+        .where(
+          and(eq(events.slug, slug), eq(events.organizerId, organizerId))
+        );
+
+      if (!event) {
+        return c.json({ error: "Event not found" }, 404);
+      }
+
+      const updated = await closeOpenCheckout(event);
+
+      return c.json({
+        eventId: updated.id,
+        slug: updated.slug,
+        plan: updated.plan,
+        paymentStatus: updated.paymentStatus,
+        paidAt: updated.paidAt,
+        whopCheckoutConfigurationId: updated.whopCheckoutConfigurationId,
+      });
+    }
+  )
   .post(
     "/events/:slug/checkout",
     jwt({ secret: JWT_SECRET, alg: "HS256" }),
@@ -53,6 +127,23 @@ export const billingRoutes = new Hono()
                 ? "This event is already on this plan"
                 : "This event is already paid. Choose Premium or Pro before checkout — Whop charges each plan in full, so we do not offer upgrades.",
             plan: event.plan,
+          },
+          400
+        );
+      }
+
+      await closeOpenCheckout(event);
+
+      const [latest] = await db
+        .select()
+        .from(events)
+        .where(eq(events.id, event.id));
+
+      if (!latest || latest.paymentStatus === "paid") {
+        return c.json(
+          {
+            error: "This event is already paid.",
+            plan: latest?.plan ?? event.plan,
           },
           400
         );

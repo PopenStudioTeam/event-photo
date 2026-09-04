@@ -24,6 +24,8 @@ export const EVENT_PLANS = {
       "Content moderation",
       "Password-protected gallery",
       "Custom cover and colors",
+      "ZIP download",
+      "Guest likes",
     ],
   },
   pro: {

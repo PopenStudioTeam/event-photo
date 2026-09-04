@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
@@ -16,6 +16,7 @@ import {
   apiFetch,
   apiFetchBlobWithProgress,
   reportApiError,
+  showErrorAlert,
 } from "@/lib/api";
 import { useBaseWebUrl } from "@/lib/use-base-web-url";
 import { Button } from "@/components/ui/button";
@@ -29,12 +30,14 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { EventSlideshowOverlay } from "@/components/event-slideshow-overlay";
+import { eventHasPaidPlan, type EventPlan, type PaymentStatus } from "@/lib/plans";
 
 type EventRecord = {
   id: string;
   name: string;
   slug: string;
-  plan: string;
+  plan: EventPlan;
+  paymentStatus: PaymentStatus;
   maxMediaCount: number;
   mediaCount?: number;
 };
@@ -149,6 +152,10 @@ export default function EventMediaPage() {
 
   const handleDownloadAll = async () => {
     if (!event || filteredMedia.length === 0 || downloadingZip) return;
+    if (!eventHasPaidPlan(event.plan, event.paymentStatus)) {
+      showErrorAlert("ZIP download requires a Premium or Pro plan");
+      return;
+    }
     setDownloadingZip(true);
     try {
       const zip = new JSZip();
@@ -214,6 +221,7 @@ export default function EventMediaPage() {
   }
 
   const guestUploadUrl = `${baseWebUrl}/e/${event.slug}`;
+  const canZipDownload = eventHasPaidPlan(event.plan, event.paymentStatus);
 
   return (
     <div className="space-y-6">
@@ -237,6 +245,7 @@ export default function EventMediaPage() {
                 <Upload className="h-4 w-4" />
                 Upload Photos
               </a>
+              {canZipDownload ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -247,6 +256,14 @@ export default function EventMediaPage() {
                 <Download className="mr-1.5 h-4 w-4" />
                 {downloadingZip ? "Downloading…" : "Download All"}
               </Button>
+              ) : (
+                <Link
+                  href={`/events/${event.slug}/settings?tab=plan`}
+                  className="inline-flex h-8 items-center justify-center rounded-xl border px-3 text-sm font-medium hover:bg-muted"
+                >
+                  ZIP download on Premium
+                </Link>
+              )}
               <Button
                 variant="outline"
                 size="sm"

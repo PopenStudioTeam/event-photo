@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 
 import { db } from "@app/shared/db";
 import { events } from "@app/shared/schema";
@@ -51,16 +51,6 @@ async function markEventPaid(options: {
     .where(eq(events.id, options.eventId));
 }
 
-async function markEventStatus(
-  eventId: string,
-  paymentStatus: "failed" | "refunded"
-) {
-  await db
-    .update(events)
-    .set({ paymentStatus })
-    .where(eq(events.id, eventId));
-}
-
 export const whopWebhookRoutes = new Hono().post("/whop", async (c) => {
   const rawBody = await c.req.text();
   const headers = Object.fromEntries(c.req.raw.headers);
@@ -104,8 +94,7 @@ export const whopWebhookRoutes = new Hono().post("/whop", async (c) => {
         break;
       }
 
-      case "payment.failed":
-      case "payment.canceled": {
+      case "payment.failed": {
         const data = asRecord(webhookEvent.data);
 
         if (!data) {
@@ -115,7 +104,54 @@ export const whopWebhookRoutes = new Hono().post("/whop", async (c) => {
         const eventId = asString(readMetadata(data).eventId);
 
         if (eventId) {
-          await markEventStatus(eventId, "failed");
+          await db
+            .update(events)
+            .set({
+              paymentStatus: "failed",
+              whopCheckoutConfigurationId: null,
+            })
+            .where(
+              and(eq(events.id, eventId), ne(events.paymentStatus, "paid"))
+            );
+        }
+
+        break;
+      }
+
+      case "payment.canceled": {
+        const data = asRecord(webhookEvent.data);
+
+        if (!data) {
+          break;
+        }
+
+        const metadata = readMetadata(data);
+        const eventId = asString(metadata.eventId);
+        const checkoutId = asString(data.checkout_configuration_id);
+
+        if (eventId) {
+          await db
+            .update(events)
+            .set({
+              paymentStatus: "free",
+              whopCheckoutConfigurationId: null,
+            })
+            .where(
+              and(eq(events.id, eventId), ne(events.paymentStatus, "paid"))
+            );
+        } else if (checkoutId) {
+          await db
+            .update(events)
+            .set({
+              paymentStatus: "free",
+              whopCheckoutConfigurationId: null,
+            })
+            .where(
+              and(
+                eq(events.whopCheckoutConfigurationId, checkoutId),
+                ne(events.paymentStatus, "paid")
+              )
+            );
         }
 
         break;
