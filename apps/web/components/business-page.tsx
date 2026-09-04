@@ -166,7 +166,8 @@ const businessFaqs = [
   },
   {
     question: "Can I change my plan later?",
-    answer: "Yes, you can upgrade or downgrade your plan at any time.",
+    answer:
+      "The Business monthly plans on this page are not sold in the app yet. Per-event Premium and Pro cannot be switched in-app after payment; request a Whop refund, then choose again.",
   },
   {
     question: "What counts as an active event?",

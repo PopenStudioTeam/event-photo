@@ -15,7 +15,7 @@ import {
   guestMediaQuerySchema,
   likeMediaSchema,
 } from "@app/shared/validators";
-import { count, desc, eq, lt, and, sql, ne, or, ilike, inArray } from "drizzle-orm";
+import { count, desc, eq, lt, and, sql, or, ilike, inArray } from "drizzle-orm";
 import { R2_BUCKET, getSignedReadUrl, getSignedUploadUrl, r2 } from "../lib/r2.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
 import {
@@ -245,6 +245,10 @@ export const eventRoutes = new Hono()
         return c.json({ error: "Event not found" }, 404);
       }
 
+      if (!canUseFeature(event, "customization")) {
+        return c.json({ error: PLAN_FEATURE_ERRORS.customization }, 403);
+      }
+
       const key = `events/${event.id}/cover-${Date.now()}`;
       const command = new PutObjectCommand({
         Bucket: R2_BUCKET,
@@ -283,6 +287,9 @@ export const eventRoutes = new Hono()
         patch.eventDate = new Date(updates.eventDate);
       }
       if (updates.coverImageKey) {
+        if (!canUseFeature(event, "customization")) {
+          return c.json({ error: PLAN_FEATURE_ERRORS.customization }, 403);
+        }
         if (event.coverImageKey && event.coverImageKey !== updates.coverImageKey) {
           await r2.send(
             new DeleteObjectCommand({
@@ -577,10 +584,6 @@ export const eventRoutes = new Hono()
         return c.json({ error: "Event not found" }, 404);
       }
 
-      if (!canUseFeature(event, "moderation")) {
-        return c.json({ error: PLAN_FEATURE_ERRORS.moderation }, 403);
-      }
-
       const rows = await db
         .select()
         .from(media)
@@ -629,10 +632,6 @@ export const eventRoutes = new Hono()
         return c.json({ error: "Event not found" }, 404);
       }
 
-      if (!canUseFeature(event, "moderation")) {
-        return c.json({ error: PLAN_FEATURE_ERRORS.moderation }, 403);
-      }
-
       const [item] = await db
         .select()
         .from(media)
@@ -662,10 +661,6 @@ export const eventRoutes = new Hono()
       const [event] = await db.select().from(events).where(eq(events.slug, slug));
       if (!event || event.organizerId !== organizerId) {
         return c.json({ error: "Event not found" }, 404);
-      }
-
-      if (!canUseFeature(event, "moderation")) {
-        return c.json({ error: PLAN_FEATURE_ERRORS.moderation }, 403);
       }
 
       const [item] = await db
@@ -836,9 +831,7 @@ export const publicEventRoutes = new Hono()
 
     const whereClause = and(
       eq(media.eventId, event.id),
-      canUseFeature(event, "moderation")
-        ? eq(media.status, "approved")
-        : ne(media.status, "rejected")
+      eq(media.status, "approved")
     );
 
     if (event.povEnabled && revealAt && now < revealAt) {

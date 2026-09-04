@@ -61,6 +61,21 @@ export function isCurrentPaidPlan(
   return paymentStatus === "paid" && current === target;
 }
 
-export function eventPlanSettingsPath(slug: string) {
-  return `/events/${slug}/settings?tab=plan`;
+export function eventHasPaidPlan(plan: EventPlan, paymentStatus: PaymentStatus) {
+  return (
+    paymentStatus === "paid" && (plan === "premium" || plan === "pro")
+  );
+}
+
+export function eventHasProPlan(plan: EventPlan, paymentStatus: PaymentStatus) {
+  return paymentStatus === "paid" && plan === "pro";
+}
+
+export function eventPlanSettingsPath(
+  slug: string,
+  checkout?: PaidEventPlan
+) {
+  const params = new URLSearchParams({ tab: "plan" });
+  if (checkout) params.set("checkout", checkout);
+  return `/events/${slug}/settings?${params.toString()}`;
 }

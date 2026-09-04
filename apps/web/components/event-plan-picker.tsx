@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { apiFetch, reportApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,9 +27,11 @@ type EventPlanPickerProps = {
 };
 
 export function EventPlanPicker({ event }: EventPlanPickerProps) {
+  const searchParams = useSearchParams();
   const [checkoutLoading, setCheckoutLoading] = useState<PaidEventPlan | null>(
     null
   );
+  const autoCheckoutStarted = useRef(false);
 
   const startCheckout = async (plan: PaidEventPlan) => {
     setCheckoutLoading(plan);
@@ -51,6 +54,15 @@ export function EventPlanPicker({ event }: EventPlanPickerProps) {
       setCheckoutLoading(null);
     }
   };
+
+  useEffect(() => {
+    const checkout = searchParams.get("checkout");
+    if (autoCheckoutStarted.current) return;
+    if (event.paymentStatus === "paid") return;
+    if (checkout !== "premium" && checkout !== "pro") return;
+    autoCheckoutStarted.current = true;
+    void startCheckout(checkout);
+  }, [event.paymentStatus, event.slug, searchParams]);
 
   return (
     <div className="grid gap-4 md:grid-cols-3">

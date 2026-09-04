@@ -114,7 +114,6 @@ export const likeMediaSchema = z.object({
 
 export const createCheckoutSchema = z.object({
   plan: z.enum(["premium", "pro"]),
-  bypassKey: z.string().trim().min(1).max(200).optional(),
 });
 
 export const guideSlugParamSchema = z

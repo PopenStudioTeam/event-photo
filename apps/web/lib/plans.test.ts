@@ -30,4 +30,10 @@ describe("eventPlanSettingsPath", () => {
       "/events/wedding/settings?tab=plan"
     );
   });
+
+  it("can start checkout for a paid plan", () => {
+    expect(eventPlanSettingsPath("wedding", "pro")).toBe(
+      "/events/wedding/settings?tab=plan&checkout=pro"
+    );
+  });
 });

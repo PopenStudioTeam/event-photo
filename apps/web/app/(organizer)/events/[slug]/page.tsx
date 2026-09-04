@@ -29,13 +29,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { renderQrCard } from "@/lib/qr-card-renderer";
 import { CoverUploadField } from "@/components/cover-upload-field";
+import { eventHasPaidPlan, type EventPlan, type PaymentStatus } from "@/lib/plans";
 
 type EventRecord = {
   id: string;
   name: string;
   slug: string;
   category: string;
-  plan: string;
+  plan: EventPlan;
+  paymentStatus: PaymentStatus;
   eventDate: string | null;
   coverImageUrl: string | null;
   coverLayout?: "banner" | "card";
@@ -152,21 +154,28 @@ export default function EventDashboardPage() {
     event.coverOverlay === "gradient"
       ? "absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"
       : "";
+  const hasPaid = eventHasPaidPlan(event.plan, event.paymentStatus);
+  const upgradeHref = `/events/${event.slug}/settings?tab=plan`;
 
   return (
     <div className="space-y-6">
-      {event.plan === "free" && (
+      {!hasPaid && (
       <div className="rounded-2xl border border-[color-mix(in_srgb,var(--brand-champagne-gold)_35%,transparent)] bg-[color-mix(in_srgb,var(--brand-champagne-gold)_12%,var(--background))] px-4 py-3 text-sm text-foreground">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            You&apos;re currently using the limited free plan. Upgrade your event
-            to unlock all features.
+            {event.paymentStatus === "pending"
+              ? "Payment is still processing. Paid features unlock after Whop confirms it."
+              : event.paymentStatus === "failed"
+                ? "The last checkout did not go through. You can try again from the Plan tab."
+                : event.paymentStatus === "refunded"
+                  ? "This event is back on Free after a refund. Choose Premium or Pro again from the Plan tab."
+                  : "You're currently using the limited free plan. Upgrade your event to unlock all features."}
           </p>
           <Link
-            href={`/events/${event.slug}/settings?tab=plan`}
+            href={upgradeHref}
             className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[color-mix(in_srgb,var(--brand-champagne-gold)_40%,transparent)] bg-card px-3 text-sm hover:bg-muted"
           >
-            Upgrade Plan
+            {event.paymentStatus === "pending" ? "View plan" : "Upgrade Plan"}
           </Link>
         </div>
       </div>
@@ -189,6 +198,7 @@ export default function EventDashboardPage() {
       <Card className="overflow-hidden rounded-2xl border-border/70 p-0">
         <CoverUploadField
           slug={event.slug}
+          disabled={!hasPaid}
           onUploaded={(updated) =>
             setEvent((prev) => (prev ? { ...prev, ...updated } : prev))
           }

@@ -15,14 +15,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { CoverUploadField } from "@/components/cover-upload-field";
 import { EventPlanPicker } from "@/components/event-plan-picker";
-import { type EventPlan, type PaymentStatus } from "@/lib/plans";
+import {
+  eventHasPaidPlan,
+  eventHasProPlan,
+  type EventPlan,
+  type PaymentStatus,
+} from "@/lib/plans";
 import {
   ImageIcon,
   Monitor,
   Shield,
   SlidersHorizontal,
   Sparkles,
-  Users,
 } from "lucide-react";
 
 type EventRecord = {
@@ -52,7 +56,6 @@ const TABS = [
   { id: "appearance", label: "Appearance", icon: ImageIcon },
   { id: "photo-wall", label: "Photo Wall", icon: Monitor },
   { id: "moderation", label: "Moderation", icon: Shield },
-  { id: "collaborators", label: "Collaborators", icon: Users },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -104,7 +107,58 @@ export default function EventSettingsPage() {
     if (payment === "cancelled") {
       setPlanMessage("Checkout was cancelled. No charge was made.");
     }
+    if (payment === "failed") {
+      setPlanMessage("Payment failed. You can try checkout again.");
+    }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (searchParams.get("payment") !== "success" || !slug) return;
+
+    let cancelled = false;
+
+    const poll = async () => {
+      for (let attempt = 0; attempt < 15 && !cancelled; attempt += 1) {
+        try {
+          const status = (await apiFetch(`/billing/events/${slug}/status`)) as {
+            plan: EventPlan;
+            paymentStatus: PaymentStatus;
+          };
+          if (status.paymentStatus === "paid") {
+            const events = (await apiFetch("/events")) as EventRecord[];
+            const found = events.find((e) => e.slug === slug) ?? null;
+            if (!cancelled && found) {
+              setEvent(found);
+              setFormProtected(found.protected);
+              setFormPrimaryColor(found.primaryColor ?? "#ffffff");
+              setFormBackgroundVariant(found.backgroundVariant ?? "dark");
+              setFormPOVEnabled(found.povEnabled ?? false);
+              setFormPovMaxPerGuest(found.povMaxPerGuest ?? 0);
+              setFormPovRevealAt(
+                found.povRevealAt ? found.povRevealAt.slice(0, 10) : ""
+              );
+              setPlanMessage("Payment confirmed. Paid features are now active.");
+            }
+            return;
+          }
+          if (status.paymentStatus === "failed") {
+            if (!cancelled) {
+              setPlanMessage("Payment failed. You can try checkout again.");
+            }
+            return;
+          }
+        } catch {
+          // Keep polling while Whop confirms the payment.
+        }
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    };
+
+    void poll();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, slug]);
 
   useEffect(() => {
     const load = async () => {
@@ -141,7 +195,12 @@ export default function EventSettingsPage() {
     e.preventDefault();
     if (!event) return;
 
-    if (formProtected && !event.hasPassword && formPassword.length < 4) {
+    if (
+      eventHasPaidPlan(event.plan, event.paymentStatus) &&
+      formProtected &&
+      !event.hasPassword &&
+      formPassword.length < 4
+    ) {
       showErrorAlert("Gallery password must be at least 4 characters");
       return;
     }
@@ -151,8 +210,10 @@ export default function EventSettingsPage() {
       category: formCategory,
     };
     if (formDate) body.eventDate = new Date(formDate).toISOString();
-    if (formProtected !== event.protected) body.protected = formProtected;
-    if (formPassword) body.password = formPassword;
+    if (eventHasPaidPlan(event.plan, event.paymentStatus)) {
+      if (formProtected !== event.protected) body.protected = formProtected;
+      if (formPassword) body.password = formPassword;
+    }
 
     setSaving(true);
     try {
@@ -173,6 +234,10 @@ export default function EventSettingsPage() {
   const handleSaveAppearance = async (e: FormEvent) => {
     e.preventDefault();
     if (!event) return;
+    if (!eventHasPaidPlan(event.plan, event.paymentStatus)) {
+      showErrorAlert("Custom cover and colors require Premium or Pro.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -197,6 +262,10 @@ export default function EventSettingsPage() {
   const handleSavePhotoWall = async (e: FormEvent) => {
     e.preventDefault();
     if (!event) return;
+    if (!eventHasProPlan(event.plan, event.paymentStatus)) {
+      showErrorAlert("POV mode requires a Pro plan.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -248,6 +317,9 @@ export default function EventSettingsPage() {
   }
 
   if (!event) return null;
+
+  const hasPaid = eventHasPaidPlan(event.plan, event.paymentStatus);
+  const hasPro = eventHasProPlan(event.plan, event.paymentStatus);
 
   return (
     <div className="space-y-6">
@@ -369,6 +441,7 @@ export default function EventSettingsPage() {
                     type="checkbox"
                     className="mt-1"
                     checked={formProtected}
+                    disabled={!hasPaid}
                     onChange={(e) => setFormProtected(e.target.checked)}
                   />
                   <span>
@@ -376,7 +449,7 @@ export default function EventSettingsPage() {
                       Protect gallery with password
                     </span>
                     <span className="block text-xs text-muted-foreground">
-                      Requires Premium or Pro plan for new protection.
+                      Requires a paid Premium or Pro plan.
                     </span>
                   </span>
                 </label>
@@ -384,10 +457,19 @@ export default function EventSettingsPage() {
                   <input
                     type="password"
                     placeholder="Gallery password"
-                    className="w-full rounded-xl border px-3 py-2 text-sm"
+                    className="w-full rounded-xl border px-3 py-2 text-sm disabled:opacity-60"
                     value={formPassword}
+                    disabled={!hasPaid}
                     onChange={(e) => setFormPassword(e.target.value)}
                   />
+                )}
+                {!hasPaid && (
+                  <p className="text-xs text-muted-foreground">
+                    <Link href={`/events/${slug}/settings?tab=plan`} className="text-primary hover:underline">
+                      Choose Premium or Pro
+                    </Link>{" "}
+                    to enable a gallery password.
+                  </p>
                 )}
               </div>
 
@@ -404,10 +486,7 @@ export default function EventSettingsPage() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Custom slugs are available on Pro.{" "}
-                  <Link href={`/events/${slug}/settings?tab=plan`} className="text-primary hover:underline">
-                    Upgrade
-                  </Link>
+                  Each event gets a unique private link. Custom slugs are not available yet.
                 </p>
               </div>
 
@@ -468,10 +547,21 @@ export default function EventSettingsPage() {
                 <div className="text-sm font-medium">Cover photo</div>
                 <p className="text-xs text-muted-foreground">
                   Shown on the guest welcome screen and album header.
+                  {!hasPaid && (
+                    <>
+                      {" "}
+                      Cover photos require{" "}
+                      <Link href={`/events/${slug}/settings?tab=plan`} className="text-primary hover:underline">
+                        Premium or Pro
+                      </Link>
+                      .
+                    </>
+                  )}
                 </p>
               </div>
               <CoverUploadField
                 slug={event.slug}
+                disabled={!hasPaid}
                 className="overflow-hidden rounded-xl"
                 onUploaded={(updated) =>
                   setEvent((prev) => (prev ? { ...prev, ...updated } : prev))
@@ -503,15 +593,17 @@ export default function EventSettingsPage() {
                 <input
                   type="color"
                   value={formPrimaryColor}
+                  disabled={!hasPaid}
                   onChange={(e) => setFormPrimaryColor(e.target.value)}
-                  className="h-10 w-full rounded-xl border"
+                  className="h-10 w-full rounded-xl border disabled:opacity-60"
                 />
               </div>
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Background</label>
                 <select
-                  className="w-full rounded-xl border px-3 py-2 text-sm"
+                  className="w-full rounded-xl border px-3 py-2 text-sm disabled:opacity-60"
                   value={formBackgroundVariant}
+                  disabled={!hasPaid}
                   onChange={(e) =>
                     setFormBackgroundVariant(e.target.value as "dark" | "light")
                   }
@@ -523,9 +615,10 @@ export default function EventSettingsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">Cover layout</label>
-                  <select
-                    className="w-full rounded-xl border px-3 py-2 text-sm"
+                    <select
+                    className="w-full rounded-xl border px-3 py-2 text-sm disabled:opacity-60"
                     value={formCoverLayout}
+                    disabled={!hasPaid}
                     onChange={(e) =>
                       setFormCoverLayout(e.target.value as "banner" | "card")
                     }
@@ -536,9 +629,10 @@ export default function EventSettingsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">Cover overlay</label>
-                  <select
-                    className="w-full rounded-xl border px-3 py-2 text-sm"
+                    <select
+                    className="w-full rounded-xl border px-3 py-2 text-sm disabled:opacity-60"
                     value={formCoverOverlay}
+                    disabled={!hasPaid}
                     onChange={(e) =>
                       setFormCoverOverlay(e.target.value as "none" | "gradient")
                     }
@@ -548,7 +642,7 @@ export default function EventSettingsPage() {
                   </select>
                 </div>
               </div>
-              <Button type="submit" disabled={saving} className="rounded-xl">
+              <Button type="submit" disabled={saving || !hasPaid} className="rounded-xl">
                 {saving ? "Saving…" : "Save appearance"}
               </Button>
             </form>
@@ -568,12 +662,23 @@ export default function EventSettingsPage() {
                   type="checkbox"
                   className="mt-1"
                   checked={formPOVEnabled}
+                  disabled={!hasPro}
                   onChange={(e) => setFormPOVEnabled(e.target.checked)}
                 />
                 <span>
                   <span className="block text-sm font-medium">POV mode</span>
                   <span className="block text-xs text-muted-foreground">
                     Limit guest uploads like a disposable camera (Pro plan).
+                    {!hasPro && (
+                      <>
+                        {" "}
+                        <Link href={`/events/${slug}/settings?tab=plan`} className="text-primary hover:underline">
+                          Choose Pro
+                        </Link>
+                        {" "}
+                        to enable POV.
+                      </>
+                    )}
                   </span>
                 </span>
               </label>
@@ -584,8 +689,9 @@ export default function EventSettingsPage() {
                     <input
                       type="number"
                       min={0}
-                      className="w-full rounded-xl border px-3 py-2 text-sm"
+                      className="w-full rounded-xl border px-3 py-2 text-sm disabled:opacity-60"
                       value={formPovMaxPerGuest}
+                      disabled={!hasPro}
                       onChange={(e) =>
                         setFormPovMaxPerGuest(Number(e.target.value))
                       }
@@ -595,14 +701,15 @@ export default function EventSettingsPage() {
                     <label className="text-sm font-medium">Gallery reveal date</label>
                     <input
                       type="date"
-                      className="w-full rounded-xl border px-3 py-2 text-sm"
+                      className="w-full rounded-xl border px-3 py-2 text-sm disabled:opacity-60"
                       value={formPovRevealAt}
+                      disabled={!hasPro}
                       onChange={(e) => setFormPovRevealAt(e.target.value)}
                     />
                   </div>
                 </>
               )}
-              <Button type="submit" disabled={saving} className="rounded-xl">
+              <Button type="submit" disabled={saving || !hasPro} className="rounded-xl">
                 {saving ? "Saving…" : "Save photo wall settings"}
               </Button>
             </form>
@@ -617,8 +724,9 @@ export default function EventSettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
             <p>
-              Review pending uploads before they appear in the gallery. Manage
-              moderation from the Photos & Videos page.
+              Premium and Pro hold guest uploads for review. Open Photos & Videos
+              to approve or reject the queue. After a refund, leftover pending
+              items stay hidden from guests until you approve or reject them.
             </p>
             <Link
               href={`/events/${slug}/media`}
@@ -626,18 +734,6 @@ export default function EventSettingsPage() {
             >
               Go to Photos & Videos
             </Link>
-          </CardContent>
-        </Card>
-      )}
-
-      {tab === "collaborators" && (
-        <Card className="rounded-2xl">
-          <CardHeader>
-            <CardTitle className="text-base">Collaborators</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Invite co-organizers to help manage this event. Coming soon on Pro
-            plans.
           </CardContent>
         </Card>
       )}

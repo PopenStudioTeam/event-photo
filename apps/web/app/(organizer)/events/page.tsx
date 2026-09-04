@@ -56,6 +56,26 @@ export default function EventsPage() {
     router.push(`/events/${slug}`);
   };
 
+  const handleDeleteEvent = async (evt: Event) => {
+    const confirmed = window.confirm(
+      `Delete "${evt.name}"? This cannot be undone. Events with a past date or any uploads cannot be deleted.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await apiFetch(`/events/${evt.slug}`, { method: "DELETE" });
+      setEvents((prev) => prev.filter((item) => item.id !== evt.id));
+      if (currentSlug === evt.slug) {
+        setCurrentSlug(null);
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("eventphoto_current_slug");
+        }
+      }
+    } catch (err) {
+      reportApiError(err, "Failed to delete event");
+    }
+  };
+
   return (
     <div className="min-w-0 space-y-6">
       <div className="space-y-1">
@@ -122,6 +142,12 @@ export default function EventsPage() {
                         onClick={() => router.push(`/events/${evt.slug}/settings`)}
                       >
                         Event settings
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="cursor-pointer rounded-lg text-destructive"
+                        onClick={() => void handleDeleteEvent(evt)}
+                      >
+                        Delete event
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

@@ -33,7 +33,7 @@ export const guides: Guide[] = [
         id: "turning-it-on",
         title: "Turning it on",
         paragraphs: [
-          "Turn it on from the event's edit dialog, then open the Moderation panel from the event page whenever you want to review pending uploads.",
+          "Premium and Pro include moderation automatically. Open Photos & Videos to review the pending queue. After a refund, leftover pending items stay hidden from guests until you approve or reject them.",
         ],
       },
       {
@@ -161,7 +161,7 @@ export const guides: Guide[] = [
         id: "changing-password",
         title: "Changing the password",
         paragraphs: [
-          "You can change the password at any time from the event's edit dialog without affecting uploads that already exist.",
+          "You can change the password at any time from Event Settings → General on a paid Premium or Pro event, without affecting uploads that already exist.",
         ],
       },
     ],

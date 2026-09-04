@@ -85,8 +85,7 @@ export const helpCategories: HelpCategory[] = [
             subtitle: "Letting a partner or planner help manage your event.",
             date: "2026-05-27",
             body: [
-              "Collaborators are other organizers who can help manage your event — approving uploads, downloading photos, or updating settings — without needing to share your login.",
-              "You can invite a collaborator by email from your event's settings page.",
+              "Collaborators are not available yet. Event settings currently only let the account owner manage the gallery.",
             ],
           },
         ],
@@ -166,7 +165,7 @@ export const helpCategories: HelpCategory[] = [
             subtitle: "Customizing the look of your gallery.",
             date: "2026-04-14",
             body: [
-              "Open your event's settings and update the cover image, accent color, and background style. Changes apply immediately for anyone viewing the gallery.",
+              "Open Event Settings → Appearance on a Premium or Pro event to update the cover image, accent color, and background style. Changes apply immediately for anyone viewing the gallery.",
             ],
           },
           {
@@ -193,7 +192,7 @@ export const helpCategories: HelpCategory[] = [
             subtitle: "Turning on moderation.",
             date: "2026-04-18",
             body: [
-              "Enable moderation from your event's settings (available on Premium and Pro). Every upload will wait in a review queue until you approve or decline it.",
+              "Premium and Pro events hold every upload in a review queue. Open Photos & Videos to approve or decline items. After a refund, leftover pending items stay hidden from guests until you review them.",
             ],
           },
         ],
@@ -255,7 +254,7 @@ export const helpCategories: HelpCategory[] = [
             subtitle: "Timing after checkout.",
             date: "2026-03-12",
             body: [
-              "Paid features activate as soon as your payment is confirmed, which is typically instant.",
+              "Paid features activate after Whop confirms the payment. After checkout, stay on the Plan tab — the app checks payment status and unlocks the plan when it is confirmed, which is usually quick.",
             ],
           },
           {
@@ -273,7 +272,8 @@ export const helpCategories: HelpCategory[] = [
             subtitle: "Moving from Free to a paid plan later.",
             date: "2026-03-16",
             body: [
-              "Yes. You can upgrade an existing event to Premium or Pro at any time from its settings page — your gallery and existing uploads carry over.",
+              "Yes. Open the event's Plan tab and choose Premium or Pro. The gallery and existing uploads stay with the event.",
+              "There is no in-app upgrade from Premium to Pro, because a second checkout would charge the full Pro price. To switch plans, request a refund in Whop, then choose again after the event returns to Free.",
             ],
           },
         ],
@@ -312,7 +312,7 @@ export const helpCategories: HelpCategory[] = [
             subtitle: "Removing an event once you're done with it.",
             date: "2026-03-23",
             body: [
-              "Yes, from your dashboard. Deleting an event permanently removes its gallery and all associated media from our systems.",
+              "Yes. On My Events, open the event menu and choose Delete event. Deletion is blocked if the event date is in the past or if any photos or videos have been uploaded. When it succeeds, the gallery and associated media are removed.",
             ],
           },
         ],

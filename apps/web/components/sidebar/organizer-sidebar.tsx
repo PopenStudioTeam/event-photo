@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NewEventDialog } from "@/components/new-event-dialog";
+import { eventHasPaidPlan, eventPlanSettingsPath, type EventPlan, type PaymentStatus } from "@/lib/plans";
 
 type EventSummary = {
   id: string;
@@ -33,6 +34,8 @@ type EventSummary = {
   slug: string;
   mediaCount?: number;
   createdAt?: string;
+  plan?: EventPlan;
+  paymentStatus?: PaymentStatus;
 };
 
 const CURRENT_SLUG_KEY = "eventphoto_current_slug";
@@ -252,13 +255,19 @@ export function Sidebar() {
             </DropdownMenu>
           </div>
 
+          {currentEvent &&
+            !eventHasPaidPlan(
+              currentEvent.plan ?? "free",
+              currentEvent.paymentStatus ?? "free"
+            ) && (
           <Link
-            href="/settings"
+            href={eventPlanSettingsPath(currentEvent.slug)}
             className="flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-[var(--primary-hover)]"
           >
             <Star className="h-4 w-4" />
             Upgrade Your Event
           </Link>
+            )}
         </div>
       )}
 

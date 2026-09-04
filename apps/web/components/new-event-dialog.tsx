@@ -25,8 +25,6 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
   const [category, setCategory] = useState<EventCategory>("party");
-  const [protectedGallery, setProtectedGallery] = useState(false);
-  const [password, setPassword] = useState("");
   const [plan, setPlan] = useState<EventPlan>("free");
   const [creating, setCreating] = useState(false);
 
@@ -34,8 +32,6 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
     setName("");
     setDate("");
     setCategory("party");
-    setProtectedGallery(false);
-    setPassword("");
     setPlan("free");
   };
 
@@ -46,26 +42,16 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
       return;
     }
 
-    if (protectedGallery && password.length < 4) {
-      showErrorAlert("Gallery password must be at least 4 characters");
-      return;
-    }
-
     setCreating(true);
 
     try {
       const body: Record<string, unknown> = {
         name: name.trim(),
         category,
-        protected: protectedGallery,
       };
 
       if (date) {
         body.eventDate = new Date(date).toISOString();
-      }
-
-      if (protectedGallery) {
-        body.password = password;
       }
 
       const created = await apiFetch("/events", {
@@ -81,9 +67,9 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
         localStorage.setItem("eventphoto_current_slug", event.slug);
       }
       router.push(
-        plan === "free"
-          ? `/events/${event.slug}`
-          : eventPlanSettingsPath(event.slug)
+        plan === "premium" || plan === "pro"
+          ? eventPlanSettingsPath(event.slug, plan)
+          : `/events/${event.slug}`
       );
     } catch (err) {
       console.error(err);
@@ -178,43 +164,9 @@ export function NewEventDialog({ open, onOpenChange }: NewEventDialogProps) {
             </div>
             <p className="text-[11px] text-muted-foreground">
               {plan === "free"
-                ? "Starts on Free. You can choose Premium or Pro in event settings before paying."
-                : `The event is created on Free first. Next you’ll choose ${EVENT_PLANS[plan].name} checkout.`}
+                ? "Starts on Free. Password protection and POV are in event settings after you choose Premium or Pro."
+                : `Created on Free, then opens checkout for ${EVENT_PLANS[plan].name}.`}
             </p>
-          </div>
-
-          <div className="space-y-3 rounded-md border bg-muted/40 p-3">
-            <label className="flex items-start gap-2">
-              <input
-                type="checkbox"
-                className="mt-0.5"
-                checked={protectedGallery}
-                onChange={(e) => {
-                  setProtectedGallery(e.target.checked);
-                  if (!e.target.checked) setPassword("");
-                }}
-              />
-              <span>
-                <span className="block text-xs font-medium">Protect gallery with password</span>
-                <span className="block text-[11px] text-muted-foreground">
-                  Guests must enter a password to view photos and videos.
-                </span>
-              </span>
-            </label>
-
-            {protectedGallery && (
-              <div className="space-y-1">
-                <label className="text-xs font-medium">Gallery password</label>
-                <input
-                  type="password"
-                  className="w-full rounded-md border px-3 py-2 text-sm"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="At least 4 characters"
-                  minLength={4}
-                />
-              </div>
-            )}
           </div>
 
           <DialogFooter className="mt-4 flex justify-end gap-2">

@@ -136,6 +136,11 @@ export const whopWebhookRoutes = new Hono().post("/whop", async (c) => {
               maxMediaCount: EVENT_LIMITS.free.maxMediaCount,
               paidAt: null,
               whopPaymentId: null,
+              protected: false,
+              protectedPasswordHash: null,
+              povEnabled: false,
+              povMaxPerGuest: 0,
+              povRevealAt: null,
             })
             .where(eq(events.whopPaymentId, paymentId));
         }
